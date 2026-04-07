@@ -1,0 +1,93 @@
+ALTER TABLE users
+CHANGE COLUMN username gamer_tag VARCHAR(30) NOT NULL UNIQUE,
+MODIFY COLUMN email VARCHAR(120) NOT NULL UNIQUE,
+MODIFY COLUMN role ENUM('admin', 'player') NOT NULL DEFAULT 'player',
+ADD COLUMN full_name VARCHAR(100) NOT NULL,
+ADD COLUMN profile_picture TEXT;
+
+CREATE TABLE GAME_CATALOG(
+game_id INT AUTO_INCREMENT PRIMARY KEY,
+name VARCHAR(100) NOT NULL,
+tag VARCHAR(255) NOT NULL,
+genre VARCHAR(50) NOT NULL,
+max_players INT NOT NULL
+);
+
+CREATE TABLE TEAMS(
+    team_id INT AUTO_INCREMENT PRIMARY KEY,
+    team_name VARCHAR(100) NOT NULL,
+    tag VARCHAR(10) NOT NULL UNIQUE,
+    logo VARCHAR(255) NOT NULL,
+    description TEXT
+);
+
+CREATE TABLE TOURNAMENTS(
+    tournamentid INT AUTO_INCREMENT PRIMARY KEY,
+    game_id INT NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    format ENUM('single_elim', 'double_elim', 'round_robin') NOT NULL,
+    max_teams INT NOT NULL,
+    registration_deadline DATETIME NOT NULL,
+    prize_pool DECIMAL(10, 2) DEFAULT 0.00,
+    status ENUM('open', 'locked', 'ongoing', 'completed') DEFAULT 'open',
+    FOREIGN KEY (game_id) REFERENCES GAME_CATALOG(game_id) ON DELETE CASCADE
+);
+
+CREATE TABLE GAMES(
+    game_id INT AUTO_INCREMENT PRIMARY KEY,
+    tournament_id INT NOT NULL,
+    team1_id INT NULL,
+    team2_id INT NULL,
+    round INT NOT NULL,
+    score VARCHAR(10) DEFAULT '0:0',
+    status ENUM('scheduled', 'ongoing', 'completed') DEFAULT 'scheduled',
+    winner_team_id INT NULL,
+    FOREIGN KEY (tournament_id) REFERENCES TOURNAMENTS(tournamentid) ON DELETE CASCADE,
+    FOREIGN KEY (team1_id) REFERENCES TEAMS(team_id),
+    FOREIGN KEY (team2_id) REFERENCES TEAMS(team_id),
+    FOREIGN KEY (winner_team_id) REFERENCES TEAMS(team_id)
+);
+--relacija 1 :
+CREATE TABLE TEAM_MEMBERS(
+    team_id INT NOT NULL,
+    player_id INT unsigned NOT NULL,
+    role ENUM('captain', 'member') NOT NULL DEFAULT 'member',
+    joined_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (team_id, player_id),
+    FOREIGN KEY (team_id) REFERENCES TEAMS(team_id) ON DELETE CASCADE,
+    FOREIGN KEY (player_id) REFERENCES users(id) ON DELETE CASCADE
+);
+--relacija 2 :
+CREATE TABLE TOURNAMENT_REGISTATIONS(
+    tournament_id INT NOT NULL,
+    team_id INT NOT NULL,
+    registered_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    status ENUM('pending','confirmed','disqualified') DEFAULT 'pending',
+    seed int NULL,
+    PRIMARY KEY (team_id, tournament_id),
+    FOREIGN KEY (tournament_id) REFERENCES TOURNAMENTS(tournamentid) ON DELETE CASCADE,
+    FOREIGN KEY (team_id) REFERENCES TEAMS(team_id) ON DELETE CASCADE
+);
+--relacija 3 :
+CREATE TABLE MATCH_PLAYERS(
+    game_id int NOT NULL,
+    player_id int unsigned NOT NULL,
+    team_id int NOT NULL,
+    performance_stats TEXT,
+    PRIMARY KEY (game_id, player_id),
+    FOREIGN KEY (game_id) REFERENCES GAMES(game_id) ON DELETE CASCADE,
+    FOREIGN KEY (player_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (team_id) REFERENCES TEAMS(team_id) ON DELETE CASCADE
+);
+--relacija 4 :
+CREATE TABLE USER_WATCHLIST(
+    user_id INT unsigned NOT NULL,
+    tournament_id INT NOT NULL,
+    added_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, tournament_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (tournament_id) REFERENCES TOURNAMENTS(tournamentid) ON DELETE CASCADE
+);
+
+
+
