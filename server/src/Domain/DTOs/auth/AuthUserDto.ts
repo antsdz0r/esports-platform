@@ -4,6 +4,6 @@ export class AuthUserDto {
   constructor(
     public id: number       = 0,
     public username: string = "",
-    public role: UserRole   = UserRole.USER,
+    public role: UserRole   = UserRole.PLAYER,
   ) {}
 }

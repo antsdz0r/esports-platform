@@ -70,6 +70,9 @@ docker-compose up -d
 ```bash
 docker cp docker/setup-replication.sh project_master:/setup.sh
 docker exec project_master sh /setup.sh
+
+docker exec project_master sh -c "sed -i 's/\r$//' /setup.sh"
+docker exec project_master sh /setup.sh
 ```
 
 ### 3. Start the server
