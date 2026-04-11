@@ -7,7 +7,6 @@ export interface IAuthService {
     gamerTag: string,
     email: string,
     password: string,
-    role?: UserRole,
     fullName?: string,
     profilePicture?: string | null,
   ): Promise<AuthUserDto>;

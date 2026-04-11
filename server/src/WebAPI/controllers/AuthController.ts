@@ -2,6 +2,8 @@ import { Request, Response, Router } from "express";
 import { IAuthService } from "../../Domain/services/auth/IAuthService";
 import { UserRole } from "../../Domain/enums/UserRole";
 import { generateToken } from "../utils/jwt";
+import { validateLogin } from "../validators/auth/validateLogin";
+import { validateRegister } from "../validators/auth/validateRegister";
 
 export class AuthController {
   private readonly router: Router;
@@ -24,6 +26,13 @@ export class AuthController {
         res.status(400).json({ success: false, message: "gamerTag i password su obavezni." });
         return;
       }
+
+      const validation = validateLogin(gamerTag, password);
+      if (!validation.valid) {
+          res.status(400).json({ success: false, message: validation.message });
+          return;
+      }
+
 
       const result = await this.authService.login(gamerTag, password);
 
@@ -55,7 +64,7 @@ export class AuthController {
 
   private async register(req: Request, res: Response): Promise<void> {
     try {
-      const { gamerTag, email, password, role, fullName, profilePicture } = req.body;
+      const { gamerTag, email, password,fullName, profilePicture } = req.body;
 
       if (!gamerTag || !email || !password) {
         res.status(400).json({
@@ -65,17 +74,23 @@ export class AuthController {
         return;
       }
 
-      const parsedRole: UserRole =
-        role === UserRole.ADMIN ? UserRole.ADMIN : UserRole.PLAYER;
 
+      const validation = validateRegister(gamerTag, email, password);
+      if (!validation.valid) {
+        res.status(400).json({ success: false, message: validation.message });
+        return;
+      }
+
+
+      //const parsedRole: UserRole =
+        //role === UserRole.ADMIN ? UserRole.ADMIN : UserRole.PLAYER;
       const result = await this.authService.register(
-        gamerTag,
-        email,
-        password,
-        parsedRole,
-        fullName,
-        profilePicture
-      );
+          gamerTag,
+          email,
+          password,
+          fullName,
+          profilePicture
+        );
 
       if (result.id === 0) {
         res.status(400).json({

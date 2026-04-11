@@ -27,39 +27,49 @@ export class UserRepository implements IUserRepository {
   }
 
   async create(user: User): Promise<User> {
-    const res = await this.db.getWriteConnection();
-    if (!res) return new User();
+  const res = await this.db.getWriteConnection();
+  if (!res) return new User();
 
-    try {
-      const [result] = await res.conn.execute<ResultSetHeader>(
-        `
-        INSERT INTO users
-          (gamer_tag, email, passwordHash, role, isActive, createdAt, updatedAt, full_name, profile_picture)
-        VALUES
-          (?, ?, ?, ?, ?, NOW(), NOW(), ?, ?)
-        `,
-        [
-          user.gamerTag,
-          user.email,
-          user.passwordHash,
-          user.role,
-          user.isActive,
-          user.fullName,
-          user.profilePicture,
-        ]
-      );
+  try {
+    const [result] = await res.conn.execute<ResultSetHeader>(
+      `
+      INSERT INTO users
+        (gamer_tag, email, passwordHash, role, isActive, createdAt, updatedAt, full_name, profile_picture)
+      VALUES
+        (?, ?, ?, ?, ?, NOW(), NOW(), ?, ?)
+      `,
+      [
+        user.gamerTag,
+        user.email,
+        user.passwordHash,
+        user.role,
+        user.isActive,
+        user.fullName,
+        user.profilePicture,
+      ]
+    );
 
-      if (result.insertId === 0) return new User();
+    if (result.insertId === 0) return new User();
 
-      const created = await this.findById(result.insertId);
-      return created;
-    } catch (err) {
-      this.logger.error("UserRepository", "create failed", err);
-      return new User();
-    } finally {
-      res.conn.release();
-    }
+    return new User(
+      result.insertId,
+      user.gamerTag,
+      user.email,
+      user.role,
+      user.isActive,
+      user.passwordHash,
+      new Date(),
+      new Date(),
+      user.fullName,
+      user.profilePicture
+    );
+  } catch (err) {
+    this.logger.error("UserRepository", "create failed", err);
+    return new User();
+  } finally {
+    res.conn.release();
   }
+}
 
   async findById(id: number): Promise<User> {
     const res = await this.db.getReadConnection();

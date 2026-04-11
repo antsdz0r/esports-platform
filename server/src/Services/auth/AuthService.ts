@@ -24,7 +24,6 @@ export class AuthService implements IAuthService {
     gamerTag: string,
     email: string,
     password: string,
-    role?: UserRole,
     fullName?: string,
     profilePicture?: string | null,
   ): Promise<AuthUserDto> {
@@ -35,7 +34,7 @@ export class AuthService implements IAuthService {
     if (byEmail.id !== 0) return new AuthUserDto();
  
     const hash = await bcrypt.hash(password, 10);
-    const userRole = role === UserRole.ADMIN ? UserRole.ADMIN : UserRole.PLAYER;
+    const userRole = UserRole.PLAYER;
  
     const created = await this.userRepo.create(
       new User(
