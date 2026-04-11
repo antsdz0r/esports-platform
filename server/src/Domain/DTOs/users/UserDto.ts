@@ -6,8 +6,8 @@ export class UserDto {
     public gamerTag: string = "",
     public email: string    = "",
     public role: UserRole   = UserRole.PLAYER,
+        public isActive: boolean = true,
     public fullName: string = "",
     public profilePicture: string | null = null,
-   // public isActive: number = 1,
   ) {}
 }

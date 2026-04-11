@@ -6,9 +6,11 @@ export class User {
     public gamerTag: string  = "",
     public email: string     = "",
     public role: UserRole    = UserRole.PLAYER,
+    public isActive: boolean = true,
     public passwordHash: string = "",
+    public createdAt: Date = new Date(),
+    public updatedAt: Date = new Date(),
     public fullName: string   = "",
     public profilePicture: string | null = null,
-   // public isActive: number  = 1,
   ) {}
 }
