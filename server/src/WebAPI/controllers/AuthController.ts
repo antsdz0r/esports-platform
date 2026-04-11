@@ -1,45 +1,112 @@
 import { Request, Response, Router } from "express";
-import jwt from "jsonwebtoken";
 import { IAuthService } from "../../Domain/services/auth/IAuthService";
-import { ValidationResult } from "../../Domain/types/ValidationResult";
-import { validateLogin } from "../validators/auth/validateLogin";
-import { validateRegister } from "../validators/auth/validateRegister";
+import { UserRole } from "../../Domain/enums/UserRole";
+import { generateToken } from "../utils/jwt";
 
 export class AuthController {
-  private readonly router = Router();
+  private readonly router: Router;
 
   public constructor(private readonly authService: IAuthService) {
+    this.router = Router();
+    this.initializeRoutes();
+  }
+
+  private initializeRoutes(): void {
     this.router.post("/auth/login", this.login.bind(this));
     this.router.post("/auth/register", this.register.bind(this));
   }
 
   private async login(req: Request, res: Response): Promise<void> {
-    const { username, password } = req.body as { username?: string; password?: string };
-    const v: ValidationResult = validateLogin(username ?? "", password ?? "");
-    if (!v.valid) { res.status(400).json({ success: false, message: v.message }); return; }
-    const result = await this.authService.login(username!, password!);
-    if (result.id === 0) { res.status(401).json({ success: false, message: "Invalid username or password" }); return; }
-    const token = jwt.sign(
-      { id: result.id, username: result.username, role: result.role },
-      process.env.JWT_SECRET ?? "",
-      { expiresIn: "24h" }
-    );
-    res.status(200).json({ success: true, message: "Login successful", data: token });
+    try {
+      const { gamerTag, password } = req.body;
+
+      if (!gamerTag || !password) {
+        res.status(400).json({ success: false, message: "gamerTag i password su obavezni." });
+        return;
+      }
+
+      const result = await this.authService.login(gamerTag, password);
+
+      if (result.id === 0) {
+        res.status(401).json({ success: false, message: "Neispravni kredencijali ili nalog nije aktivan." });
+        return;
+      }
+
+      const token = generateToken({
+        id: result.id,
+        gamerTag: result.gamerTag,
+        role: result.role,
+      });
+
+      res.status(200).json({
+        success: true,
+        message: "Uspešna prijava.",
+        data: {
+          id: result.id,
+          gamerTag: result.gamerTag,
+          role: result.role,
+          token,
+        },
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, message: "Greška pri prijavi.", error: err });
+    }
   }
 
   private async register(req: Request, res: Response): Promise<void> {
-    const { username, email, password, role } = req.body as { username?: string; email?: string; password?: string; role?: string };
-    const v: ValidationResult = validateRegister(username ?? "", email ?? "", password ?? "");
-    if (!v.valid) { res.status(400).json({ success: false, message: v.message }); return; }
-    const result = await this.authService.register(username!, email!, role ?? "user", password!);
-    if (result.id === 0) { res.status(409).json({ success: false, message: "Username or email already taken" }); return; }
-    const token = jwt.sign(
-      { id: result.id, username: result.username, role: result.role },
-      process.env.JWT_SECRET ?? "",
-      { expiresIn: "24h" }
-    );
-    res.status(201).json({ success: true, message: "Registration successful", data: token });
+    try {
+      const { gamerTag, email, password, role, fullName, profilePicture } = req.body;
+
+      if (!gamerTag || !email || !password) {
+        res.status(400).json({
+          success: false,
+          message: "gamerTag, email i password su obavezni.",
+        });
+        return;
+      }
+
+      const parsedRole: UserRole =
+        role === UserRole.ADMIN ? UserRole.ADMIN : UserRole.PLAYER;
+
+      const result = await this.authService.register(
+        gamerTag,
+        email,
+        password,
+        parsedRole,
+        fullName,
+        profilePicture
+      );
+
+      if (result.id === 0) {
+        res.status(400).json({
+          success: false,
+          message: "Registracija nije uspela. Gamer tag ili email već postoje.",
+        });
+        return;
+      }
+
+      const token = generateToken({
+        id: result.id,
+        gamerTag: result.gamerTag,
+        role: result.role,
+      });
+
+      res.status(201).json({
+        success: true,
+        message: "Uspešna registracija.",
+        data: {
+          id: result.id,
+          gamerTag: result.gamerTag,
+          role: result.role,
+          token,
+        },
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, message: "Greška pri registraciji.", error: err });
+    }
   }
 
-  public getRouter(): Router { return this.router; }
+  public getRouter(): Router {
+    return this.router;
+  }
 }

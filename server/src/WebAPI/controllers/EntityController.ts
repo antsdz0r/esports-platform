@@ -9,10 +9,10 @@ export class EntityController {
   private readonly router = Router();
 
   public constructor(private readonly entityService: IEntityService) {
-    this.router.get("/entities",          authenticate, authorize(UserRole.ADMIN, UserRole.USER), this.getAll.bind(this));
-    this.router.get("/entities/:id",      authenticate, authorize(UserRole.ADMIN, UserRole.USER), this.getById.bind(this));
-    this.router.get("/entities/user/:userId", authenticate, authorize(UserRole.ADMIN, UserRole.USER), this.getByUserId.bind(this));
-    this.router.post("/entities",         authenticate, authorize(UserRole.USER), this.create.bind(this));
+    this.router.get("/entities",          authenticate, authorize(UserRole.ADMIN, UserRole.PLAYER), this.getAll.bind(this));
+    this.router.get("/entities/:id",      authenticate, authorize(UserRole.ADMIN, UserRole.PLAYER), this.getById.bind(this));
+    this.router.get("/entities/user/:userId", authenticate, authorize(UserRole.ADMIN, UserRole.PLAYER), this.getByUserId.bind(this));
+    this.router.post("/entities",         authenticate, authorize(UserRole.PLAYER), this.create.bind(this));
     this.router.patch("/entities/:id",    authenticate, authorize(UserRole.ADMIN), this.update.bind(this));
     this.router.delete("/entities/:id",   authenticate, authorize(UserRole.ADMIN), this.delete.bind(this));
   }
