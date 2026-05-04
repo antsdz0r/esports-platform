@@ -7,7 +7,7 @@ async function start(): Promise<void> {
   await db.init();
 
   app.listen(PORT, () => {
-    logger.info("Server", `Running at http://localhost:${PORT}/api/v1`);
+    logger.info("Server", `Running at http://localhost:${PORT}/api`);
   });
 }
 

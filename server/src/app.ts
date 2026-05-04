@@ -33,8 +33,8 @@ const app = express();
 app.use(cors({ origin: process.env.CLIENT_URL ?? "*" }));
 app.use(express.json());
 
-app.use("/api/v1", new AuthController(authService).getRouter());
-app.use("/api/v1", new UserController(userService).getRouter());
-app.use("/api/v1", new EntityController(entityService).getRouter());
+app.use("/api", new AuthController(authService).getRouter());
+app.use("/api", new UserController(userService).getRouter());
+app.use("/api", new EntityController(entityService).getRouter());
 
 export default app;
