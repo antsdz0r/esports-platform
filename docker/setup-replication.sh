@@ -14,7 +14,7 @@ ROOT_PASS="root1234"
 REPL_USER="replicator"
 REPL_PASS="repl1234"
 
-# TODO: Replace "project_db" with your actual database name
+# PulseGrind databse name
 DB_NAME="project_db"
 
 M="mysql  -h127.0.0.1    -P3306 -uroot -p${ROOT_PASS} --protocol=TCP --connect-timeout=5"
@@ -59,32 +59,110 @@ $M -e "CREATE DATABASE ${DB_NAME} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_
 # TODO: Replace the SQL below with your actual table definitions
 $M ${DB_NAME} << 'SQL'
 CREATE TABLE users (
-  id           INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  username     VARCHAR(40)  NOT NULL UNIQUE,
-  email        VARCHAR(120) NOT NULL UNIQUE,
-  passwordHash VARCHAR(255) NOT NULL,
-  role         ENUM('user','admin') DEFAULT 'user',
-  isActive     TINYINT(1)   DEFAULT 1,
-  createdAt    DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updatedAt    DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  id              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  gamer_tag       VARCHAR(30)  NOT NULL UNIQUE,
+  email           VARCHAR(120) NOT NULL UNIQUE,
+  passwordHash    VARCHAR(255) NOT NULL,
+  role            ENUM('admin','player') NOT NULL DEFAULT 'player',
+  isActive        TINYINT(1)   DEFAULT 1,
+  createdAt       DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updatedAt       DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  full_name       VARCHAR(100) NOT NULL,
+  profile_picture TEXT
 );
 
--- TODO: Replace "entities" with your domain table and its columns
-CREATE TABLE entities (
-  id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  userId      INT UNSIGNED NOT NULL,
-  status      ENUM('pending','active','completed','cancelled') DEFAULT 'pending',
-  createdAt   DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updatedAt   DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (userId) REFERENCES users(id)
+CREATE TABLE GAME_CATALOG (
+  game_id       INT AUTO_INCREMENT PRIMARY KEY,
+  name          VARCHAR(100) NOT NULL,
+  tag           VARCHAR(255) NOT NULL UNIQUE,
+  genre         VARCHAR(50)  NOT NULL,
+  max_players   INT NOT NULL,
+  logo          TEXT
 );
+
+CREATE TABLE TEAMS (
+  team_id       INT AUTO_INCREMENT PRIMARY KEY,
+  team_name     VARCHAR(100) NOT NULL,
+  tag           VARCHAR(10)  NOT NULL UNIQUE,
+  logo          VARCHAR(255) NOT NULL,
+  description   TEXT
+);
+
+CREATE TABLE TOURNAMENTS (
+  tournamentid          INT AUTO_INCREMENT PRIMARY KEY,
+  game_id               INT NOT NULL,
+  name                  VARCHAR(100) NOT NULL,
+  format                ENUM('single_elim','double_elim','round_robin') NOT NULL,
+  max_teams             INT NOT NULL,
+  registration_deadline DATETIME NOT NULL,
+  prize_pool            DECIMAL(10,2) DEFAULT 0.00,
+  status                ENUM('open','locked','ongoing','completed') DEFAULT 'open',
+  FOREIGN KEY (game_id) REFERENCES GAME_CATALOG(game_id) ON DELETE CASCADE
+);
+
+CREATE TABLE GAMES (
+  game_id         INT AUTO_INCREMENT PRIMARY KEY,
+  tournament_id   INT NOT NULL,
+  team1_id        INT NULL,
+  team2_id        INT NULL,
+  round           INT NOT NULL,
+  score           VARCHAR(10) DEFAULT '0:0',
+  status          ENUM('scheduled','ongoing','completed') DEFAULT 'scheduled',
+  winner_team_id  INT NULL,
+  FOREIGN KEY (tournament_id) REFERENCES TOURNAMENTS(tournamentid) ON DELETE CASCADE,
+  FOREIGN KEY (team1_id) REFERENCES TEAMS(team_id),
+  FOREIGN KEY (team2_id) REFERENCES TEAMS(team_id),
+  FOREIGN KEY (winner_team_id) REFERENCES TEAMS(team_id)
+);
+
+CREATE TABLE TEAM_MEMBERS (
+  team_id      INT NOT NULL,
+  player_id    INT UNSIGNED NOT NULL,
+  role         ENUM('captain','member') NOT NULL DEFAULT 'member',
+  joined_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (team_id, player_id),
+  FOREIGN KEY (team_id) REFERENCES TEAMS(team_id) ON DELETE CASCADE,
+  FOREIGN KEY (player_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE TOURNAMENT_REGISTRATIONS (
+  tournament_id  INT NOT NULL,
+  team_id        INT NOT NULL,
+  registered_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  status         ENUM('pending','confirmed','disqualified') DEFAULT 'pending',
+  seed           INT NULL,
+  PRIMARY KEY (team_id, tournament_id),
+  FOREIGN KEY (tournament_id) REFERENCES TOURNAMENTS(tournamentid) ON DELETE CASCADE,
+  FOREIGN KEY (team_id) REFERENCES TEAMS(team_id) ON DELETE CASCADE
+);
+
+CREATE TABLE MATCH_PLAYERS (
+  game_id             INT NOT NULL,
+  player_id           INT UNSIGNED NOT NULL,
+  team_id             INT NOT NULL,
+  performance_notes   TEXT,
+  PRIMARY KEY (game_id, player_id),
+  FOREIGN KEY (game_id) REFERENCES GAMES(game_id) ON DELETE CASCADE,
+  FOREIGN KEY (player_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (team_id) REFERENCES TEAMS(team_id) ON DELETE CASCADE
+);
+
+CREATE TABLE USER_WATCHLIST (
+  user_id        INT UNSIGNED NOT NULL,
+  tournament_id  INT NOT NULL,
+  added_at       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (user_id, tournament_id),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (tournament_id) REFERENCES TOURNAMENTS(tournamentid) ON DELETE CASCADE
+);
+
 SQL
 
 MASTER_TABLES=$($M -s --skip-column-names \
   -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='${DB_NAME}';" 2>/dev/null)
 echo "  Master tables: ${MASTER_TABLES}"
-if [ "${MASTER_TABLES:-0}" -lt "2" ]; then
-  echo "  ERROR: Schema creation failed on Master"
+if [ "${MASTER_TABLES:-0}" -lt "9" ]; then
+  echo "  ERROR: Schema creation failed on Master (expected >= 9 tables)"
   exit 1
 fi
 
