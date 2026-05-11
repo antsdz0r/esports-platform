@@ -273,4 +273,35 @@ export class GameRepository implements IGameRepository {
       res.conn.release();
     }
   }
+  async createMatch(
+    tournamentId: number,
+    team1Id: number | null,
+    team2Id: number | null,
+    round: number
+    ): Promise<boolean> {
+    const game = new Game(0, tournamentId, team1Id, team2Id, round, "0:0", GameStatus.SCHEDULED, null);
+    const created = await this.create(game);
+    return created.gameId !== 0;
+}
+
+  async deleteMatchesForTournament(tournamentId: number): Promise<boolean> {
+    const res = await this.db.getWriteConnection();
+      if (!res) return false;
+
+        try {
+          const [result] = await res.conn.execute<ResultSetHeader>(
+          `DELETE FROM GAMES WHERE tournament_id = ?`,
+          [tournamentId]
+      );
+      return result.affectedRows >= 0;
+   } catch (err) {
+     this.logger.error("GameRepository", "deleteMatchesForTournament failed", err);
+     return false;
+    } finally {
+      res.conn.release();
+  }
+}
+
+
+
 }
