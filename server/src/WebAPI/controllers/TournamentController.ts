@@ -105,14 +105,19 @@ export class TournamentController {
   // ─────────────────────────────────────────────────────────────────────────
 
   private async getAll(req: Request, res: Response): Promise<void> {
+    try{
     const gameId = req.query.gameId ? Number(req.query.gameId) : undefined;
     const status = req.query.status as TournamentStatus | undefined;
 
     const tournaments = await this.tournamentService.getAll({ gameId, status });
     res.json(tournaments);
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
+}
 
   private async getById(req: Request, res: Response): Promise<void> {
+    try{
     const id = Number(req.params.id);
     if (isNaN(id)) { res.status(400).json({ message: "Neispravan ID" }); return; }
 
@@ -124,9 +129,13 @@ export class TournamentController {
     if (!tournament) { res.status(404).json({ message: "Turnir nije pronađen" }); return; }
 
     res.json({ ...tournament, registrations });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
+}
 
   private async create(req: Request, res: Response): Promise<void> {
+    try{
     const { gameId, name, format, maxTeams, registrationDeadline, prizePool } = req.body;
 
     if (!gameId || !name || !format || !maxTeams || !registrationDeadline) {
@@ -159,9 +168,12 @@ export class TournamentController {
     }
 
     res.status(201).json(created);
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
-
+  }
   private async update(req: Request, res: Response): Promise<void> {
+    try{
     const id = Number(req.params.id);
     const { gameId, name, format, maxTeams, registrationDeadline, prizePool, status } = req.body;
 
@@ -183,23 +195,29 @@ export class TournamentController {
     ok
       ? res.json({ message: "Turnir uspešno ažuriran" })
       : res.status(400).json({ message: "Ažuriranje nije uspelo" });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
-
+  }
   private async deleteTournament(req: Request, res: Response): Promise<void> {
+    try{
     const id = Number(req.params.id);
     const ok = await this.tournamentService.delete(id);
 
     ok
       ? res.json({ message: "Turnir obrisan" })
       : res.status(404).json({ message: "Turnir nije pronađen" });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
-
+  }
   // ─── Prijave ──────────────────────────────────────────────────────────
 
   private async registerTeam(req: Request, res: Response): Promise<void> {
+    try{
     const tournamentId = Number(req.params.id);
     const { teamId } = req.body;
-    const captainId = (req as any).user?.id;
+    const captainId = req.user!.id;
 
     if (!teamId || !captainId) {
       res.status(400).json({ message: "teamId je obavezan" });
@@ -215,21 +233,28 @@ export class TournamentController {
     result.ok
       ? res.status(201).json({ message: "Tim prijavljen" })
       : res.status(400).json({ message: result.error });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
-
+  }
   private async unregisterTeam(req: Request, res: Response): Promise<void> {
+    try{
     const tournamentId = Number(req.params.id);
     const teamId = Number(req.params.teamId);
-    const captainId = (req as any).user?.id;
+    const captainId = req.user!.id;
 
     const ok = await this.tournamentService.unregisterTeam(tournamentId, teamId, captainId);
 
     ok
       ? res.json({ message: "Tim odjavljen" })
       : res.status(400).json({ message: "Odjava nije uspela" });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
+}
 
   private async updateRegistrationStatus(req: Request, res: Response): Promise<void> {
+    try{
     const tournamentId = Number(req.params.id);
     const teamId = Number(req.params.teamId);
     const { status } = req.body;
@@ -249,36 +274,49 @@ export class TournamentController {
     ok
       ? res.json({ message: "Status prijave ažuriran" })
       : res.status(404).json({ message: "Prijava nije pronađena" });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
-
+  }
   private async generateBracket(req: Request, res: Response): Promise<void> {
+    try{
     const tournamentId = Number(req.params.id);
     const result = await this.tournamentService.lockAndGenerateBracket(tournamentId);
 
     result.ok
       ? res.json({ message: "Bracket uspešno generisan" })
       : res.status(400).json({ message: result.error });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
+}
 
   // ─── Watchlist ────────────────────────────────────────────────────────
 
   private async watchTournament(req: Request, res: Response): Promise<void> {
+    try{
     const tournamentId = Number(req.params.id);
-    const userId = (req as any).user?.id;
+    const userId = req.user!.id;
 
     const ok = await this.tournamentService.watchTournament(userId, tournamentId);
     ok
       ? res.status(201).json({ message: "Turnir dodat na listu praćenja" })
       : res.status(400).json({ message: "Već praćen ili greška" });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
-
+}
   private async unwatchTournament(req: Request, res: Response): Promise<void> {
+    try{
     const tournamentId = Number(req.params.id);
-    const userId = (req as any).user?.id;
+    const userId = req.user!.id;
 
     const ok = await this.tournamentService.unwatchTournament(userId, tournamentId);
     ok
       ? res.json({ message: "Turnir uklonjen sa liste praćenja" })
       : res.status(400).json({ message: "Nije na listi praćenja" });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
+}
 }

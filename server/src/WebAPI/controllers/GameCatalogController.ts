@@ -16,11 +16,15 @@ export class GameCatalogController {
   }
 
   private async getAll(req: Request, res: Response): Promise<void> {
+    try{
     const games = await this.gameService.getAll();
     res.status(200).json({ success: true, data: games });
-  }
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }}
 
   private async getById(req: Request, res: Response): Promise<void> {
+    try{
     const id = parseInt(req.params.id as string, 10);
     if (isNaN(id)) {
       res.status(400).json({ success: false, message: "Invalid id" });
@@ -34,9 +38,12 @@ export class GameCatalogController {
     }
 
     res.status(200).json({ success: true, data: game });
-  }
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }}
 
   private async create(req: Request, res: Response): Promise<void> {
+    try{
     const { name, tag, genre, maxPlayers } = req.body;
     if (!name || !tag || !genre || typeof maxPlayers !== "number" || maxPlayers <= 0) {
       res.status(400).json({ success: false, message: "Invalid payload" });
@@ -50,9 +57,12 @@ export class GameCatalogController {
     }
 
     res.status(201).json({ success: true, data: created });
-  }
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }}
 
   private async update(req: Request, res: Response): Promise<void> {
+    try{
     const id = parseInt(req.params.id as string, 10);
     if (isNaN(id)) {
       res.status(400).json({ success: false, message: "Invalid id" });
@@ -70,9 +80,12 @@ export class GameCatalogController {
       success: ok,
       message: ok ? "Game updated" : "Update failed",
     });
-  }
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }}
 
   private async delete(req: Request, res: Response): Promise<void> {
+    try{
     const id = parseInt(req.params.id as string, 10);
     if (isNaN(id)) {
       res.status(400).json({ success: false, message: "Invalid id" });
@@ -84,7 +97,9 @@ export class GameCatalogController {
       success: ok,
       message: ok ? "Game deleted" : "Cannot delete game with tournaments",
     });
-  }
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }}
 
   public getRouter(): Router {
     return this.router;

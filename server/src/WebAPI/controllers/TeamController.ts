@@ -16,17 +16,23 @@ export class TeamController {
   }
 
   private async getMyTeams(req: Request, res: Response): Promise<void> {
-    const teams = await this.teamService.getMyTeams(req.user!.id);
-    res.status(200).json({ success: true, data: teams });
+    try{
+      const teams = await this.teamService.getMyTeams(req.user!.id);
+      res.status(200).json({ success: true, data: teams });
+  } catch (err) {
+      res.status(500).json({ success: false, message: "Internal server error" });
   }
+}
 
   private async create(req: Request, res: Response): Promise<void> {
+    try{
     const { teamName, tag, logo, description } = req.body;
+
     if (!teamName || !tag || !logo) {
       res.status(400).json({ success: false, message: "teamName, tag and logo are required" });
       return;
     }
-
+  
     const created = await this.teamService.create({
       userId: req.user!.id,
       teamName,
@@ -41,9 +47,12 @@ export class TeamController {
     }
 
     res.status(201).json({ success: true, data: created });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
-
+}
   private async getById(req: Request, res: Response): Promise<void> {
+    try{
     const id = parseInt(req.params.id as string, 10);
     if (isNaN(id)) {
       res.status(400).json({ success: false, message: "Invalid id" });
@@ -56,9 +65,13 @@ export class TeamController {
       return;
     }
     res.status(200).json({ success: true, data: team });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
   }
 
   private async update(req: Request, res: Response): Promise<void> {
+    try{
     const id = parseInt(req.params.id as string, 10);
     if (isNaN(id)) {
       res.status(400).json({ success: false, message: "Invalid id" });
@@ -73,9 +86,13 @@ export class TeamController {
 
     const ok = await this.teamService.update(req.user!.id, id, { teamName, tag, logo, description });
     res.status(ok ? 200 : 403).json({ success: ok, message: ok ? "Team updated" : "Update denied" });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
+}
 
   private async delete(req: Request, res: Response): Promise<void> {
+    try{
     const id = parseInt(req.params.id as string, 10);
     if (isNaN(id)) {
       res.status(400).json({ success: false, message: "Invalid id" });
@@ -84,9 +101,13 @@ export class TeamController {
 
     const ok = await this.teamService.delete(req.user!.id, id);
     res.status(ok ? 200 : 403).json({ success: ok, message: ok ? "Team deleted" : "Delete denied" });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
+}
 
   private async transferCaptain(req: Request, res: Response): Promise<void> {
+    try{
     const teamId = parseInt(req.params.id as string, 10);
     const targetUserId = parseInt(req.params.userId as string, 10);
     if (isNaN(teamId) || isNaN(targetUserId)) {
@@ -99,9 +120,13 @@ export class TeamController {
       success: ok,
       message: ok ? "Captain transferred" : "Transfer denied",
     });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
+}
 
   private async removeMember(req: Request, res: Response): Promise<void> {
+    try{
     const teamId = parseInt(req.params.id as string, 10);
     const targetUserId = parseInt(req.params.userId as string, 10);
     if (isNaN(teamId) || isNaN(targetUserId)) {
@@ -114,8 +139,10 @@ export class TeamController {
       success: ok,
       message: ok ? "Member removed" : "Action denied",
     });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
-
+}
   public getRouter(): Router {
     return this.router;
   }

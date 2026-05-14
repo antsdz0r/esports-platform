@@ -14,24 +14,33 @@ export class UserController {
   }
 
   private async getAll(req: Request, res: Response): Promise<void> {
+    try{
     const users = await this.userService.getAll();
     res.status(200).json({ success: true, data: users });
-  }
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }}
 
   private async getById(req: Request, res: Response): Promise<void> {
+    try{
     const id = parseInt(req.params.id as string, 10);
     if (isNaN(id)) { res.status(400).json({ success: false, message: "Invalid id" }); return; }
     const user = await this.userService.getById(id);
     if (!user) { res.status(404).json({ success: false, message: "User not found" }); return; }
     res.status(200).json({ success: true, data: user });
-  }
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }}
 
   private async deactivate(req: Request, res: Response): Promise<void> {
+    try{
     const id = parseInt(req.params.id as string, 10);
     if (isNaN(id)) { res.status(400).json({ success: false, message: "Invalid id" }); return; }
     const ok = await this.userService.deactivate(id);
     res.status(ok ? 200 : 500).json({ success: ok, message: ok ? "User deactivated" : "Failed to deactivate user" });
-  }
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }}
 
   public getRouter(): Router { return this.router; }
 }

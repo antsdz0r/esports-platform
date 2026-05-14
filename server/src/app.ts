@@ -29,6 +29,14 @@ import { EntityController } from "./WebAPI/controllers/EntityController";
 import { GameCatalogController } from "./WebAPI/controllers/GameCatalogController";
 import { TeamController } from "./WebAPI/controllers/TeamController";
 import { TournamentController } from "./WebAPI/controllers/TournamentController";
+import { HealthCheckController } from "./WebAPI/controllers/HealthCheckController";
+
+
+import { authenticate } from "./Middlewares/authentification/AuthMiddleware";
+import { authorize } from "./Middlewares/authorization/AuthorizeMiddleware";
+import { User } from "./Domain/models/User";
+import { UserRole } from "./Domain/enums/UserRole";
+
 
 
 
@@ -70,5 +78,6 @@ app.use("/api", new EntityController(entityService).getRouter());
 app.use("/api", new GameCatalogController(gameCatalogService).getRouter());
 app.use("/api", new TeamController(teamService).getRouter());
 app.use("/api", new TournamentController(tournamentService).getRouter());
+app.use("/api", new HealthCheckController().getRouter());
 
 export default app;
