@@ -43,6 +43,14 @@ export interface ITournamentService {
     status: TournamentRegistrationStatus
   ): Promise<boolean>;
 
+
+  // ─── Mečevi ────────────────────────────────────────────────────────
+recordMatchResult(
+  gameId: number,
+  score: string,
+  winnerTeamId: number
+): Promise<{ ok: boolean; error?: string }>;
+
   // ─── Watchlist ─────────────────────────────────────────────────────
   watchTournament(userId: number, tournamentId: number): Promise<boolean>;
   unwatchTournament(userId: number, tournamentId: number): Promise<boolean>;

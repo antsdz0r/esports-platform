@@ -154,6 +154,17 @@ export class TournamentService implements ITournamentService {
     return { ok: true };
   }
 
+
+  async recordMatchResult(
+    gameId: number,
+    score: string,
+    winnerTeamId: number
+    ): Promise<{ ok: boolean; error?: string }> {
+    
+    const ok = await this.gameRepo.updateResult(gameId, score, winnerTeamId);
+    return ok ? { ok: true } : { ok: false, error: "Ažuriranje nije uspelo" };
+  }
+
   private isPowerOfTwo(n: number): boolean {
     return n > 0 && (n & (n - 1)) === 0;
   }

@@ -1,6 +1,7 @@
 import { Request, Response, Router } from "express";
 import { ITeamService } from "../../Domain/services/teams/ITeamService";
 import { authenticate } from "../../Middlewares/authentification/AuthMiddleware";
+import { validateTeam } from "../validators/teams/validateTeams";
 
 export class TeamController {
   private readonly router = Router();
@@ -28,8 +29,9 @@ export class TeamController {
     try{
     const { teamName, tag, logo, description } = req.body;
 
-    if (!teamName || !tag || !logo) {
-      res.status(400).json({ success: false, message: "teamName, tag and logo are required" });
+    const validation = validateTeam(teamName, tag, logo);
+    if (!validation.valid) {
+      res.status(400).json({ success: false, message: validation.message });
       return;
     }
   
@@ -79,10 +81,11 @@ export class TeamController {
     }
 
     const { teamName, tag, logo, description } = req.body;
-    if (!teamName || !tag || !logo) {
-      res.status(400).json({ success: false, message: "teamName, tag and logo are required" });
+    const validation = validateTeam(teamName, tag, logo);
+    if (!validation.valid) {
+      res.status(400).json({ success: false, message: validation.message });
       return;
-    }
+  }
 
     const ok = await this.teamService.update(req.user!.id, id, { teamName, tag, logo, description });
     res.status(ok ? 200 : 403).json({ success: ok, message: ok ? "Team updated" : "Update denied" });

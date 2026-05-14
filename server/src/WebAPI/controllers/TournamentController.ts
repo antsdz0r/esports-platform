@@ -5,9 +5,13 @@ import { authorize } from "../../Middlewares/authorization/AuthorizeMiddleware";
 import { UserRole } from "../../Domain/enums/UserRole";
 import { TournamentRegistrationStatus } from "../../Domain/enums/TournamentRegistrationStatus";
 import { TournamentStatus } from "../../Domain/enums/TournamentStatus";
+import { validateTournament } from "../validators/tournaments/validateTournaments";
+import { validateMatchScore } from "../validators/score/validateMatchScore";
+
 
 export class TournamentController {
   private readonly router: Router;
+  
 
   constructor(private readonly tournamentService: ITournamentService) {
     this.router = Router();
@@ -98,6 +102,13 @@ export class TournamentController {
       authenticate,
       this.unwatchTournament.bind(this)
     );
+
+    this.router.patch(
+    "/tournaments/games/:gameId/result",
+    authenticate,
+    authorize(UserRole.ADMIN),
+    this.recordMatchResult.bind(this)
+    );
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -138,14 +149,17 @@ export class TournamentController {
     try{
     const { gameId, name, format, maxTeams, registrationDeadline, prizePool } = req.body;
 
-    if (!gameId || !name || !format || !maxTeams || !registrationDeadline) {
-      res.status(400).json({ message: "Sva obavezna polja moraju biti popunjena" });
-      return;
-    }
+    
 
     const deadline = new Date(registrationDeadline);
     if (isNaN(deadline.getTime())) {
       res.status(400).json({ message: "Neispravan datum roka prijave" });
+      return;
+    }
+
+    const validation = validateTournament(name, format, Number(maxTeams), deadline);
+    if (!validation.valid) {
+      res.status(400).json({ success: false, message: validation.message });
       return;
     }
 
@@ -177,8 +191,15 @@ export class TournamentController {
     const id = Number(req.params.id);
     const { gameId, name, format, maxTeams, registrationDeadline, prizePool, status } = req.body;
 
-    if (!gameId || !name || !format || !maxTeams || !registrationDeadline) {
-      res.status(400).json({ message: "Sva obavezna polja moraju biti popunjena" });
+    const deadline = new Date(registrationDeadline);
+    if (isNaN(deadline.getTime())) {
+      res.status(400).json({ message: "Neispravan datum roka prijave" });
+      return;
+    }
+
+    const validation = validateTournament(name, format, Number(maxTeams), deadline);
+    if (!validation.valid) {
+      res.status(400).json({ success: false, message: validation.message });
       return;
     }
 
@@ -285,6 +306,26 @@ export class TournamentController {
 
     result.ok
       ? res.json({ message: "Bracket uspešno generisan" })
+      : res.status(400).json({ message: result.error });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+}
+
+private async recordMatchResult(req: Request, res: Response): Promise<void> {
+    try{
+    const gameId = Number(req.params.gameId);
+    const { score, winnerTeamId } = req.body;
+    const validation = validateMatchScore(score);
+    if (!validation.valid) {
+      res.status(400).json({ success: false, message: validation.message });
+      return;
+    }
+
+    const result = await this.tournamentService.recordMatchResult(gameId, score, Number(winnerTeamId));
+
+    result.ok
+      ? res.json({ message: "Rezultat uspešno zabeležen" })
       : res.status(400).json({ message: result.error });
   } catch (err) {
     res.status(500).json({ success: false, message: "Internal server error" });
