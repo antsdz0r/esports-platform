@@ -10,22 +10,23 @@ const authHeader = () => {
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
-const err = <T>(e: unknown, fallback: string): ApiResponse<T> => ({
+const makeError = <T>(fallback: string): ApiResponse<T> => ({
   success: false,
-  message: axios.isAxiosError(e) ? (e.response?.data as { message?: string })?.message ?? fallback : fallback,
+  message: fallback,
+  data: undefined as T,
 });
 
 export const usersApi: IUsersAPIService = {
   async getAll() {
     return axios.get<ApiResponse<UserDto[]>>(BASE, { headers: authHeader() })
-      .then(r => r.data).catch(e => err(e, "Failed to load users"));
+      .then(r => r.data).catch(() => makeError("Failed to load users"));
   },
   async getById(id) {
     return axios.get<ApiResponse<UserDto>>(`${BASE}/${id}`, { headers: authHeader() })
-      .then(r => r.data).catch(e => err(e, "Failed to load user"));
+      .then(r => r.data).catch(() => makeError("Failed to load user"));
   },
   async deactivate(id) {
     return axios.patch<ApiResponse<void>>(`${BASE}/${id}/deactivate`, {}, { headers: authHeader() })
-      .then(r => r.data).catch(e => err(e, "Failed to deactivate user"));
+      .then(r => r.data).catch(() => makeError<void>("Failed to deactivate user"))
   },
 };
