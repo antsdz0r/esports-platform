@@ -14,15 +14,15 @@ export class MatchService implements IMatchService {
   ) {}
 
   async getByTournament(tournamentId: number): Promise<GameDto[]> {
-    return this.gameRepo.findByTournamentId(tournamentId) as unknown as GameDto[];
-  }
+  return this.gameRepo.findByTournamentId(tournamentId);
+}
 
-  async getById(gameId: number): Promise<{ game: GameDto; players: MatchPlayer[] } | null> {
-    const game = await this.gameRepo.findById(gameId);
-    if (!game || (game as any).gameId === 0) return null;
-    const players = await this.matchPlayerRepo.getByGame(gameId);
-    return { game: game as unknown as GameDto, players };
-  }
+ async getById(gameId: number): Promise<{ game: GameDto; players: MatchPlayer[] } | null> {
+  const game = await this.gameRepo.findById(gameId);
+  if (!game) return null;
+  const players = await this.matchPlayerRepo.getByGame(gameId);
+  return { game, players };
+}
 
   async addPlayer(
     gameId: number,
