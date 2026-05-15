@@ -49,8 +49,8 @@ export class TeamRepository implements ITeamRepository {
         team.logo,
         team.description
       );
-    } catch (err) {
-      this.logger.error("TeamRepository", "create failed", err);
+    } catch {
+      this.logger.error("TeamRepository", "create failed");
       return new Team();
     } finally {
       res.conn.release();
@@ -68,8 +68,8 @@ export class TeamRepository implements ITeamRepository {
       );
 
       return rows.length > 0 ? this.map(rows[0]) : new Team();
-    } catch (err) {
-      this.logger.error("TeamRepository", "findById failed", err);
+    } catch {
+      this.logger.error("TeamRepository", "findById failed");
       return new Team();
     } finally {
       res.conn.release();
@@ -87,8 +87,8 @@ export class TeamRepository implements ITeamRepository {
       );
 
       return rows.length > 0 ? this.map(rows[0]) : new Team();
-    } catch (err) {
-      this.logger.error("TeamRepository", "findByName failed", err);
+    } catch {
+      this.logger.error("TeamRepository", "findByName failed");
       return new Team();
     } finally {
       res.conn.release();
@@ -106,8 +106,8 @@ export class TeamRepository implements ITeamRepository {
       );
 
       return rows.length > 0 ? this.map(rows[0]) : new Team();
-    } catch (err) {
-      this.logger.error("TeamRepository", "findByTag failed", err);
+    } catch {
+      this.logger.error("TeamRepository", "findByTag failed");
       return new Team();
     } finally {
       res.conn.release();
@@ -124,8 +124,8 @@ export class TeamRepository implements ITeamRepository {
       );
 
       return rows.map((r) => this.map(r));
-    } catch (err) {
-      this.logger.error("TeamRepository", "findAll failed", err);
+    } catch {
+      this.logger.error("TeamRepository", "findAll failed");
       return [];
     } finally {
       res.conn.release();
@@ -156,8 +156,8 @@ export class TeamRepository implements ITeamRepository {
       );
 
       return result.affectedRows > 0;
-    } catch (err) {
-      this.logger.error("TeamRepository", "update failed", err);
+    } catch {
+      this.logger.error("TeamRepository", "update failed");
       return false;
     } finally {
       res.conn.release();
@@ -175,8 +175,8 @@ export class TeamRepository implements ITeamRepository {
       );
 
       return result.affectedRows > 0;
-    } catch (err) {
-      this.logger.error("TeamRepository", "delete failed", err);
+    } catch {
+      this.logger.error("TeamRepository", "delete failed");
       return false;
     } finally {
       res.conn.release();
@@ -194,8 +194,8 @@ export class TeamRepository implements ITeamRepository {
       );
 
       return (rows[0]?.cnt ?? 0) > 0;
-    } catch (err) {
-      this.logger.error("TeamRepository", "exists failed", err);
+    } catch {
+      this.logger.error("TeamRepository", "exists failed");
       return false;
     } finally {
       res.conn.release();

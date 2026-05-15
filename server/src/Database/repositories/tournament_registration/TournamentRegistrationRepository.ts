@@ -42,15 +42,15 @@ export class TournamentRegistrationRepository implements ITournamentRegistration
       );
 
       return result.affectedRows > 0;
-    } catch (err) {
-      this.logger.error("TournamentRegistrationRepository", "registerTeam failed", err);
+    } catch {
+      this.logger.error("TournamentRegistrationRepository", "registerTeam failed");
       return false;
     } finally {
       res.conn.release();
     }
   }
 
-  // 🔹 REMOVE
+  
   async removeRegistration(tournamentId: number, teamId: number): Promise<boolean> {
     const res = await this.db.getWriteConnection();
     if (!res) return false;
@@ -65,8 +65,8 @@ export class TournamentRegistrationRepository implements ITournamentRegistration
       );
 
       return result.affectedRows > 0;
-    } catch (err) {
-      this.logger.error("TournamentRegistrationRepository", "removeRegistration failed", err);
+    } catch {
+      this.logger.error("TournamentRegistrationRepository", "removeRegistration failed");
       return false;
     } finally {
       res.conn.release();
@@ -88,8 +88,8 @@ export class TournamentRegistrationRepository implements ITournamentRegistration
       );
 
       return rows.map((r) => this.map(r));
-    } catch (err) {
-      this.logger.error("TournamentRegistrationRepository", "getTeamsForTournament failed", err);
+    } catch {
+      this.logger.error("TournamentRegistrationRepository", "getTeamsForTournament failed");
       return [];
     } finally {
       res.conn.release();
@@ -111,8 +111,8 @@ export class TournamentRegistrationRepository implements ITournamentRegistration
       );
 
       return rows.map((r) => this.map(r));
-    } catch (err) {
-      this.logger.error("TournamentRegistrationRepository", "getTournamentsForTeam failed", err);
+    } catch {
+      this.logger.error("TournamentRegistrationRepository", "getTournamentsForTeam failed");
       return [];
     } finally {
       res.conn.release();
@@ -139,8 +139,8 @@ export class TournamentRegistrationRepository implements ITournamentRegistration
       );
 
       return result.affectedRows > 0;
-    } catch (err) {
-      this.logger.error("TournamentRegistrationRepository", "updateStatus failed", err);
+    } catch {
+      this.logger.error("TournamentRegistrationRepository", "updateStatus failed");
       return false;
     } finally {
       res.conn.release();
@@ -167,8 +167,8 @@ export class TournamentRegistrationRepository implements ITournamentRegistration
       );
 
       return result.affectedRows > 0;
-    } catch (err) {
-      this.logger.error("TournamentRegistrationRepository", "updateSeed failed", err);
+    } catch {
+      this.logger.error("TournamentRegistrationRepository", "updateSeed failed");
       return false;
     } finally {
       res.conn.release();
@@ -191,8 +191,8 @@ export class TournamentRegistrationRepository implements ITournamentRegistration
       );
 
       return (rows[0]?.cnt ?? 0) > 0;
-    } catch (err) {
-      this.logger.error("TournamentRegistrationRepository", "exists failed", err);
+    } catch {
+      this.logger.error("TournamentRegistrationRepository", "exists failed");
       return false;
     } finally {
       res.conn.release();

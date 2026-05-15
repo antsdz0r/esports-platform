@@ -18,10 +18,10 @@ export class ConsoleLoggerService implements ILoggerService {
     console.warn(`${GRAY}${ts()}${RESET} ${YELLOW}[WARN]${RESET} ${GRAY}[${context}]${RESET} ${message}`);
   }
 
-  error(context: string, message: string, err?: unknown): void {
-    const detail = err instanceof Error ? ` — ${err.message}` : err ? ` — ${String(err)}` : "";
-    console.error(`${GRAY}${ts()}${RESET} ${RED}[ERROR]${RESET} ${GRAY}[${context}]${RESET} ${message}${detail}`);
-  }
+ error(context: string, message: string, err?: Error | string): void {
+  const detail = err instanceof Error ? ` — ${err.message}` : err ? ` — ${err}` : "";
+  console.error(`${GRAY}${ts()}${RESET} ${RED}[ERROR]${RESET} ${GRAY}[${context}]${RESET} ${message}${detail}`);
+}
 
   debug(context: string, message: string): void {
     if (process.env.NODE_ENV === "production") return;

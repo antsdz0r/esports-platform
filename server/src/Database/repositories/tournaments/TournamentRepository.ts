@@ -60,8 +60,8 @@ export class TournamentRepository implements ITournamentRepository {
         t.prizePool,
         t.status
       );
-    } catch (err) {
-      this.logger.error("TournamentRepository", "create failed", err);
+    } catch {
+      this.logger.error("TournamentRepository", "create failed");
       return new Tournament();
     } finally {
       res.conn.release();
@@ -80,8 +80,8 @@ export class TournamentRepository implements ITournamentRepository {
       );
 
       return rows.length > 0 ? this.map(rows[0]) : new Tournament();
-    } catch (err) {
-      this.logger.error("TournamentRepository", "findById failed", err);
+    } catch {
+      this.logger.error("TournamentRepository", "findById failed");
       return new Tournament();
     } finally {
       res.conn.release();
@@ -99,15 +99,15 @@ export class TournamentRepository implements ITournamentRepository {
       );
 
       return rows.map((r) => this.map(r));
-    } catch (err) {
-      this.logger.error("TournamentRepository", "findAll failed", err);
+    } catch {
+      this.logger.error("TournamentRepository", "findAll failed");
       return [];
     } finally {
       res.conn.release();
     }
   }
 
-  // 🔹 FIND BY GAME
+  
   async findByGameId(gameId: number): Promise<Tournament[]> {
     const res = await this.db.getReadConnection();
     if (!res) return [];
@@ -119,15 +119,15 @@ export class TournamentRepository implements ITournamentRepository {
       );
 
       return rows.map((r) => this.map(r));
-    } catch (err) {
-      this.logger.error("TournamentRepository", "findByGameId failed", err);
+    } catch {
+      this.logger.error("TournamentRepository", "findByGameId failed");
       return [];
     } finally {
       res.conn.release();
     }
   }
 
-  // 🔹 UPDATE
+  // hehe ;)
   async update(t: Tournament): Promise<boolean> {
     const res = await this.db.getWriteConnection();
     if (!res) return false;
@@ -158,15 +158,15 @@ export class TournamentRepository implements ITournamentRepository {
       );
 
       return result.affectedRows > 0;
-    } catch (err) {
-      this.logger.error("TournamentRepository", "update failed", err);
+    } catch {
+      this.logger.error("TournamentRepository", "update failed");
       return false;
     } finally {
       res.conn.release();
     }
   }
 
-  // 🔹 UPDATE STATUS
+  // lovac 
   async updateStatus(id: number, status: TournamentStatus): Promise<boolean> {
     const res = await this.db.getWriteConnection();
     if (!res) return false;
@@ -178,15 +178,15 @@ export class TournamentRepository implements ITournamentRepository {
       );
 
       return result.affectedRows > 0;
-    } catch (err) {
-      this.logger.error("TournamentRepository", "updateStatus failed", err);
+    } catch {
+      this.logger.error("TournamentRepository", "updateStatus failed");
       return false;
     } finally {
       res.conn.release();
     }
   }
 
-  // 🔹 DELETE
+  
   async delete(id: number): Promise<boolean> {
     const res = await this.db.getWriteConnection();
     if (!res) return false;
@@ -198,15 +198,15 @@ export class TournamentRepository implements ITournamentRepository {
       );
 
       return result.affectedRows > 0;
-    } catch (err) {
-      this.logger.error("TournamentRepository", "delete failed", err);
+    } catch {
+      this.logger.error("TournamentRepository", "delete failed");
       return false;
     } finally {
       res.conn.release();
     }
   }
 
-  // 🔹 EXISTS
+  
   async exists(id: number): Promise<boolean> {
     const res = await this.db.getReadConnection();
     if (!res) return false;
@@ -218,8 +218,8 @@ export class TournamentRepository implements ITournamentRepository {
       );
 
       return (rows[0]?.cnt ?? 0) > 0;
-    } catch (err) {
-      this.logger.error("TournamentRepository", "exists failed", err);
+    } catch {
+      this.logger.error("TournamentRepository", "exists failed");
       return false;
     } finally {
       res.conn.release();

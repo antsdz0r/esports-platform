@@ -4,20 +4,18 @@ import type { IAuthAPIService } from "./IAuthAPIService";
 
 const BASE = import.meta.env.VITE_API_URL + "auth";
 
-const err = (e: unknown, fallback: string): AuthResponse => ({
+const makeError = (fallback: string): AuthResponse => ({
   success: false,
-  message:
-    axios.isAxiosError(e)
-      ? (e.response?.data as { message?: string } | undefined)?.message ?? fallback
-      : fallback,
+  message: fallback,
 });
 
 export const authApi: IAuthAPIService = {
   async login(username: string, password: string): Promise<AuthResponse> {
     return axios
       .post<AuthResponse>(`${BASE}/login`, { gamerTag: username, password })
-      .then((r) => r.data)
-      .catch((e: unknown) => err(e, "Login failed"));
+      .then((r: { data: AuthResponse }) => r.data)
+      .catch(() => makeError("Login failed"));
+      
   },
 
   async register(
@@ -28,7 +26,7 @@ export const authApi: IAuthAPIService = {
   ): Promise<AuthResponse> {
     return axios
       .post<AuthResponse>(`${BASE}/register`, { gamerTag: username, email, password, role })
-      .then((r) => r.data)
-      .catch((e: unknown) => err(e, "Registration failed"));
+      .then((r: { data: AuthResponse }) => r.data)
+      .catch(() => makeError("Registration failed"));
   },
 };

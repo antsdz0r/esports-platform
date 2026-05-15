@@ -63,8 +63,8 @@ export class UserRepository implements IUserRepository {
       user.fullName,
       user.profilePicture
     );
-  } catch (err) {
-    this.logger.error("UserRepository", "create failed", err);
+  } catch {
+    this.logger.error("UserRepository", "create failed");
     return new User();
   } finally {
     res.conn.release();
@@ -82,8 +82,8 @@ export class UserRepository implements IUserRepository {
       );
 
       return rows.length > 0 ? this.map(rows[0]) : new User();
-    } catch (err) {
-      this.logger.error("UserRepository", "findById failed", err);
+    } catch {
+      this.logger.error("UserRepository", "findById failed");
       return new User();
     } finally {
       res.conn.release();
@@ -101,8 +101,8 @@ export class UserRepository implements IUserRepository {
       );
 
       return rows.length > 0 ? this.map(rows[0]) : new User();
-    } catch (err) {
-      this.logger.error("UserRepository", "findByGamerTag failed", err);
+    } catch {
+      this.logger.error("UserRepository", "findByGamerTag failed");
       return new User();
     } finally {
       res.conn.release();
@@ -120,8 +120,8 @@ export class UserRepository implements IUserRepository {
       );
 
       return rows.length > 0 ? this.map(rows[0]) : new User();
-    } catch (err) {
-      this.logger.error("UserRepository", "findByEmail failed", err);
+    } catch {
+      this.logger.error("UserRepository", "findByEmail failed");
       return new User();
     } finally {
       res.conn.release();
@@ -138,8 +138,8 @@ export class UserRepository implements IUserRepository {
       );
 
       return rows.map((r) => this.map(r));
-    } catch (err) {
-      this.logger.error("UserRepository", "findAll failed", err);
+    } catch {
+      this.logger.error("UserRepository", "findAll failed");
       return [];
     } finally {
       res.conn.release();
@@ -175,8 +175,8 @@ export class UserRepository implements IUserRepository {
       );
 
       return result.affectedRows > 0;
-    } catch (err) {
-      this.logger.error("UserRepository", "update failed", err);
+    } catch {
+      this.logger.error("UserRepository", "update failed");
       return false;
     } finally {
       res.conn.release();
@@ -198,8 +198,8 @@ export class UserRepository implements IUserRepository {
       );
 
       return result.affectedRows > 0;
-    } catch (err) {
-      this.logger.error("UserRepository", "updatePassword failed", err);
+    } catch {
+      this.logger.error("UserRepository", "updatePassword failed");
       return false;
     } finally {
       res.conn.release();
@@ -217,8 +217,8 @@ export class UserRepository implements IUserRepository {
       );
 
       return result.affectedRows > 0;
-    } catch (err) {
-      this.logger.error("UserRepository", "deactivate failed", err);
+    } catch{
+      this.logger.error("UserRepository", "deactivate failed");
       return false;
     } finally {
       res.conn.release();
@@ -236,8 +236,8 @@ export class UserRepository implements IUserRepository {
       );
 
       return (rows[0]?.cnt ?? 0) > 0;
-    } catch (err) {
-      this.logger.error("UserRepository", "exists failed", err);
+    } catch {
+      this.logger.error("UserRepository", "exists failed");
       return false;
     } finally {
       res.conn.release();

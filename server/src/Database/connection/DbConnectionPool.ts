@@ -99,10 +99,10 @@ export class DbManager {
       const conn = await this.master.pool.getConnection();
       this.master.node.successfulWrites++;
       return { conn, nodeName: this.master.name };
-    } catch (err) {
+    } catch {
       this.master.node.status = NodeStatus.OFFLINE;
       this.master.node.failedWrites++;
-      this.logger.error("DB", "Failed to connect to master", err);
+      this.logger.error("DB", "Failed to connect to master");
       return null;
     }
   }
@@ -135,9 +135,9 @@ export class DbManager {
       const conn = await this.master.pool.getConnection();
       this.master.node.successfulWrites++;
       return { conn, nodeName: this.master.name };
-    } catch (err) {
+    } catch {
       this.master.node.status = NodeStatus.OFFLINE;
-      this.logger.error("DB", "Failed to connect to master for fallback read", err);
+      this.logger.error("DB", "Failed to connect to master for fallback read");
       return null;
     }
   }

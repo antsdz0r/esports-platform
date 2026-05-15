@@ -80,4 +80,6 @@ app.use("/api", new TeamController(teamService).getRouter());
 app.use("/api", new TournamentController(tournamentService).getRouter());
 app.use("/api", new HealthCheckController().getRouter());
 
+
+
 export default app;

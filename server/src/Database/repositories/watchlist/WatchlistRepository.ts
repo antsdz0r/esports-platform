@@ -19,8 +19,8 @@ export class WatchlistRepository implements IWatchlistRepository {
         [userId, tournamentId]
       );
       return result.affectedRows > 0;
-    } catch (err) {
-      this.logger.error("WatchlistRepository", "add failed", err);
+    } catch {
+      this.logger.error("WatchlistRepository", "add failed");
       return false;
     } finally {
       res.conn.release();
@@ -37,8 +37,8 @@ export class WatchlistRepository implements IWatchlistRepository {
         [userId, tournamentId]
       );
       return result.affectedRows > 0;
-    } catch (err) {
-      this.logger.error("WatchlistRepository", "remove failed", err);
+    } catch {
+      this.logger.error("WatchlistRepository", "remove failed");
       return false;
     } finally {
       res.conn.release();
@@ -55,8 +55,8 @@ export class WatchlistRepository implements IWatchlistRepository {
         [userId, tournamentId]
       );
       return (rows[0]?.cnt ?? 0) > 0;
-    } catch (err) {
-      this.logger.error("WatchlistRepository", "exists failed", err);
+    } catch {
+      this.logger.error("WatchlistRepository", "exists failed");
       return false;
     } finally {
       res.conn.release();
@@ -73,8 +73,8 @@ export class WatchlistRepository implements IWatchlistRepository {
         [userId]
       );
       return rows.map((r) => r.tournament_id);
-    } catch (err) {
-      this.logger.error("WatchlistRepository", "getByUser failed", err);
+    } catch {
+      this.logger.error("WatchlistRepository", "getByUser failed");
       return [];
     } finally {
       res.conn.release();

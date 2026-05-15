@@ -11,4 +11,4 @@ async function start(): Promise<void> {
   });
 }
 
-start().catch((err) => logger.error("Server", "Fatal startup error", err));
+start().catch(() => logger.error("Server", "Fatal startup error"));

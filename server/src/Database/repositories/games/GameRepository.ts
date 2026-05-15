@@ -59,8 +59,8 @@ export class GameRepository implements IGameRepository {
         game.status,
         game.winnerTeamId
       );
-    } catch (err) {
-      this.logger.error("GameRepository", "create failed", err);
+    } catch {
+      this.logger.error("GameRepository", "create failed");
       return new Game();
     } finally {
       res.conn.release();
@@ -78,8 +78,8 @@ export class GameRepository implements IGameRepository {
       );
 
       return rows.length > 0 ? this.map(rows[0]) : new Game();
-    } catch (err) {
-      this.logger.error("GameRepository", "findById failed", err);
+    } catch {
+      this.logger.error("GameRepository", "findById failed");
       return new Game();
     } finally {
       res.conn.release();
@@ -96,8 +96,8 @@ export class GameRepository implements IGameRepository {
       );
 
       return rows.map((r) => this.map(r));
-    } catch (err) {
-      this.logger.error("GameRepository", "findAll failed", err);
+    } catch {
+      this.logger.error("GameRepository", "findAll failed");
       return [];
     } finally {
       res.conn.release();
@@ -119,8 +119,8 @@ export class GameRepository implements IGameRepository {
       );
 
       return rows.map((r) => this.map(r));
-    } catch (err) {
-      this.logger.error("GameRepository", "findByTournamentId failed", err);
+    } catch {
+      this.logger.error("GameRepository", "findByTournamentId failed");
       return [];
     } finally {
       res.conn.release();
@@ -142,8 +142,8 @@ export class GameRepository implements IGameRepository {
       );
 
       return rows.map((r) => this.map(r));
-    } catch (err) {
-      this.logger.error("GameRepository", "findByTeamId failed", err);
+    } catch {
+      this.logger.error("GameRepository", "findByTeamId failed");
       return [];
     } finally {
       res.conn.release();
@@ -180,8 +180,8 @@ export class GameRepository implements IGameRepository {
       );
 
       return result.affectedRows > 0;
-    } catch (err) {
-      this.logger.error("GameRepository", "update failed", err);
+    } catch {
+      this.logger.error("GameRepository", "update failed");
       return false;
     } finally {
       res.conn.release();
@@ -199,8 +199,8 @@ export class GameRepository implements IGameRepository {
       );
 
       return result.affectedRows > 0;
-    } catch (err) {
-      this.logger.error("GameRepository", "updateStatus failed", err);
+    } catch {
+      this.logger.error("GameRepository", "updateStatus failed");
       return false;
     } finally {
       res.conn.release();
@@ -228,8 +228,8 @@ export class GameRepository implements IGameRepository {
       );
 
       return result.affectedRows > 0;
-    } catch (err) {
-      this.logger.error("GameRepository", "updateResult failed", err);
+    } catch {
+      this.logger.error("GameRepository", "updateResult failed");
       return false;
     } finally {
       res.conn.release();
@@ -247,8 +247,8 @@ export class GameRepository implements IGameRepository {
       );
 
       return result.affectedRows > 0;
-    } catch (err) {
-      this.logger.error("GameRepository", "delete failed", err);
+    } catch {
+      this.logger.error("GameRepository", "delete failed");
       return false;
     } finally {
       res.conn.release();
@@ -266,8 +266,8 @@ export class GameRepository implements IGameRepository {
       );
 
       return (rows[0]?.cnt ?? 0) > 0;
-    } catch (err) {
-      this.logger.error("GameRepository", "exists failed", err);
+    } catch {
+      this.logger.error("GameRepository", "exists failed");
       return false;
     } finally {
       res.conn.release();
@@ -294,8 +294,8 @@ export class GameRepository implements IGameRepository {
           [tournamentId]
       );
       return result.affectedRows >= 0;
-   } catch (err) {
-     this.logger.error("GameRepository", "deleteMatchesForTournament failed", err);
+   } catch {
+     this.logger.error("GameRepository", "deleteMatchesForTournament failed");
      return false;
     } finally {
       res.conn.release();

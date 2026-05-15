@@ -49,8 +49,8 @@ export class GameCatalogRepository implements IGameCatalogRepository {
         game.genre,
         game.maxPlayers
       );
-    } catch (err) {
-      this.logger.error("GameCatalogRepository", "create failed", err);
+    } catch {
+      this.logger.error("GameCatalogRepository", "create failed");
       return new GameCatalog();
     } finally {
       res.conn.release();
@@ -68,8 +68,8 @@ export class GameCatalogRepository implements IGameCatalogRepository {
       );
 
       return rows.length > 0 ? this.map(rows[0]) : new GameCatalog();
-    } catch (err) {
-      this.logger.error("GameCatalogRepository", "findById failed", err);
+    } catch {
+      this.logger.error("GameCatalogRepository", "findById failed");
       return new GameCatalog();
     } finally {
       res.conn.release();
@@ -87,8 +87,8 @@ export class GameCatalogRepository implements IGameCatalogRepository {
       );
 
       return rows.length > 0 ? this.map(rows[0]) : new GameCatalog();
-    } catch (err) {
-      this.logger.error("GameCatalogRepository", "findByName failed", err);
+    } catch {
+      this.logger.error("GameCatalogRepository", "findByName failed");
       return new GameCatalog();
     } finally {
       res.conn.release();
@@ -106,8 +106,8 @@ export class GameCatalogRepository implements IGameCatalogRepository {
       );
 
       return rows.length > 0 ? this.map(rows[0]) : new GameCatalog();
-    } catch (err) {
-      this.logger.error("GameCatalogRepository", "findByTag failed", err);
+    } catch {
+      this.logger.error("GameCatalogRepository", "findByTag failed");
       return new GameCatalog();
     } finally {
       res.conn.release();
@@ -124,8 +124,8 @@ export class GameCatalogRepository implements IGameCatalogRepository {
       );
 
       return rows.map((r) => this.map(r));
-    } catch (err) {
-      this.logger.error("GameCatalogRepository", "findAll failed", err);
+    } catch {
+      this.logger.error("GameCatalogRepository", "findAll failed");
       return [];
     } finally {
       res.conn.release();
@@ -156,8 +156,8 @@ export class GameCatalogRepository implements IGameCatalogRepository {
       );
 
       return result.affectedRows > 0;
-    } catch (err) {
-      this.logger.error("GameCatalogRepository", "update failed", err);
+    } catch {
+      this.logger.error("GameCatalogRepository", "update failed");
       return false;
     } finally {
       res.conn.release();
@@ -175,8 +175,8 @@ export class GameCatalogRepository implements IGameCatalogRepository {
       );
 
       return result.affectedRows > 0;
-    } catch (err) {
-      this.logger.error("GameCatalogRepository", "delete failed", err);
+    } catch {
+      this.logger.error("GameCatalogRepository", "delete failed");
       return false;
     } finally {
       res.conn.release();
@@ -194,8 +194,8 @@ export class GameCatalogRepository implements IGameCatalogRepository {
       );
 
       return (rows[0]?.cnt ?? 0) > 0;
-    } catch (err) {
-      this.logger.error("GameCatalogRepository", "exists failed", err);
+    } catch {
+      this.logger.error("GameCatalogRepository", "exists failed");
       return false;
     } finally {
       res.conn.release();

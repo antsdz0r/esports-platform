@@ -20,7 +20,7 @@ export class TeamMemberRepository implements ITeamMemberRepository {
     );
   }
 
-  // 🔹 ADD MEMBER
+  
   async addMember(member: TeamMember): Promise<boolean> {
     const res = await this.db.getWriteConnection();
     if (!res) return false;
@@ -40,15 +40,15 @@ export class TeamMemberRepository implements ITeamMemberRepository {
       );
 
       return result.affectedRows > 0;
-    } catch (err) {
-      this.logger.error("TeamMemberRepository", "addMember failed", err);
+    } catch {
+      this.logger.error("TeamMemberRepository", "addMember failed");
       return false;
     } finally {
       res.conn.release();
     }
   }
 
-  // 🔹 REMOVE MEMBER
+ 
   async removeMember(teamId: number, playerId: number): Promise<boolean> {
     const res = await this.db.getWriteConnection();
     if (!res) return false;
@@ -63,15 +63,15 @@ export class TeamMemberRepository implements ITeamMemberRepository {
       );
 
       return result.affectedRows > 0;
-    } catch (err) {
-      this.logger.error("TeamMemberRepository", "removeMember failed", err);
+    } catch {
+      this.logger.error("TeamMemberRepository", "removeMember failed");
       return false;
     } finally {
       res.conn.release();
     }
   }
 
-  // 🔹 GET MEMBERS OF TEAM
+  
   async getMembersByTeam(teamId: number): Promise<TeamMember[]> {
     const res = await this.db.getReadConnection();
     if (!res) return [];
@@ -83,15 +83,15 @@ export class TeamMemberRepository implements ITeamMemberRepository {
       );
 
       return rows.map((r) => this.map(r));
-    } catch (err) {
-      this.logger.error("TeamMemberRepository", "getMembersByTeam failed", err);
+    } catch {
+      this.logger.error("TeamMemberRepository", "getMembersByTeam failed");
       return [];
     } finally {
       res.conn.release();
     }
   }
 
-  // 🔹 GET TEAMS FOR PLAYER
+  
   async getTeamsByPlayer(playerId: number): Promise<TeamMember[]> {
     const res = await this.db.getReadConnection();
     if (!res) return [];
@@ -103,15 +103,15 @@ export class TeamMemberRepository implements ITeamMemberRepository {
       );
 
       return rows.map((r) => this.map(r));
-    } catch (err) {
-      this.logger.error("TeamMemberRepository", "getTeamsByPlayer failed", err);
+    } catch  {
+      this.logger.error("TeamMemberRepository", "getTeamsByPlayer failed");
       return [];
     } finally {
       res.conn.release();
     }
   }
 
-  // 🔹 UPDATE ROLE (captain/member)
+  
   async updateRole(
     teamId: number,
     playerId: number,
@@ -131,15 +131,15 @@ export class TeamMemberRepository implements ITeamMemberRepository {
       );
 
       return result.affectedRows > 0;
-    } catch (err) {
-      this.logger.error("TeamMemberRepository", "updateRole failed", err);
+    } catch {
+      this.logger.error("TeamMemberRepository", "updateRole failed");
       return false;
     } finally {
       res.conn.release();
     }
   }
 
-  // 🔹 EXISTS
+  
   async exists(teamId: number, playerId: number): Promise<boolean> {
     const res = await this.db.getReadConnection();
     if (!res) return false;
@@ -155,8 +155,8 @@ export class TeamMemberRepository implements ITeamMemberRepository {
       );
 
       return (rows[0]?.cnt ?? 0) > 0;
-    } catch (err) {
-      this.logger.error("TeamMemberRepository", "exists failed", err);
+    } catch  {
+      this.logger.error("TeamMemberRepository", "exists failed");
       return false;
     } finally {
       res.conn.release();
