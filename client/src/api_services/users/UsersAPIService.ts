@@ -15,7 +15,7 @@ const makeError = <T>(fallback: string): ApiResponse<T> => ({
   message: fallback,
   data: undefined as T,
 });
-
+//ups
 export const usersApi: IUsersAPIService = {
   async getAll() {
     return axios.get<ApiResponse<UserDto[]>>(BASE, { headers: authHeader() })
@@ -27,6 +27,6 @@ export const usersApi: IUsersAPIService = {
   },
   async deactivate(id) {
     return axios.patch<ApiResponse<void>>(`${BASE}/${id}/deactivate`, {}, { headers: authHeader() })
-      .then(r => r.data).catch(() => makeError<void>("Failed to deactivate user"))
+      .then(r => r.data).catch(() => makeError<void>("Failed to deactivate user"));
   },
 };
