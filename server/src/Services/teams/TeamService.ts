@@ -6,11 +6,16 @@ import { TeamMember } from "../../Domain/models/TeamMember";
 import { ITeamMemberRepository } from "../../Domain/repositories/team_members/ITeamMemberRepository";
 import { ITeamRepository } from "../../Domain/repositories/teams/ITeamRepository";
 import { ITeamService } from "../../Domain/services/teams/ITeamService";
+import { ITeamInviteRepository } from "../../Domain/repositories/team_invites/ITeamInvitesRepository";
+import { TeamInvite } from "../../Domain/models/TeamInvites";
+
+
 
 export class TeamService implements ITeamService {
   public constructor(
     private readonly teamRepo: ITeamRepository,
     private readonly teamMemberRepo: ITeamMemberRepository,
+    private readonly teamInviteRepo: ITeamInviteRepository,
   ) {}
 
   private async toDto(team: Team): Promise<TeamDto> {
@@ -124,4 +129,41 @@ export class TeamService implements ITeamService {
     if (!captain) return false;
     return this.teamMemberRepo.removeMember(teamId, targetUserId);
   }
+  public async sendInvite(captainId: number, teamId: number, inviteeId: number): Promise<{ ok: boolean; error?: string }> {
+  const members = await this.teamMemberRepo.getMembersByTeam(teamId);
+  const isCaptain = members.some((m) => m.playerId === captainId && m.role === TeamMemberRole.CAPTAIN);
+  if (!isCaptain) return { ok: false, error: "Samo kapiten može slati pozivnice" };
+
+  const alreadyMember = members.some((m) => m.playerId === inviteeId);
+  if (alreadyMember) return { ok: false, error: "Igrač je već član tima" };
+
+  const alreadyInvited = await this.teamInviteRepo.existsPending(teamId, inviteeId);
+  if (alreadyInvited) return { ok: false, error: "Pozivnica već postoji" };
+
+  const invite = await this.teamInviteRepo.create(teamId, captainId, inviteeId);
+  return invite ? { ok: true } : { ok: false, error: "Greška pri slanju pozivnice" };
+}
+
+public async respondInvite(userId: number, inviteId: number, accept: boolean): Promise<{ ok: boolean; error?: string }> {
+  const invite = await this.teamInviteRepo.findById(inviteId);
+  if (!invite) return { ok: false, error: "Pozivnica nije pronađena" };
+  if (invite.inviteeId !== userId) return { ok: false, error: "Nije vaša pozivnica" };
+
+  const status = accept ? "accepted" : "declined";
+  const ok = await this.teamInviteRepo.respond(inviteId, status);
+  if (!ok) return { ok: false, error: "Greška pri odgovoru na pozivnicu" };
+
+  if (accept) {
+    await this.teamMemberRepo.addMember(new TeamMember(invite.teamId, userId, TeamMemberRole.MEMBER, new Date()));
+  }
+
+  return { ok: true };
+}
+
+public async getMyInvites(userId: number): Promise<TeamInvite[]> {
+  return this.teamInviteRepo.findPendingByInvitee(userId);
+}
+
+
+
 }

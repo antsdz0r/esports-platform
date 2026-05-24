@@ -156,13 +156,25 @@ CREATE TABLE USER_WATCHLIST (
   FOREIGN KEY (tournament_id) REFERENCES TOURNAMENTS(tournamentid) ON DELETE CASCADE
 );
 
+CREATE TABLE TEAM_INVITES (
+  id           INT AUTO_INCREMENT PRIMARY KEY,
+  team_id      INT NOT NULL,
+  inviter_id   INT UNSIGNED NOT NULL,
+  invitee_id   INT UNSIGNED NOT NULL,
+  status       ENUM('pending', 'accepted', 'declined') NOT NULL DEFAULT 'pending',
+  created_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (team_id)    REFERENCES TEAMS(team_id)  ON DELETE CASCADE,
+  FOREIGN KEY (inviter_id) REFERENCES users(id)       ON DELETE CASCADE,
+  FOREIGN KEY (invitee_id) REFERENCES users(id)       ON DELETE CASCADE
+);
+
 SQL
 
 MASTER_TABLES=$($M -s --skip-column-names \
   -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='${DB_NAME}';" 2>/dev/null)
 echo "  Master tables: ${MASTER_TABLES}"
-if [ "${MASTER_TABLES:-0}" -lt "9" ]; then
-  echo "  ERROR: Schema creation failed on Master (expected >= 9 tables)"
+if [ "${MASTER_TABLES:-0}" -lt "10" ]; then
+  echo "  ERROR: Schema creation failed on Master (expected >= 10 tables)"
   exit 1
 fi
 

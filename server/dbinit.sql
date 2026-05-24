@@ -100,6 +100,18 @@ CREATE TABLE USER_WATCHLIST(
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (tournament_id) REFERENCES TOURNAMENTS(tournamentid) ON DELETE CASCADE
 );
+--relacija 5 :
+CREATE TABLE TEAM_INVITES (
+  id           INT AUTO_INCREMENT PRIMARY KEY,
+  team_id      INT NOT NULL,
+  inviter_id   INT UNSIGNED NOT NULL,
+  invitee_id   INT UNSIGNED NOT NULL,
+  status       ENUM('pending', 'accepted', 'declined') NOT NULL DEFAULT 'pending',
+  created_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (team_id)    REFERENCES TEAMS(team_id)  ON DELETE CASCADE,
+  FOREIGN KEY (inviter_id) REFERENCES users(id)       ON DELETE CASCADE,
+  FOREIGN KEY (invitee_id) REFERENCES users(id)       ON DELETE CASCADE
+);
 
 
 

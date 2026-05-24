@@ -1,5 +1,5 @@
 import { TeamDto } from "../../DTOs/teams/TeamDto";
-
+import { TeamInvite } from "../../models/TeamInvites";
 export interface ITeamService {
   getMyTeams(userId: number): Promise<TeamDto[]>;
   getById(teamId: number): Promise<TeamDto | null>;
@@ -18,4 +18,7 @@ export interface ITeamService {
   delete(userId: number, teamId: number): Promise<boolean>;
   transferCaptain(userId: number, teamId: number, targetUserId: number): Promise<boolean>;
   removeMember(userId: number, teamId: number, targetUserId: number): Promise<boolean>;
+  sendInvite(captainId: number, teamId: number, inviteeId: number): Promise<{ ok: boolean; error?: string }>;
+  respondInvite(userId: number, inviteId: number, accept: boolean): Promise<{ ok: boolean; error?: string }>;
+  getMyInvites(userId: number): Promise<TeamInvite[]>;
 }

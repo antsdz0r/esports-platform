@@ -2,6 +2,7 @@ import { Request, Response, Router } from "express";
 import { ITeamService } from "../../Domain/services/teams/ITeamService";
 import { authenticate } from "../../Middlewares/authentification/AuthMiddleware";
 import { validateTeam } from "../validators/teams/validateTeams";
+import { ITeamInviteRepository } from "../../Domain/repositories/team_invites/ITeamInvitesRepository";
 
 export class TeamController {
   private readonly router = Router();
@@ -14,6 +15,9 @@ export class TeamController {
     this.router.delete("/teams/:id", authenticate, this.delete.bind(this));
     this.router.patch("/teams/:id/members/:userId/role", authenticate, this.transferCaptain.bind(this));
     this.router.delete("/teams/:id/members/:userId", authenticate, this.removeMember.bind(this));
+    this.router.post("/teams/:id/invite", authenticate, this.sendInvite.bind(this));
+    this.router.post("/teams/:id/invite/respond", authenticate, this.respondInvite.bind(this));
+    this.router.get("/teams/invites/my", authenticate, this.getMyInvites.bind(this));
   }
 
   private async getMyTeams(req: Request, res: Response): Promise<void> {
@@ -146,6 +150,52 @@ export class TeamController {
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 }
+
+private async sendInvite(req: Request, res: Response): Promise<void> {
+  try {
+    const teamId = parseInt(req.params.id as string, 10);
+    const { inviteeId } = req.body;
+    const captainId = req.user!.id;
+
+    if (!inviteeId) { res.status(400).json({ success: false, message: "inviteeId je obavezan" }); return; }
+
+    const result = await this.teamService.sendInvite(captainId, teamId, Number(inviteeId));
+    result.ok
+      ? res.status(201).json({ success: true, message: "Pozivnica poslata" })
+      : res.status(400).json({ success: false, message: result.error });
+  } catch {
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+}
+
+private async respondInvite(req: Request, res: Response): Promise<void> {
+  try {
+    const { inviteId, accept } = req.body;
+    const userId = req.user!.id;
+
+    if (inviteId === undefined || accept === undefined) {
+      res.status(400).json({ success: false, message: "inviteId i accept su obavezni" }); return;
+    }
+
+    const result = await this.teamService.respondInvite(userId, Number(inviteId), Boolean(accept));
+    result.ok
+      ? res.json({ success: true, message: accept ? "Pozivnica prihvaćena" : "Pozivnica odbijena" })
+      : res.status(400).json({ success: false, message: result.error });
+  } catch {
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+}
+
+private async getMyInvites(req: Request, res: Response): Promise<void> {
+  try {
+    const userId = req.user!.id;
+    const invites = await this.teamService.getMyInvites(userId);
+    res.json({ success: true, data: invites });
+  } catch {
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+}
+
   public getRouter(): Router {
     return this.router;
   }
