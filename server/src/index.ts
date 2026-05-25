@@ -6,6 +6,8 @@ const PORT = parseInt(process.env.PORT ?? "4000", 10);
 async function start(): Promise<void> {
   await db.init();
 
+ 
+
   app.listen(PORT, () => {
     logger.info("Server", `Running at http://localhost:${PORT}/api`);
   });

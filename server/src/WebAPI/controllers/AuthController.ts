@@ -1,21 +1,27 @@
 import { Request, Response, Router } from "express";
 import { IAuthService } from "../../Domain/services/auth/IAuthService";
-import { UserRole } from "../../Domain/enums/UserRole";
 import { generateToken } from "../utils/jwt";
 import { validateLogin } from "../validators/auth/validateLogin";
 import { validateRegister } from "../validators/auth/validateRegister";
+import { authenticate } from "../../Middlewares/authentification/AuthMiddleware";
+import { IAuditLogService } from "../../Domain/services/audit_logs/IAuditLogService";
 
 export class AuthController {
   private readonly router: Router;
 
-  public constructor(private readonly authService: IAuthService) {
-    this.router = Router();
-    this.initializeRoutes();
-  }
+  public constructor(
+  private readonly authService: IAuthService,
+  private readonly auditLogService: IAuditLogService,
+) {
+  this.router = Router();
+  this.initializeRoutes();
+}
 
   private initializeRoutes(): void {
+    
     this.router.post("/auth/login", this.login.bind(this));
     this.router.post("/auth/register", this.register.bind(this));
+    this.router.post("/auth/logout", authenticate, this.logout.bind(this));
   }
 
   private async login(req: Request, res: Response): Promise<void> {
@@ -120,6 +126,17 @@ export class AuthController {
       res.status(500).json({ success: false, message: "Greška pri registraciji.", error: err });
     }
   }
+
+  private async logout(req: Request, res: Response): Promise<void> {
+  try {
+    const userId = req.user!.id;
+    const ip = req.socket.remoteAddress ?? null;
+    await this.auditLogService.log(userId, "LOGOUT", "user", userId, `Korisnik ${req.user!.gamerTag} se odjavio`, ip);
+    res.json({ success: true, message: "Uspešna odjava." });
+  } catch {
+    res.status(500).json({ success: false, message: "Greška pri odjavi." });
+  }
+}
 
   public getRouter(): Router {
     return this.router;

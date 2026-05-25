@@ -168,6 +168,18 @@ CREATE TABLE TEAM_INVITES (
   FOREIGN KEY (invitee_id) REFERENCES users(id)       ON DELETE CASCADE
 );
 
+CREATE TABLE AUDIT_LOGS (
+  id          INT AUTO_INCREMENT PRIMARY KEY,
+  user_id     INT UNSIGNED NULL,
+  action      VARCHAR(100) NOT NULL,
+  entity      VARCHAR(50)  NULL,
+  entity_id   INT          NULL,
+  description TEXT         NULL,
+  ip_address  VARCHAR(45)  NULL,
+  created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
 SQL
 
 MASTER_TABLES=$($M -s --skip-column-names \
