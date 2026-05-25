@@ -47,8 +47,7 @@ export class AuditLogRepository implements IAuditLogRepository {
     try {
       const offset = (page - 1) * limit;
       const [rows] = await res.conn.execute<RowDataPacket[]>(
-        `SELECT * FROM AUDIT_LOGS ORDER BY created_at DESC LIMIT ? OFFSET ?`,
-        [limit, offset]
+        `SELECT * FROM AUDIT_LOGS ORDER BY created_at DESC LIMIT ${limit} OFFSET ${offset}`
       );
       const [countRows] = await res.conn.execute<RowDataPacket[]>(
         `SELECT COUNT(*) as total FROM AUDIT_LOGS`
