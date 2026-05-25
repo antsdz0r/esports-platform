@@ -78,6 +78,7 @@ const auditLogService = new AuditLogService(auditLogRepo);
 const app = express();
 app.use(cors({ origin: process.env.CLIENT_URL ?? "*" }));
 app.use(express.json());
+app.set('etag', false);
 
 app.use("/api", new AuthController(authService, auditLogService).getRouter());
 app.use("/api", new UserController(userService).getRouter());

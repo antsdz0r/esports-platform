@@ -185,8 +185,8 @@ SQL
 MASTER_TABLES=$($M -s --skip-column-names \
   -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='${DB_NAME}';" 2>/dev/null)
 echo "  Master tables: ${MASTER_TABLES}"
-if [ "${MASTER_TABLES:-0}" -lt "10" ]; then
-  echo "  ERROR: Schema creation failed on Master (expected >= 10 tables)"
+if [ "${MASTER_TABLES:-0}" -lt "11" ]; then
+  echo "  ERROR: Schema creation failed on Master (expected >= 11 tables)"
   exit 1
 fi
 

@@ -41,7 +41,8 @@ export class AuditLogRepository implements IAuditLogRepository {
   }
 
   public async findAll(page: number, limit: number): Promise<{ logs: AuditLog[]; total: number }> {
-    const res = await this.db.getReadConnection();
+    const res = await this.db.getWriteConnection();
+    console.log("findAll connection:", res ? res.nodeName : "NULL");
     if (!res) return { logs: [], total: 0 };
     try {
       const offset = (page - 1) * limit;
@@ -54,7 +55,7 @@ export class AuditLogRepository implements IAuditLogRepository {
       );
       return {
         logs: rows.map((r) => this.map(r)),
-        total: countRows[0]?.total ?? 0,
+        total: Number(countRows[0]?.total ?? 0),
       };
     } catch {
       this.logger.error("AuditLogRepository", "findAll failed");
