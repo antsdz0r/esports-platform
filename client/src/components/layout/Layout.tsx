@@ -2,15 +2,19 @@ import { type ReactNode } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/auth/useAuthHook";
 
-// TODO: Update nav items to match your routes and roles
+
 const userNav = [
-  { to: "/dashboard", label: "Dashboard", icon: "⬡" },
-  // add more user routes here
+  { to: "/dashboard",          label: "Dashboard",  icon: "⬡" },
+  { to: "/dashboard/teams",    label: "Teams",      icon: "◎" },
+  { to: "/dashboard/tournaments", label: "Tournaments", icon: "◈" },
+  { to: "/dashboard/invites",  label: "Invites",    icon: "✉" },
+  { to: "/dashboard/watchlist", label: "Watchlist", icon: "★" },
 ];
 const adminNav = [
-  { to: "/admin",       label: "Dashboard", icon: "⬡" },
-  { to: "/admin/users", label: "Users",     icon: "◎" },
-  // add more admin routes here
+  { to: "/admin",              label: "Dashboard",  icon: "⬡" },
+  { to: "/admin/users",        label: "Users",      icon: "◎" },
+  { to: "/admin/audit",        label: "Audit Log",  icon: "◈" },
+  { to: "/admin/health",       label: "Health",     icon: "♥" },
 ];
 
 export function Layout({ children }: { children: ReactNode }) {
@@ -27,8 +31,8 @@ export function Layout({ children }: { children: ReactNode }) {
             <span className="text-white/50 text-xs">◈</span>
           </div>
           <div>
-            {/* TODO: Replace with your app name */}
-            <p className="text-sm font-semibold text-white tracking-tight">AppName</p>
+            {}
+            <p className="text-sm font-semibold text-white tracking-tight">PulseGrid</p>
             <p className="text-[10px] text-white/25 uppercase tracking-widest">{user?.role}</p>
           </div>
         </div>

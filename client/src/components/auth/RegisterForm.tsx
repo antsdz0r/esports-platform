@@ -4,17 +4,17 @@ import type { IAuthAPIService } from "../../api_services/auth/IAuthAPIService";
 
 export function RegisterForm({ authApi }: { authApi: IAuthAPIService }) {
   const { login } = useAuth();
-  const [form, setForm] = useState({ username: "", email: "", password: "" });
+  const [form, setForm] = useState({ username: "", email: "", password: "", fullName: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, [k]: e.target.value }));
 
   const submit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault(); setError(""); setLoading(true);
-    const res = await authApi.register(form.username, form.email, form.password, "user");
+    const res = await authApi.register(form.username, form.email, form.password, form.fullName);
     setLoading(false);
     if (!res.success || !res.data) { setError(res.message ?? "Registration failed"); return; }
-    login(res.data);
+    login(res.data.token);
   };
 
   return (
@@ -34,7 +34,7 @@ export function RegisterForm({ authApi }: { authApi: IAuthAPIService }) {
       )}
 
       <form onSubmit={submit} className="flex flex-col gap-4">
-        {(["username", "email", "password"] as const).map((field) => (
+        {(["username", "email", "password", "fullName"] as const).map((field) => (
           <div key={field}>
             <label className="block text-xs text-white/40 mb-2 font-medium capitalize">{field}</label>
             <input

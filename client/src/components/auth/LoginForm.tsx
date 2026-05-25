@@ -14,7 +14,7 @@ export function LoginForm({ authApi }: { authApi: IAuthAPIService }) {
     const res = await authApi.login(username, password);
     setLoading(false);
     if (!res.success || !res.data) { setError(res.message ?? "Invalid credentials"); return; }
-    login(res.data);
+    login(res.data.token);
   };
 
   return (

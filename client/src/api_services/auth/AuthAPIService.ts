@@ -18,15 +18,10 @@ export const authApi: IAuthAPIService = {
       
   },
 
-  async register(
-    username: string,
-    email: string,
-    password: string,
-    role: string
-  ): Promise<AuthResponse> {
-    return axios
-      .post<AuthResponse>(`${BASE}/register`, { gamerTag: username, email, password, role })
-      .then((r: { data: AuthResponse }) => r.data)
-      .catch(() => makeError("Registration failed"));
-  },
+async register(username: string, email: string, password: string, fullName: string): Promise<AuthResponse> {
+  return axios
+    .post<AuthResponse>(`${BASE}/register`, { gamerTag: username, email, password, fullName })
+    .then((r: { data: AuthResponse }) => r.data)
+    .catch(() => makeError("Registration failed"));
+},
 };

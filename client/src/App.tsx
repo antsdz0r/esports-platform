@@ -9,6 +9,9 @@ import UserDashboard from "./pages/user/UserDashboard";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import UsersPage from "./pages/admin/UsersPage";
 
+import TournamentsPage from "./pages/user/TournamentsPage";
+import TeamPage from "./pages/user/TeamPage";
+
 export default function App() {
   return (
     <Routes>
@@ -17,7 +20,11 @@ export default function App() {
       
 
       {/* User routes */}
-      <Route path="/dashboard" element={<ProtectedRoute requiredRole="user"><UserDashboard /></ProtectedRoute>} />
+      <Route path="/dashboard" element={<ProtectedRoute requiredRole="player"><UserDashboard /></ProtectedRoute>} />
+      <Route path="/dashboard/teams" element={<ProtectedRoute requiredRole="player"><TeamPage /></ProtectedRoute>} />
+      <Route path="/dashboard/tournaments" element={<ProtectedRoute requiredRole="player"><TournamentsPage /></ProtectedRoute>} />
+      {/* <Route path="/dashboard/invites" element={<ProtectedRoute requiredRole="player"><InvitesPage /></ProtectedRoute>} />
+       <Route path="/dashboard/watchlist" element={<ProtectedRoute requiredRole="player"><WatchlistPage /></ProtectedRoute>} /> */}
 
       {/* Admin routes */}
       <Route path="/admin"       element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />
