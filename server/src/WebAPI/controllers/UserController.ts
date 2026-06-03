@@ -27,7 +27,7 @@ export class UserController {
     const id = parseInt(req.params.id as string, 10);
     if (isNaN(id)) { res.status(400).json({ success: false, message: "Invalid id" }); return; }
     const user = await this.userService.getById(id);
-    if (!user) { res.status(404).json({ success: false, message: "User not found" }); return; }
+    if (user.id === 0) { res.status(404).json({ success: false, message: "User not found" }); return; }
     res.status(200).json({ success: true, data: user });
   } catch (err) {
     res.status(500).json({ success: false, message: "Internal server error" });

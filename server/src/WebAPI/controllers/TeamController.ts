@@ -2,7 +2,9 @@ import { Request, Response, Router } from "express";
 import { ITeamService } from "../../Domain/services/teams/ITeamService";
 import { authenticate } from "../../Middlewares/authentification/AuthMiddleware";
 import { validateTeam } from "../validators/teams/validateTeams";
-import { ITeamInviteRepository } from "../../Domain/repositories/team_invites/ITeamInvitesRepository";
+import { TeamDto } from "../../Domain/DTOs/teams/TeamDto";
+import { TeamMemberDto } from "../../Domain/DTOs/teams/TeamMemberDto";
+
 
 export class TeamController {
   private readonly router = Router();
@@ -39,20 +41,15 @@ export class TeamController {
       return;
     }
   
-    const created = await this.teamService.create({
-      userId: req.user!.id,
-      teamName,
-      tag,
-      logo,
-      description,
-    });
+    const created = await this.teamService.create({ userId: req.user!.id, teamName, tag, logo, description });
 
-    if (!created) {
-      res.status(400).json({ success: false, message: "Team create failed" });
+    if (!created.ok) {
+      res.status(400).json({ success: false, message: created.error ?? "Team create failed" });
       return;
     }
 
-    res.status(201).json({ success: true, data: created });
+    res.status(201).json({ success: true, data: created.team });
+
   } catch (err) {
     res.status(500).json({ success: false, message: "Internal server error" });
   }
@@ -66,11 +63,12 @@ export class TeamController {
     }
 
     const team = await this.teamService.getById(id);
-    if (!team) {
+    if (team.teamId === 0) {
       res.status(404).json({ success: false, message: "Team not found" });
       return;
     }
     res.status(200).json({ success: true, data: team });
+    
   } catch (err) {
     res.status(500).json({ success: false, message: "Internal server error" });
   }

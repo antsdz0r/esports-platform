@@ -1,14 +1,15 @@
-import { GameCatalogDto } from "../../DTOs/games/GameCatalogDto";
+
+import { GameCatalog } from "../../models/GameCatalog";
 
 export interface IGameCatalogService {
-  getAll(): Promise<GameCatalogDto[]>;
-  getById(gameId: number): Promise<GameCatalogDto | null>;
+  getAll(): Promise<GameCatalog[]>;
+  getById(gameId: number): Promise<GameCatalog>;
   create(payload: {
     name: string;
     tag: string;
     genre: string;
     maxPlayers: number;
-  }): Promise<GameCatalogDto | null>;
+  }): Promise<{ ok: boolean; game?: GameCatalog; error?: string }>;
   update(
     gameId: number,
     payload: {

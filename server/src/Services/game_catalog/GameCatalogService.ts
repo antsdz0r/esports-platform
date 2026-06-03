@@ -1,5 +1,5 @@
-import { GameCatalogDto } from "../../Domain/DTOs/games/GameCatalogDto";
-import { TournamentStatus } from "../../Domain/enums/TournamentStatus";
+
+
 import { GameCatalog } from "../../Domain/models/GameCatalog";
 import { IGameCatalogRepository } from "../../Domain/repositories/game_catalog/IGameCatalogRepository";
 import { ITournamentRepository } from "../../Domain/repositories/tournaments/ITournamentRepository";
@@ -11,31 +11,13 @@ export class GameCatalogService implements IGameCatalogService {
     private readonly tournamentRepo: ITournamentRepository,
   ) {}
 
-  private async toDto(game: GameCatalog): Promise<GameCatalogDto> {
-    const tournaments = await this.tournamentRepo.findByGameId(game.gameId);
-    const activeTournamentsCount = tournaments.filter(
-      (t) => t.status !== TournamentStatus.COMPLETED
-    ).length;
 
-    return new GameCatalogDto(
-      game.gameId,
-      game.name,
-      game.tag,
-      game.genre,
-      game.maxPlayers,
-      activeTournamentsCount
-    );
+  async getAll(): Promise<GameCatalog[]> {
+    return this.gameRepo.findAll();
   }
 
-  async getAll(): Promise<GameCatalogDto[]> {
-    const games = await this.gameRepo.findAll();
-    return Promise.all(games.map((game) => this.toDto(game)));
-  }
-
-  async getById(gameId: number): Promise<GameCatalogDto | null> {
-    const game = await this.gameRepo.findById(gameId);
-    if (game.gameId === 0) return null;
-    return this.toDto(game);
+  async getById(gameId: number): Promise<GameCatalog> {
+    return this.gameRepo.findById(gameId);
   }
 
   async create(payload: {
@@ -43,25 +25,19 @@ export class GameCatalogService implements IGameCatalogService {
     tag: string;
     genre: string;
     maxPlayers: number;
-  }): Promise<GameCatalogDto | null> {
+    }): Promise<{ ok: boolean; game?: GameCatalog; error?: string }> {
     const byName = await this.gameRepo.findByName(payload.name);
-    if (byName.gameId !== 0) return null;
+    if (byName.gameId !== 0) return { ok: false, error: "Igra sa tim imenom već postoji" };
 
     const byTag = await this.gameRepo.findByTag(payload.tag);
-    if (byTag.gameId !== 0) return null;
+    if (byTag.gameId !== 0) return { ok: false, error: "Igra sa tim tagom već postoji" };
 
     const created = await this.gameRepo.create(
-      new GameCatalog(
-        0,
-        payload.name,
-        payload.tag,
-        payload.genre,
-        payload.maxPlayers,
-      )
+      new GameCatalog(0, payload.name, payload.tag, payload.genre, payload.maxPlayers)
     );
+    if (created.gameId === 0) return { ok: false, error: "Greška pri kreiranju igre" };
 
-    if (created.gameId === 0) return null;
-    return this.toDto(created);
+    return { ok: true, game: created };
   }
 
   async update(

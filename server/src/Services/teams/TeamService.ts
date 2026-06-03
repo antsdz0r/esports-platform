@@ -1,5 +1,4 @@
-import { TeamDto } from "../../Domain/DTOs/teams/TeamDto";
-import { TeamMemberDto } from "../../Domain/DTOs/teams/TeamMemberDto";
+
 import { TeamMemberRole } from "../../Domain/enums/TeamMemberRole";
 import { Team } from "../../Domain/models/Team";
 import { TeamMember } from "../../Domain/models/TeamMember";
@@ -18,38 +17,22 @@ export class TeamService implements ITeamService {
     private readonly teamInviteRepo: ITeamInviteRepository,
   ) {}
 
-  private async toDto(team: Team): Promise<TeamDto> {
-    const members = await this.teamMemberRepo.getMembersByTeam(team.teamId);
-    return new TeamDto(
-      team.teamId,
-      team.teamName,
-      team.tag,
-      team.logo,
-      team.description,
-      members.map((m) => new TeamMemberDto(m.playerId, m.role, m.joinedAt))
-    );
-  }
 
   private async isCaptain(userId: number, teamId: number): Promise<boolean> {
     const members = await this.teamMemberRepo.getMembersByTeam(teamId);
     return members.some((m) => m.playerId === userId && m.role === TeamMemberRole.CAPTAIN);
   }
 
-  async getMyTeams(userId: number): Promise<TeamDto[]> {
+  async getMyTeams(userId: number): Promise<Team[]> {
     const memberships = await this.teamMemberRepo.getTeamsByPlayer(userId);
     const teams = await Promise.all(
-      memberships.map(async (m) => {
-        const team = await this.teamRepo.findById(m.TeamId);
-        return team.teamId === 0 ? null : this.toDto(team);
-      })
+        memberships.map((m) => this.teamRepo.findById(m.TeamId))
     );
-    return teams.filter((t): t is TeamDto => t !== null);
+    return teams.filter((t) => t.teamId !== 0);
   }
 
-  async getById(teamId: number): Promise<TeamDto | null> {
-    const team = await this.teamRepo.findById(teamId);
-    if (team.teamId === 0) return null;
-    return this.toDto(team);
+  async getById(teamId: number): Promise<Team> {
+    return this.teamRepo.findById(teamId);
   }
 
   async create(payload: {
@@ -58,25 +41,25 @@ export class TeamService implements ITeamService {
     tag: string;
     logo: string;
     description?: string | null;
-  }): Promise<TeamDto | null> {
+    }): Promise<{ ok: boolean; team?: Team; error?: string }> {
     const byName = await this.teamRepo.findByName(payload.teamName);
-    if (byName.teamId !== 0) return null;
+    if (byName.teamId !== 0) return { ok: false, error: "Tim sa tim imenom već postoji" };
 
     const byTag = await this.teamRepo.findByTag(payload.tag);
-    if (byTag.teamId !== 0) return null;
+    if (byTag.teamId !== 0) return { ok: false, error: "Tim sa tim tagom već postoji" };
 
     const team = await this.teamRepo.create(
       new Team(0, payload.teamName, payload.tag, payload.logo, payload.description ?? null)
     );
-    if (team.teamId === 0) return null;
+    if (team.teamId === 0) return { ok: false, error: "Greška pri kreiranju tima" };
 
     const added = await this.teamMemberRepo.addMember(
       new TeamMember(team.teamId, payload.userId, TeamMemberRole.CAPTAIN, new Date())
     );
-    if (!added) return null;
+    if (!added) return { ok: false, error: "Greška pri dodavanju kapitena" };
 
-    return this.toDto(team);
-  }
+    return { ok: true, team };
+}
 
   async update(
     userId: number,

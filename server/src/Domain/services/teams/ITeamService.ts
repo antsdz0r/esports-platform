@@ -1,15 +1,16 @@
-import { TeamDto } from "../../DTOs/teams/TeamDto";
+
+import { Team } from "../../models/Team";
 import { TeamInvite } from "../../models/TeamInvites";
 export interface ITeamService {
-  getMyTeams(userId: number): Promise<TeamDto[]>;
-  getById(teamId: number): Promise<TeamDto | null>;
+  getMyTeams(userId: number): Promise<Team[]>;
+  getById(teamId: number): Promise<Team>;
   create(payload: {
     userId: number;
     teamName: string;
     tag: string;
     logo: string;
     description?: string | null;
-  }): Promise<TeamDto | null>;
+  }): Promise<{ ok: boolean; team?: Team; error?: string }>;
   update(
     userId: number,
     teamId: number,

@@ -32,7 +32,7 @@ export class GameCatalogController {
     }
 
     const game = await this.gameService.getById(id);
-    if (!game) {
+    if (game.gameId === 0) {
       res.status(404).json({ success: false, message: "Game not found" });
       return;
     }
@@ -51,12 +51,11 @@ export class GameCatalogController {
     }
 
     const created = await this.gameService.create({ name, tag, genre, maxPlayers });
-    if (!created) {
-      res.status(400).json({ success: false, message: "Game with same name or tag already exists" });
+    if (!created.ok) {
+      res.status(400).json({ success: false, message: created.error ?? "Game create failed" });
       return;
     }
-
-    res.status(201).json({ success: true, data: created });
+    res.status(201).json({ success: true, data: created.game });
   } catch (err) {
     res.status(500).json({ success: false, message: "Internal server error" });
   }}

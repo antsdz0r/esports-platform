@@ -6,7 +6,7 @@ import { TournamentStatus } from "../../enums/TournamentStatus";
 export interface ITournamentService {
   // ─── Turniri ───────────────────────────────────────────────────────
   getAll(filters?: { gameId?: number; status?: TournamentStatus }): Promise<Tournament[]>;
-  getById(id: number): Promise<Tournament | null>;
+  getById(id: number): Promise<Tournament>;
   create(payload: {
     gameId: number;
     name: string;
@@ -14,7 +14,7 @@ export interface ITournamentService {
     maxTeams: number;
     registrationDeadline: Date;
     prizePool?: number;
-  }): Promise<Tournament | null>;
+  }): Promise<{ ok: boolean; tournament?: Tournament; error?: string }>;
   update(
     id: number,
     payload: {

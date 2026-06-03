@@ -111,9 +111,7 @@ export class TournamentController {
     );
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // HANDLER METODE
-  // ─────────────────────────────────────────────────────────────────────────
+
 
   private async getAll(req: Request, res: Response): Promise<void> {
     try{
@@ -137,7 +135,7 @@ export class TournamentController {
       this.tournamentService.getRegistrations(id),
     ]);
 
-    if (!tournament) { res.status(404).json({ message: "Turnir nije pronađen" }); return; }
+    if (tournament.tournamentId === 0) { res.status(404).json({ message: "Turnir nije pronađen" }); return; }
 
     res.json({ ...tournament, registrations });
   } catch (err) {
@@ -172,16 +170,14 @@ export class TournamentController {
       prizePool: prizePool ? Number(prizePool) : 0,
     });
 
-    if (!created) {
-      res.status(400).json({
-        message:
-          "Kreiranje nije uspelo. Proverite format (single_elim, double_elim, round_robin) " +
-          "i da je maxTeams stepen broja 2 za eliminacione formate.",
-      });
+    if (!created.ok) {
+      res.status(400).json({ message: created.error ?? "Kreiranje nije uspelo" });
       return;
     }
 
-    res.status(201).json(created);
+    res.status(201).json(created.tournament);
+
+    
   } catch (err) {
     res.status(500).json({ success: false, message: "Internal server error" });
   }

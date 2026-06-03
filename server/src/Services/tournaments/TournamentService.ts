@@ -33,9 +33,8 @@ export class TournamentService implements ITournamentService {
     return all;
   }
 
-  async getById(id: number): Promise<Tournament | null> {
-    const t = await this.tournamentRepo.findById(id);
-    return t.tournamentId === 0 ? null : t;
+  async getById(id: number): Promise<Tournament> {
+    return this.tournamentRepo.findById(id);
   }
 
   async create(payload: {
@@ -45,11 +44,11 @@ export class TournamentService implements ITournamentService {
     maxTeams: number;
     registrationDeadline: Date;
     prizePool?: number;
-  }): Promise<Tournament | null> {
+  }): Promise<{ ok: boolean; tournament?: Tournament; error?: string }> {
     const validFormats = Object.values(TournamentFormat) as string[];
-    if (!validFormats.includes(payload.format)) return null;
-    if (payload.format !== TournamentFormat.ROUND_ROBIN && !this.isPowerOfTwo(payload.maxTeams)) return null;
-    if (payload.registrationDeadline <= new Date()) return null;
+    if (!validFormats.includes(payload.format)) return { ok: false, error: "Neispravan format" };
+    if (payload.format !== TournamentFormat.ROUND_ROBIN && !this.isPowerOfTwo(payload.maxTeams)) return { ok: false, error: "Broj timova mora biti stepen broja 2" };
+    if (payload.registrationDeadline <= new Date()) return { ok: false, error: "Rok prijave mora biti u budućnosti" };
 
     const tournament = new Tournament(
       0, payload.gameId, payload.name,
@@ -58,7 +57,9 @@ export class TournamentService implements ITournamentService {
       payload.prizePool ?? 0, TournamentStatus.OPEN
     );
     const created = await this.tournamentRepo.create(tournament);
-    return created.tournamentId === 0 ? null : created;
+    return created.tournamentId === 0 
+      ? { ok: false, error: "Greška pri kreiranju turnira" } 
+      : { ok: true, tournament: created };
   }
 
   async update(id: number, payload: {
