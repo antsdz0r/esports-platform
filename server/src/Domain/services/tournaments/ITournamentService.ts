@@ -2,31 +2,15 @@ import { Tournament } from "../../models/Tournament";
 import { TournamentRegistration } from "../../models/TournamentRegistration";
 import { TournamentRegistrationStatus } from "../../enums/TournamentRegistrationStatus";
 import { TournamentStatus } from "../../enums/TournamentStatus";
+import { CreateTournamentData } from "../../models/CreateTournamentData";
+import { UpdateTournamentData } from "../../models/UpdateTournamentData";
 
 export interface ITournamentService {
   // ─── Turniri ───────────────────────────────────────────────────────
   getAll(filters?: { gameId?: number; status?: TournamentStatus }): Promise<Tournament[]>;
   getById(id: number): Promise<Tournament>;
-  create(payload: {
-    gameId: number;
-    name: string;
-    format: string;
-    maxTeams: number;
-    registrationDeadline: Date;
-    prizePool?: number;
-  }): Promise<{ ok: boolean; tournament?: Tournament; error?: string }>;
-  update(
-    id: number,
-    payload: {
-      gameId: number;
-      name: string;
-      format: string;
-      maxTeams: number;
-      registrationDeadline: Date;
-      prizePool?: number;
-      status?: TournamentStatus;
-    }
-  ): Promise<boolean>;
+  create(data: CreateTournamentData): Promise<{ ok: boolean; tournament?: Tournament; error?: string }>;
+  update(id: number, data: UpdateTournamentData): Promise<boolean>;
   delete(id: number): Promise<boolean>;
 
   // ─── Prijave timova ────────────────────────────────────────────────
@@ -45,11 +29,11 @@ export interface ITournamentService {
 
 
   // ─── Mečevi ────────────────────────────────────────────────────────
-recordMatchResult(
-  gameId: number,
-  score: string,
-  winnerTeamId: number
-): Promise<{ ok: boolean; error?: string }>;
+  recordMatchResult(
+    gameId: number,
+    score: string,
+    winnerTeamId: number
+  ): Promise<{ ok: boolean; error?: string }>;
 
   // ─── Watchlist ─────────────────────────────────────────────────────
   watchTournament(userId: number, tournamentId: number): Promise<boolean>;

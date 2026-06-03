@@ -10,6 +10,8 @@ import { IWatchlistRepository } from "../../Domain/repositories/watchlist/IWatch
 import { IGameRepository } from "../../Domain/repositories/games/IGameRepository";
 import { TeamMemberRole } from "../../Domain/enums/TeamMemberRole";
 import { ITournamentService } from "../../Domain/services/tournaments/ITournamentService";
+import { CreateTournamentData } from "../../Domain/models/CreateTournamentData";
+import { UpdateTournamentData } from "../../Domain/models/UpdateTournamentData";
 
 export class TournamentService implements ITournamentService {
   constructor(
@@ -37,45 +39,32 @@ export class TournamentService implements ITournamentService {
     return this.tournamentRepo.findById(id);
   }
 
-  async create(payload: {
-    gameId: number;
-    name: string;
-    format: string;
-    maxTeams: number;
-    registrationDeadline: Date;
-    prizePool?: number;
-  }): Promise<{ ok: boolean; tournament?: Tournament; error?: string }> {
+  async create(data: CreateTournamentData): Promise<{ ok: boolean; tournament?: Tournament; error?: string }> {
     const validFormats = Object.values(TournamentFormat) as string[];
-    if (!validFormats.includes(payload.format)) return { ok: false, error: "Neispravan format" };
-    if (payload.format !== TournamentFormat.ROUND_ROBIN && !this.isPowerOfTwo(payload.maxTeams)) return { ok: false, error: "Broj timova mora biti stepen broja 2" };
-    if (payload.registrationDeadline <= new Date()) return { ok: false, error: "Rok prijave mora biti u budućnosti" };
+    if (!validFormats.includes(data.format)) return { ok: false, error: "Neispravan format" };
+    if (data.format !== TournamentFormat.ROUND_ROBIN && !this.isPowerOfTwo(data.maxTeams)) return { ok: false, error: "Broj timova mora biti stepen broja 2" };
+    if (data.registrationDeadline <= new Date()) return { ok: false, error: "Rok prijave mora biti u budućnosti" };
 
     const tournament = new Tournament(
-      0, payload.gameId, payload.name,
-      payload.format as TournamentFormat,
-      payload.maxTeams, payload.registrationDeadline,
-      payload.prizePool ?? 0, TournamentStatus.OPEN
+      0, data.gameId, data.name, data.format,
+      data.maxTeams, data.registrationDeadline,
+      data.prizePool, TournamentStatus.OPEN
     );
     const created = await this.tournamentRepo.create(tournament);
-    return created.tournamentId === 0 
-      ? { ok: false, error: "Greška pri kreiranju turnira" } 
+    return created.tournamentId === 0
+      ? { ok: false, error: "Greška pri kreiranju turnira" }
       : { ok: true, tournament: created };
-  }
+    }
 
-  async update(id: number, payload: {
-    gameId: number; name: string; format: string; maxTeams: number;
-    registrationDeadline: Date; prizePool?: number; status?: TournamentStatus;
-  }): Promise<boolean> {
+  async update(id: number, data: UpdateTournamentData): Promise<boolean> {
     const existing = await this.tournamentRepo.findById(id);
     if (existing.tournamentId === 0) return false;
     const validFormats = Object.values(TournamentFormat) as string[];
-    if (!validFormats.includes(payload.format)) return false;
+    if (!validFormats.includes(data.format)) return false;
     const updated = new Tournament(
-      id, payload.gameId, payload.name,
-      payload.format as TournamentFormat, payload.maxTeams,
-      payload.registrationDeadline,
-      payload.prizePool ?? existing.prizePool,
-      payload.status ?? existing.status
+      id, data.gameId, data.name, data.format,
+      data.maxTeams, data.registrationDeadline,
+      data.prizePool, data.status
     );
     return this.tournamentRepo.update(updated);
   }

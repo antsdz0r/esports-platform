@@ -7,6 +7,9 @@ import { TournamentRegistrationStatus } from "../../Domain/enums/TournamentRegis
 import { TournamentStatus } from "../../Domain/enums/TournamentStatus";
 import { validateTournament } from "../validators/tournaments/validateTournaments";
 import { validateMatchScore } from "../validators/score/validateMatchScore";
+import { CreateTournamentData } from "../../Domain/models/CreateTournamentData";
+import { UpdateTournamentData } from "../../Domain/models/UpdateTournamentData";
+import { TournamentFormat } from "../../Domain/enums/TournamentFormat";
 
 
 export class TournamentController {
@@ -161,14 +164,16 @@ export class TournamentController {
       return;
     }
 
-    const created = await this.tournamentService.create({
-      gameId: Number(gameId),
-      name: String(name),
-      format: String(format),
-      maxTeams: Number(maxTeams),
-      registrationDeadline: deadline,
-      prizePool: prizePool ? Number(prizePool) : 0,
-    });
+    const created = await this.tournamentService.create(
+      new CreateTournamentData(
+        Number(gameId),
+        String(name),
+        String(format) as TournamentFormat,
+        Number(maxTeams),
+        deadline,
+        prizePool ? Number(prizePool) : 0
+      )
+    );
 
     if (!created.ok) {
       res.status(400).json({ message: created.error ?? "Kreiranje nije uspelo" });
@@ -199,15 +204,17 @@ export class TournamentController {
       return;
     }
 
-    const ok = await this.tournamentService.update(id, {
-      gameId: Number(gameId),
-      name: String(name),
-      format: String(format),
-      maxTeams: Number(maxTeams),
-      registrationDeadline: new Date(registrationDeadline),
-      prizePool: prizePool ? Number(prizePool) : undefined,
-      status: status as TournamentStatus | undefined,
-    });
+    const ok = await this.tournamentService.update(id,
+      new UpdateTournamentData(
+        Number(gameId),
+        String(name),
+        String(format) as TournamentFormat,
+        Number(maxTeams),
+        new Date(registrationDeadline),
+        prizePool ? Number(prizePool) : 0,
+        status as TournamentStatus ?? TournamentStatus.OPEN
+      )
+    );
 
     ok
       ? res.json({ message: "Turnir uspešno ažuriran" })

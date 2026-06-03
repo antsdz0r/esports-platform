@@ -2,7 +2,7 @@ import { IMatchService } from "../../Domain/services/matches/IMatchService";
 import { IGameRepository } from "../../Domain/repositories/games/IGameRepository";
 import { IMatchPlayerRepository } from "../../Domain/repositories/match_players/IMatchPlayerRepository";
 import { ITeamMemberRepository } from "../../Domain/repositories/team_members/ITeamMemberRepository";
-import { GameDto } from "../../Domain/DTOs/games/GameDto";
+import { Game } from "../../Domain/models/Game";
 import { MatchPlayer } from "../../Domain/models/MatchPlayer";
 import { TeamMemberRole } from "../../Domain/enums/TeamMemberRole";
 
@@ -13,16 +13,15 @@ export class MatchService implements IMatchService {
     private readonly teamMemberRepo: ITeamMemberRepository,
   ) {}
 
-  async getByTournament(tournamentId: number): Promise<GameDto[]> {
-  return this.gameRepo.findByTournamentId(tournamentId);
+  async getByTournament(tournamentId: number): Promise<Game[]> {
+    return this.gameRepo.findByTournamentId(tournamentId);
 }
 
- async getById(gameId: number): Promise<{ game: GameDto; players: MatchPlayer[] } | null> {
-  const game = await this.gameRepo.findById(gameId);
-  if (!game) return null;
-  const players = await this.matchPlayerRepo.getByGame(gameId);
-  return { game, players };
-}
+  async getById(gameId: number): Promise<{ game: Game; players: MatchPlayer[] }> {
+    const game = await this.gameRepo.findById(gameId);
+    const players = await this.matchPlayerRepo.getByGame(gameId);
+    return { game, players };
+  }
 
   async addPlayer(
     gameId: number,

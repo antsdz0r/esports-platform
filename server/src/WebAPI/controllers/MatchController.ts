@@ -31,7 +31,7 @@ export class MatchController {
       const id = parseInt(req.params.id as string, 10);
       if (isNaN(id)) { res.status(400).json({ success: false, message: "Invalid id" }); return; }
       const result = await this.matchService.getById(id);
-      if (!result) { res.status(404).json({ success: false, message: "Match not found" }); return; }
+      if (result.game.gameId === 0) { res.status(404).json({ success: false, message: "Match not found" }); return; }
       res.json({ success: true, data: result });
     } catch {
       res.status(500).json({ success: false, message: "Internal server error" });
