@@ -26,17 +26,17 @@ export class TournamentController {
   }
 
   private initRoutes(): void {
-    // ─── Javne rute ────────────────────────────────────────────────────────
+    
 
-    // GET /api/tournaments        → lista svih turnira (filterable: ?gameId=1&status=open)
+    
     this.router.get("/tournaments", this.getAll.bind(this));
 
-    // GET /api/tournaments/:id    → detalji jednog turnira + registracije
+    
     this.router.get("/tournaments/:id", this.getById.bind(this));
 
-    // ─── Admin rute ────────────────────────────────────────────────────────
+    
 
-    // POST /api/tournaments               → kreiranje turnira (admin)
+    
     this.router.post(
       "/tournaments",
       authenticate,
@@ -44,7 +44,7 @@ export class TournamentController {
       this.create.bind(this)
     );
 
-    // PUT /api/tournaments/:id            → izmena turnira (admin)
+    
     this.router.put(
       "/tournaments/:id",
       authenticate,
@@ -52,7 +52,7 @@ export class TournamentController {
       this.update.bind(this)
     );
 
-    // DELETE /api/tournaments/:id         → brisanje turnira (admin)
+    
     this.router.delete(
       "/tournaments/:id",
       authenticate,
@@ -76,9 +76,9 @@ export class TournamentController {
       this.generateBracket.bind(this)
     );
 
-    // ─── Prijavljeni igrač (kapiten) ──────────────────────────────────────
+    
 
-    // POST /api/tournaments/:id/register          → prijava tima na turnir
+    
     this.router.post(
       "/tournaments/:id/register",
       authenticate,
@@ -235,7 +235,7 @@ export class TournamentController {
     res.status(500).json({ success: false, message: "Internal server error" });
   }
   }
-  // ─── Prijave ──────────────────────────────────────────────────────────
+  
 
   private async registerTeam(req: Request, res: Response): Promise<void> {
     try{
@@ -335,7 +335,7 @@ private async recordMatchResult(req: Request, res: Response): Promise<void> {
   }
 }
 
-  // ─── Watchlist ────────────────────────────────────────────────────────
+  
 
   private async watchTournament(req: Request, res: Response): Promise<void> {
     try{

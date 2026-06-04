@@ -25,7 +25,7 @@ export class TournamentRepository implements ITournamentRepository {
     );
   }
 
-  // 🔹 CREATE
+  //  CREATE
   async create(t: Tournament): Promise<Tournament> {
     const res = await this.db.getWriteConnection();
     if (!res) return new Tournament();
@@ -68,7 +68,7 @@ export class TournamentRepository implements ITournamentRepository {
     }
   }
 
-  // 🔹 FIND BY ID
+  //  FIND BY ID
   async findById(id: number): Promise<Tournament> {
     const res = await this.db.getReadConnection();
     if (!res) return new Tournament();
@@ -88,7 +88,7 @@ export class TournamentRepository implements ITournamentRepository {
     }
   }
 
-  // 🔹 FIND ALL
+  //  FIND ALL
   async findAll(): Promise<Tournament[]> {
     const res = await this.db.getReadConnection();
     if (!res) return [];

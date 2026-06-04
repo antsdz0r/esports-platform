@@ -88,8 +88,7 @@ export class AuthController {
       }
 
 
-      //const parsedRole: UserRole =
-        //role === UserRole.ADMIN ? UserRole.ADMIN : UserRole.PLAYER;
+      
       const result = await this.authService.register(
           gamerTag,
           email,

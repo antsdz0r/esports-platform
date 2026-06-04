@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../../hooks/auth/useAuthHook";
-import { PageHeader } from "../../components/ui/UI";
+import { PageHeader, Spinner, Empty, ErrorBox, PgBtn, TiltCard, FormField } from "../../components/ui/UI";
+import { fadeUp, staggerContainer } from "../../components/ui/motion";
 
 interface Team {
   team_id: number;
@@ -11,6 +13,7 @@ interface Team {
 }
 
 const BASE = import.meta.env.VITE_API_URL;
+const GLOWS = ["var(--violet)", "var(--cyan)", "var(--pink)", "var(--green)", "var(--gold)"];
 
 export default function TeamsPage() {
   const { token } = useAuth();
@@ -23,36 +26,32 @@ export default function TeamsPage() {
 
   const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
 
-
- useEffect(() => {
-  const load = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch(`${BASE}teams`, { headers });
-      const data = await res.json();
-      setTeams(data.success ? data.data : []);
-    } catch {
-      setError("Failed to load teams");
-    } finally {
-      setLoading(false);
-    }
-  };
-  void load();
-}, [token]);
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(`${BASE}teams`, { headers });
+        const data = await res.json();
+        setTeams(data.success ? data.data : []);
+      } catch {
+        setError("Neuspešno učitavanje timova");
+      } finally {
+        setLoading(false);
+      }
+    };
+    void load();
+  }, [token]);
 
   const createTeam = async () => {
     if (!form.teamName || !form.tag) return;
     setCreating(true);
     try {
-      const res = await fetch(`${BASE}teams`, {
-        method: "POST", headers,
-        body: JSON.stringify(form),
-      });
+      const res = await fetch(`${BASE}teams`, { method: "POST", headers, body: JSON.stringify(form) });
       const data = await res.json();
       if (data.success) { setShowCreate(false); setForm({ teamName: "", tag: "", logo: "", description: "" }); window.location.reload(); }
       else setError(data.message);
     } catch {
-      setError("Failed to create team");
+      setError("Neuspešno kreiranje tima");
     } finally {
       setCreating(false);
     }
@@ -60,63 +59,70 @@ export default function TeamsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <PageHeader eyebrow="Teams" title="Your Teams" />
-        <button onClick={() => setShowCreate(true)}
-          className="bg-white text-black text-sm font-semibold px-4 py-2 rounded-xl hover:bg-white/90 transition-colors">
-          + New Team
-        </button>
-      </div>
+      <PageHeader eyebrow="Ekipe" title="Moji timovi"
+        action={<PgBtn variant="primary" onClick={() => setShowCreate((v) => !v)}>+ Novi tim</PgBtn>} />
 
-      {error && <div className="mb-4 text-red-400 text-sm">{error}</div>}
+      {error && <ErrorBox message={error} />}
 
-      {showCreate && (
-        <div className="mb-6 bg-white/4 border border-white/10 rounded-2xl p-5 flex flex-col gap-3">
-          <p className="text-white text-sm font-semibold">Create Team</p>
-          <input placeholder="Team name" value={form.teamName} onChange={e => setForm({ ...form, teamName: e.target.value })}
-            className="bg-white/4 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-white/30" />
-          <input placeholder="Tag (e.g. TST)" value={form.tag} onChange={e => setForm({ ...form, tag: e.target.value })}
-            className="bg-white/4 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-white/30" />
-          <input placeholder="Logo URL (optional)" value={form.logo} onChange={e => setForm({ ...form, logo: e.target.value })}
-            className="bg-white/4 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-white/30" />
-          <input placeholder="Description (optional)" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })}
-            className="bg-white/4 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-white/30" />
-          <div className="flex gap-2">
-            <button onClick={createTeam} disabled={creating}
-              className="bg-white text-black text-sm font-semibold px-4 py-2 rounded-xl hover:bg-white/90 disabled:opacity-50 transition-colors">
-              {creating ? "Creating..." : "Create"}
-            </button>
-            <button onClick={() => setShowCreate(false)}
-              className="text-white/40 text-sm px-4 py-2 rounded-xl hover:text-white/70 transition-colors">
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
-
-      {loading ? (
-        <p className="text-white/30 text-sm">Loading...</p>
-      ) : teams.length === 0 ? (
-        <p className="text-white/30 text-sm">No teams yet. Create one!</p>
-      ) : (
-        <div className="grid grid-cols-1 gap-3">
-          {teams.map(t => (
-            <div key={t.team_id} className="bg-white/4 border border-white/8 rounded-2xl px-5 py-4 flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-white/8 border border-white/12 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                    {t.logo ? (
-                        <img src={t.logo} alt={t.tag} className="w-10 h-10 object-cover" />
-                    ) : (
-                    <span className="text-white/50 text-sm font-bold">{t.tag?.slice(0, 2)}</span>
-                    )}
-                </div>
-                <div className="flex-1 min-w-0">
-                    <p className="text-white text-sm font-semibold">{t.team_name}</p>
-                    <p className="text-white/30 text-xs mt-0.5">{t.description || "No description"}</p>
-                </div>
-                <span className="text-white/20 text-xs border border-white/10 px-2 py-1 rounded-lg">{t.tag}</span>
+      {/* Create form */}
+      <AnimatePresence>
+        {showCreate && (
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
+            style={{ overflow: "hidden", marginBottom: 24 }}>
+            <div className="pg-glass" style={{ padding: 26, border: "1px solid var(--border-bright)" }}>
+              <p style={{ fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 700, letterSpacing: "0.06em", color: "var(--text)", marginBottom: 20 }}>KREIRAJ TIM</p>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
+                <FormField label="Naziv tima *">
+                  <input placeholder="Dragon Force" value={form.teamName} onChange={(e) => setForm({ ...form, teamName: e.target.value })} className="pg-input" />
+                </FormField>
+                <FormField label="Tag (2-6) *">
+                  <input placeholder="DF" maxLength={6} value={form.tag} onChange={(e) => setForm({ ...form, tag: e.target.value.toUpperCase() })} className="pg-input" />
+                </FormField>
+              </div>
+              <div style={{ marginBottom: 14 }}>
+                <FormField label="Logo URL (opciono)">
+                  <input placeholder="https://..." value={form.logo} onChange={(e) => setForm({ ...form, logo: e.target.value })} className="pg-input" />
+                </FormField>
+              </div>
+              <div style={{ marginBottom: 20 }}>
+                <FormField label="Opis (opciono)">
+                  <input placeholder="Kratki opis tima..." value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="pg-input" />
+                </FormField>
+              </div>
+              <div style={{ display: "flex", gap: 10 }}>
+                <PgBtn variant="primary" onClick={createTeam} disabled={creating}>{creating ? "Kreiranje..." : "Kreiraj"}</PgBtn>
+                <PgBtn variant="ghost" onClick={() => setShowCreate(false)}>Otkaži</PgBtn>
+              </div>
             </div>
-          ))}
-        </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {loading ? <Spinner /> : teams.length === 0 ? <Empty message="Nemaš nijedan tim. Kreiraj jedan!" /> : (
+        <motion.div variants={staggerContainer(0.07)} initial="hidden" animate="show"
+          style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 18 }}>
+          {teams.map((t, i) => {
+            const glow = GLOWS[i % GLOWS.length];
+            return (
+              <motion.div key={t.team_id} variants={fadeUp}>
+                <TiltCard glow={glow} style={{ padding: 22 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
+                    <div style={{ width: 54, height: 54, borderRadius: 12, background: `${glow}1a`, border: `1px solid ${glow}45`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden", boxShadow: `0 0 18px ${glow}30` }}>
+                      {t.logo
+                        ? <img src={t.logo} alt={t.tag} style={{ width: 54, height: 54, objectFit: "cover" }} />
+                        : <span style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 900, color: glow }}>{t.tag?.slice(0, 2)}</span>}
+                    </div>
+                    <div style={{ minWidth: 0 }}>
+                      <p style={{ fontFamily: "var(--font-head)", fontSize: 17, fontWeight: 700, color: "var(--text)" }}>{t.team_name}</p>
+                      <span style={{ fontFamily: "var(--font-display)", fontSize: 12, fontWeight: 900, color: glow }}>[{t.tag}]</span>
+                    </div>
+                  </div>
+                  <p style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.5, minHeight: 38 }}>{t.description || "Nema opisa."}</p>
+                </TiltCard>
+              </motion.div>
+            );
+          })}
+        </motion.div>
       )}
     </div>
   );

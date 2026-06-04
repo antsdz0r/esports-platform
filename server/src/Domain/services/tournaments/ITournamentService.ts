@@ -6,14 +6,14 @@ import { CreateTournamentData } from "../../models/CreateTournamentData";
 import { UpdateTournamentData } from "../../models/UpdateTournamentData";
 
 export interface ITournamentService {
-  // ─── Turniri ───────────────────────────────────────────────────────
+  
   getAll(filters?: { gameId?: number; status?: TournamentStatus }): Promise<Tournament[]>;
   getById(id: number): Promise<Tournament>;
   create(data: CreateTournamentData): Promise<{ ok: boolean; tournament?: Tournament; error?: string }>;
   update(id: number, data: UpdateTournamentData): Promise<boolean>;
   delete(id: number): Promise<boolean>;
 
-  // ─── Prijave timova ────────────────────────────────────────────────
+  
   registerTeam(
     tournamentId: number,
     teamId: number,
@@ -28,17 +28,17 @@ export interface ITournamentService {
   ): Promise<boolean>;
 
 
-  // ─── Mečevi ────────────────────────────────────────────────────────
+  
   recordMatchResult(
     gameId: number,
     score: string,
     winnerTeamId: number
   ): Promise<{ ok: boolean; error?: string }>;
 
-  // ─── Watchlist ─────────────────────────────────────────────────────
+  
   watchTournament(userId: number, tournamentId: number): Promise<boolean>;
   unwatchTournament(userId: number, tournamentId: number): Promise<boolean>;
 
-  // ─── Bracket ───────────────────────────────────────────────────────
+  
   lockAndGenerateBracket(tournamentId: number): Promise<{ ok: boolean; error?: string }>;
 }

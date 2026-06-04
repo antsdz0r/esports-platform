@@ -21,7 +21,7 @@ export class TournamentRegistrationRepository implements ITournamentRegistration
     );
   }
 
-  // 🔹 REGISTER TEAM
+  //  REGISTER TEAM
   async registerTeam(reg: TournamentRegistration): Promise<boolean> {
     const res = await this.db.getWriteConnection();
     if (!res) return false;
@@ -73,7 +73,7 @@ export class TournamentRegistrationRepository implements ITournamentRegistration
     }
   }
 
-  // 🔹 GET TEAMS FOR TOURNAMENT
+  //  GET TEAMS FOR TOURNAMENT
   async getTeamsForTournament(tournamentId: number): Promise<TournamentRegistration[]> {
     const res = await this.db.getReadConnection();
     if (!res) return [];
@@ -96,7 +96,7 @@ export class TournamentRegistrationRepository implements ITournamentRegistration
     }
   }
 
-  // 🔹 GET TOURNAMENTS FOR TEAM
+  //  GET TOURNAMENTS FOR TEAM
   async getTournamentsForTeam(teamId: number): Promise<TournamentRegistration[]> {
     const res = await this.db.getReadConnection();
     if (!res) return [];
@@ -119,7 +119,7 @@ export class TournamentRegistrationRepository implements ITournamentRegistration
     }
   }
 
-  // 🔹 UPDATE STATUS
+  //  UPDATE STATUS
   async updateStatus(
     tournamentId: number,
     teamId: number,
@@ -147,7 +147,7 @@ export class TournamentRegistrationRepository implements ITournamentRegistration
     }
   }
 
-  // 🔹 UPDATE SEED
+  //  UPDATE SEED
   async updateSeed(
     tournamentId: number,
     teamId: number,
@@ -175,7 +175,7 @@ export class TournamentRegistrationRepository implements ITournamentRegistration
     }
   }
 
-  // 🔹 EXISTS
+  //  EXISTS
   async exists(tournamentId: number, teamId: number): Promise<boolean> {
     const res = await this.db.getReadConnection();
     if (!res) return false;
