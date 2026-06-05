@@ -12,6 +12,6 @@ export class Tournament{
         public registrationDeadLine : Date = new Date(),
         public prizePool : number = 0,
         public status : TournamentStatus = TournamentStatus.OPEN,
-        
+        public gameName : string | null = null,
     ){}
 }

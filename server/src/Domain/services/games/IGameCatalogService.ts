@@ -1,4 +1,3 @@
-
 import { GameCatalog } from "../../models/GameCatalog";
 
 export interface IGameCatalogService {
@@ -9,6 +8,7 @@ export interface IGameCatalogService {
     tag: string;
     genre: string;
     maxPlayers: number;
+    imageUrl?: string | null;
   }): Promise<{ ok: boolean; game?: GameCatalog; error?: string }>;
   update(
     gameId: number,
@@ -17,6 +17,7 @@ export interface IGameCatalogService {
       tag: string;
       genre: string;
       maxPlayers: number;
+      imageUrl?: string | null;
     }
   ): Promise<boolean>;
   delete(gameId: number): Promise<boolean>;

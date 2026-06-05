@@ -13,9 +13,17 @@ export class MatchService implements IMatchService {
     private readonly teamMemberRepo: ITeamMemberRepository,
   ) {}
 
-  async getByTournament(tournamentId: number): Promise<Game[]> {
-    return this.gameRepo.findByTournamentId(tournamentId);
-}
+  async getByTournament(tournamentId: number) {
+    return this.gameRepo.findByTournamentIdWithTeams(tournamentId);
+  }
+
+  async getScheduled(limit: number) {
+    return this.gameRepo.findScheduledWithTeams(limit);
+  }
+
+  async countWinsForUser(userId: number): Promise<number> {
+    return this.gameRepo.countWinsForUser(userId);
+  }
 
   async getById(gameId: number): Promise<{ game: Game; players: MatchPlayer[] }> {
     const game = await this.gameRepo.findById(gameId);

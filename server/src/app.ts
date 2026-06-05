@@ -1,6 +1,7 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
+import path from "path";
 
 import { ConsoleLoggerService } from "./Services/logger/ConsoleLoggerService";
 import { DbManager } from "./Database/connection/DbConnectionPool";
@@ -81,6 +82,7 @@ const app = express();
 app.use(cors({ origin: process.env.CLIENT_URL ?? "*" }));
 app.use(express.json());
 app.set('etag', false);
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 app.use("/api", new AuthController(authService, auditLogService).getRouter());
 app.use("/api", new UserController(userService).getRouter());
@@ -90,9 +92,5 @@ app.use("/api", new TournamentController(tournamentService).getRouter());
 app.use("/api", new HealthCheckController(healthService).getRouter());
 app.use("/api", new MatchController(matchService).getRouter());
 app.use("/api", new AuditLogController(auditLogService).getRouter());
-
-
-
-
 
 export default app;

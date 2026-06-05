@@ -11,13 +11,14 @@ export class TournamentRegistrationRepository implements ITournamentRegistration
     private readonly logger: ILoggerService,
   ) {}
 
-  private map(r: RowDataPacket): TournamentRegistration {
+  private map(r: RowDataPacket, includeTeamName = false): TournamentRegistration {
     return new TournamentRegistration(
       r.tournament_id,
       r.team_id,
       r.registered_at ? new Date(r.registered_at) : new Date(),
       r.status as TournamentRegistrationStatus,
-      r.seed
+      r.seed ?? null,
+      includeTeamName ? (r.team_name ?? null) : null,
     );
   }
 
@@ -80,14 +81,15 @@ export class TournamentRegistrationRepository implements ITournamentRegistration
 
     try {
       const [rows] = await res.conn.execute<RowDataPacket[]>(
-        `
-        SELECT * FROM TOURNAMENT_REGISTRATIONS
-        WHERE tournament_id = ?
-        `,
+        `SELECT tr.*, t.team_name
+         FROM TOURNAMENT_REGISTRATIONS tr
+         LEFT JOIN TEAMS t ON tr.team_id = t.team_id
+         WHERE tr.tournament_id = ?
+         ORDER BY tr.seed ASC, tr.registered_at ASC`,
         [tournamentId]
       );
 
-      return rows.map((r) => this.map(r));
+      return rows.map((r) => this.map(r, true));
     } catch {
       this.logger.error("TournamentRegistrationRepository", "getTeamsForTournament failed");
       return [];

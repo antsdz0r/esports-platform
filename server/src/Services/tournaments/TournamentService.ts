@@ -1,4 +1,5 @@
 import { Tournament } from "../../Domain/models/Tournament";
+import { TournamentListDto } from "../../Domain/DTOs/tournaments/TournamentListDto";
 import { TournamentRegistration } from "../../Domain/models/TournamentRegistration";
 import { TournamentFormat } from "../../Domain/enums/TournamentFormat";
 import { TournamentStatus } from "../../Domain/enums/TournamentStatus";
@@ -33,6 +34,18 @@ export class TournamentService implements ITournamentService {
       all = all.filter((t) => t.status === filters.status);
     }
     return all;
+  }
+
+  async getAllDetailed(filters?: { gameId?: number; status?: TournamentStatus }): Promise<TournamentListDto[]> {
+    return this.tournamentRepo.findAllDetailed(filters);
+  }
+
+  async getMyWatchlist(userId: number): Promise<TournamentListDto[]> {
+    const ids = await this.watchlistRepo.getByUser(userId);
+    if (ids.length === 0) return [];
+
+    const all = await this.tournamentRepo.findAllDetailed();
+    return all.filter((t) => ids.includes(t.tournamentId));
   }
 
   async getById(id: number): Promise<Tournament> {
@@ -124,6 +137,15 @@ export class TournamentService implements ITournamentService {
     if (tournament.status !== TournamentStatus.OPEN) return { ok: false, error: "Bracket je već generisan ili turnir nije otvoren" };
 
     const registrations = await this.registrationRepo.getTeamsForTournament(tournamentId);
+
+    // Auto-confirm all pending registrations so admin doesn't need a separate approval step
+    for (const reg of registrations) {
+      if (reg.status === TournamentRegistrationStatus.PENDING) {
+        await this.registrationRepo.updateStatus(tournamentId, reg.teamId, TournamentRegistrationStatus.CONFIRMED);
+        reg.status = TournamentRegistrationStatus.CONFIRMED;
+      }
+    }
+
     const confirmed = registrations.filter((r) => r.status === TournamentRegistrationStatus.CONFIRMED);
     if (confirmed.length < 2) return { ok: false, error: "Potrebna su najmanje 2 tima" };
 

@@ -20,13 +20,21 @@ export class HealthService implements IHealthService {
 
   private async probeInstance(name: string, url: string): Promise<ApiNodeStatus> {
     const start = Date.now();
+    const lastCheck = new Date().toISOString();
     try {
       const res = await fetch(`${url}/api/health`, { signal: AbortSignal.timeout(3000) });
       const latencyMs = Date.now() - start;
-      if (!res.ok) return { name, url, status: "unreachable", latencyMs };
-      return { name, url, status: latencyMs > 500 ? "degraded" : "healthy", latencyMs };
+      if (!res.ok) return { name, url, status: "unreachable", latencyMs, lastCheck, activeConnections: 0 };
+      return {
+        name,
+        url,
+        status: latencyMs > 500 ? "degraded" : "healthy",
+        latencyMs,
+        lastCheck,
+        activeConnections: 0,
+      };
     } catch {
-      return { name, url, status: "unreachable", latencyMs: null };
+      return { name, url, status: "unreachable", latencyMs: null, lastCheck, activeConnections: 0 };
     }
   }
 }

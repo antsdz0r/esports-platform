@@ -11,6 +11,8 @@ export interface ApiNodeStatus {
   url: string;
   status: "healthy" | "degraded" | "unreachable";
   latencyMs: number | null;
+  lastCheck: string;
+  activeConnections?: number;
 }
 
 export interface IHealthService {

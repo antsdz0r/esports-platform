@@ -8,11 +8,32 @@ export class MatchController {
   private readonly router = Router();
 
   public constructor(private readonly matchService: IMatchService) {
+    this.router.get("/matches/scheduled", this.getScheduled.bind(this));
+    this.router.get("/matches/my/wins", authenticate, this.getMyWins.bind(this));
     this.router.get("/matches/tournament/:tournamentId", this.getByTournament.bind(this));
     this.router.get("/matches/:id", this.getById.bind(this));
     this.router.post("/matches/:id/players", authenticate, this.addPlayer.bind(this));
     this.router.put("/matches/:id/players/:userId", authenticate, this.updatePerformance.bind(this));
     this.router.delete("/matches/:id/players/:userId", authenticate, this.removePlayer.bind(this));
+  }
+
+  private async getMyWins(req: Request, res: Response): Promise<void> {
+    try {
+      const wins = await this.matchService.countWinsForUser(req.user!.id);
+      res.json({ success: true, data: { wins } });
+    } catch {
+      res.status(500).json({ success: false, message: "Internal server error" });
+    }
+  }
+
+  private async getScheduled(req: Request, res: Response): Promise<void> {
+    try {
+      const limit = Math.min(20, Math.max(1, parseInt(req.query.limit as string, 10) || 5));
+      const matches = await this.matchService.getScheduled(limit);
+      res.json({ success: true, data: matches });
+    } catch {
+      res.status(500).json({ success: false, message: "Internal server error" });
+    }
   }
 
   private async getByTournament(req: Request, res: Response): Promise<void> {

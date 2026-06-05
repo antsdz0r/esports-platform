@@ -7,5 +7,6 @@ export class TournamentRegistration{
         public registeredAt : Date = new Date(),
         public status : TournamentRegistrationStatus = TournamentRegistrationStatus.PENDING,
         public seed : number | null = null,
+        public teamName : string | null = null,
     ){}
 }

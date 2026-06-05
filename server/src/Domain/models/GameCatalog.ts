@@ -5,5 +5,6 @@ export class GameCatalog {
         public tag: string = "",
         public genre: string = "",
         public maxPlayers: number = 0,
+        public imageUrl: string | null = null,
     ){}
 }

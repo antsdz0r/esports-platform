@@ -1,6 +1,7 @@
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 import { IGameRepository } from "../../../Domain/repositories/games/IGameRepository";
 import { Game } from "../../../Domain/models/Game";
+import { MatchWithTeamsDto } from "../../../Domain/DTOs/games/MatchWithTeamsDto";
 import { GameStatus } from "../../../Domain/enums/GameStatus";
 import { DbManager } from "../../connection/DbConnectionPool";
 import { ILoggerService } from "../../../Domain/services/logger/ILoggerService";
@@ -99,6 +100,98 @@ export class GameRepository implements IGameRepository {
     } catch {
       this.logger.error("GameRepository", "findAll failed");
       return [];
+    } finally {
+      res.conn.release();
+    }
+  }
+
+  private mapWithTeams(r: RowDataPacket): MatchWithTeamsDto {
+    return new MatchWithTeamsDto(
+      r.game_id,
+      r.tournament_id,
+      r.team1_id,
+      r.team2_id,
+      r.team1_name ?? null,
+      r.team2_name ?? null,
+      r.round,
+      r.score,
+      r.status,
+      r.winner_team_id,
+    );
+  }
+
+  async findByTournamentIdWithTeams(tournamentId: number): Promise<MatchWithTeamsDto[]> {
+    const res = await this.db.getReadConnection();
+    if (!res) return [];
+
+    try {
+      const [rows] = await res.conn.execute<RowDataPacket[]>(
+        `
+        SELECT g.*, t1.team_name AS team1_name, t2.team_name AS team2_name
+        FROM GAMES g
+        LEFT JOIN TEAMS t1 ON g.team1_id = t1.team_id
+        LEFT JOIN TEAMS t2 ON g.team2_id = t2.team_id
+        WHERE g.tournament_id = ?
+        ORDER BY g.round ASC, g.game_id ASC
+        `,
+        [tournamentId],
+      );
+
+      return rows.map((r) => this.mapWithTeams(r));
+    } catch {
+      this.logger.error("GameRepository", "findByTournamentIdWithTeams failed");
+      return [];
+    } finally {
+      res.conn.release();
+    }
+  }
+
+  async findScheduledWithTeams(limit: number): Promise<MatchWithTeamsDto[]> {
+    const res = await this.db.getReadConnection();
+    if (!res) return [];
+
+    try {
+      const [rows] = await res.conn.execute<RowDataPacket[]>(
+        `
+        SELECT g.*, t1.team_name AS team1_name, t2.team_name AS team2_name
+        FROM GAMES g
+        LEFT JOIN TEAMS t1 ON g.team1_id = t1.team_id
+        LEFT JOIN TEAMS t2 ON g.team2_id = t2.team_id
+        WHERE g.status = 'scheduled' AND g.team1_id IS NOT NULL AND g.team2_id IS NOT NULL
+        ORDER BY g.tournament_id ASC, g.round ASC, g.game_id ASC
+        LIMIT ?
+        `,
+        [limit],
+      );
+
+      return rows.map((r) => this.mapWithTeams(r));
+    } catch {
+      this.logger.error("GameRepository", "findScheduledWithTeams failed");
+      return [];
+    } finally {
+      res.conn.release();
+    }
+  }
+
+  async countWinsForUser(userId: number): Promise<number> {
+    const res = await this.db.getReadConnection();
+    if (!res) return 0;
+
+    try {
+      const [rows] = await res.conn.execute<RowDataPacket[]>(
+        `
+        SELECT COUNT(*) AS cnt
+        FROM GAMES g
+        INNER JOIN TEAM_MEMBERS tm ON g.winner_team_id = tm.team_id
+        WHERE tm.player_id = ? AND g.status = 'completed' AND g.winner_team_id IS NOT NULL
+        `,
+        [userId],
+      );
+
+      return Number(rows[0]?.cnt ?? 0);
+    } catch {
+      this.logger.error("GameRepository", "countWinsForUser failed");
+      return 0;
     } finally {
       res.conn.release();
     }

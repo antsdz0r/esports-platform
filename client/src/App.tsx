@@ -8,8 +8,11 @@ import NotFoundPage from "./pages/not_found/NotFoundPage";
 import UserDashboard from "./pages/user/UserDashboard";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import UsersPage from "./pages/admin/UsersPage";
+import GamesPage from "./pages/admin/GamesPage";
+import TournamentsAdminPage from "./pages/admin/TournamentsAdminPage";
 
 import TournamentsPage from "./pages/user/TournamentsPage";
+import TournamentDetailPage from "./pages/user/TournamentDetailPage";
 import TeamPage from "./pages/user/TeamPage";
 
 export default function App() {
@@ -23,12 +26,16 @@ export default function App() {
       <Route path="/dashboard" element={<ProtectedRoute requiredRole="player"><UserDashboard /></ProtectedRoute>} />
       <Route path="/dashboard/teams" element={<ProtectedRoute requiredRole="player"><TeamPage /></ProtectedRoute>} />
       <Route path="/dashboard/tournaments" element={<ProtectedRoute requiredRole="player"><TournamentsPage /></ProtectedRoute>} />
+      <Route path="/dashboard/tournaments/:id" element={<ProtectedRoute requiredRole="player"><TournamentDetailPage /></ProtectedRoute>} />
       {/* <Route path="/dashboard/invites" element={<ProtectedRoute requiredRole="player"><InvitesPage /></ProtectedRoute>} />
        <Route path="/dashboard/watchlist" element={<ProtectedRoute requiredRole="player"><WatchlistPage /></ProtectedRoute>} /> */}
 
       {/* Admin routes */}
-      <Route path="/admin"       element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />
-      <Route path="/admin/users" element={<ProtectedRoute requiredRole="admin"><UsersPage /></ProtectedRoute>} />
+      <Route path="/admin"                element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />
+      <Route path="/admin/users"          element={<ProtectedRoute requiredRole="admin"><UsersPage /></ProtectedRoute>} />
+      <Route path="/admin/games"          element={<ProtectedRoute requiredRole="admin"><GamesPage /></ProtectedRoute>} />
+      <Route path="/admin/tournaments"    element={<ProtectedRoute requiredRole="admin"><TournamentsAdminPage /></ProtectedRoute>} />
+      <Route path="/admin/tournaments/:id" element={<ProtectedRoute requiredRole="admin"><TournamentDetailPage isAdmin /></ProtectedRoute>} />
 
       <Route path="/"    element={<Navigate to="/login" replace />} />
       <Route path="/404" element={<NotFoundPage />} />

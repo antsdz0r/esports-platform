@@ -4,22 +4,35 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../../hooks/auth/useAuthHook";
 import { PageHeader, StatCard, NodeBadge, Spinner, Counter, PgBtn } from "../../components/ui/UI";
 import { fadeUp, staggerContainer } from "../../components/ui/motion";
+import { parseData } from "../../helpers/api";
 
 interface DbNode  { name: string; role: string; host: string; port: number; status: string; latency_ms?: number; last_check: string; }
 interface ApiNode { name: string; url: string;  status: string; latency_ms?: number; active_connections?: number; last_check: string; }
 
 const BASE = import.meta.env.VITE_API_URL;
 
-const MOCK_DB: DbNode[] = [
-  { name: "MySQL Master",  role: "master", host: "db-master", port: 3306, status: "healthy",     latency_ms: 4,   last_check: new Date().toISOString() },
-  { name: "MySQL Slave 1", role: "slave",  host: "db-slave1", port: 3306, status: "healthy",     latency_ms: 7,   last_check: new Date().toISOString() },
-  { name: "MySQL Slave 2", role: "slave",  host: "db-slave2", port: 3306, status: "degraded",    latency_ms: 580, last_check: new Date().toISOString() },
-];
-const MOCK_API: ApiNode[] = [
-  { name: "API Server #1", url: "http://localhost:3001", status: "healthy",     latency_ms: 9,  active_connections: 12, last_check: new Date().toISOString() },
-  { name: "API Server #2", url: "http://localhost:3002", status: "healthy",     latency_ms: 11, active_connections: 8,  last_check: new Date().toISOString() },
-  { name: "API Server #3", url: "http://localhost:3003", status: "unreachable",                 active_connections: 0,  last_check: new Date().toISOString() },
-];
+function mapDbNode(raw: Record<string, unknown>): DbNode {
+  const name = String(raw.name ?? "");
+  return {
+    name: name === "master" ? "MySQL Master" : name === "slave1" ? "MySQL Slave 1" : name === "slave2" ? "MySQL Slave 2" : name,
+    role: name === "master" ? "master" : "slave",
+    host: String(raw.host ?? ""),
+    port: Number(raw.port ?? 0),
+    status: String(raw.status ?? "offline"),
+    last_check: raw.lastCheck ? String(raw.lastCheck) : new Date().toISOString(),
+  };
+}
+
+function mapApiNode(raw: Record<string, unknown>): ApiNode {
+  return {
+    name: String(raw.name ?? "API Server"),
+    url: String(raw.url ?? ""),
+    status: String(raw.status ?? "unreachable"),
+    latency_ms: raw.latencyMs != null ? Number(raw.latencyMs) : undefined,
+    active_connections: raw.activeConnections != null ? Number(raw.activeConnections) : 0,
+    last_check: raw.lastCheck ? String(raw.lastCheck) : new Date().toISOString(),
+  };
+}
 
 export default function AdminDashboard() {
   const { token } = useAuth();
@@ -34,10 +47,15 @@ export default function AdminDashboard() {
         fetch(`${BASE}health/db`, { headers: { Authorization: `Bearer ${token}` } }).then((r) => r.json()),
         fetch(`${BASE}health/api`, { headers: { Authorization: `Bearer ${token}` } }).then((r) => r.json()),
       ]);
-      setDbNodes(dbRes.status === "fulfilled" && Array.isArray(dbRes.value) ? dbRes.value : MOCK_DB);
-      setApiNodes(apiRes.status === "fulfilled" && Array.isArray(apiRes.value) ? apiRes.value : MOCK_API);
+      if (dbRes.status === "fulfilled") {
+        setDbNodes(parseData<Record<string, unknown>>(dbRes.value).map(mapDbNode));
+      }
+      if (apiRes.status === "fulfilled") {
+        setApiNodes(parseData<Record<string, unknown>>(apiRes.value).map(mapApiNode));
+      }
     } catch {
-      setDbNodes(MOCK_DB); setApiNodes(MOCK_API);
+      setDbNodes([]);
+      setApiNodes([]);
     } finally {
       setLoading(false);
     }
@@ -72,7 +90,7 @@ export default function AdminDashboard() {
         <div style={{ display: "flex", gap: 22, marginBottom: 12 }}>
           <div>
             <p style={statLbl}>Latencija</p>
-            <p style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 900, color: node.status === "unreachable" ? "var(--pink)" : latColor }}>{node.latency_ms ? `${node.latency_ms}ms` : "N/A"}</p>
+            <p style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 900, color: node.status === "unreachable" ? "var(--pink)" : latColor }}>{node.latency_ms != null ? `${node.latency_ms}ms` : "N/A"}</p>
           </div>
           <div>
             <p style={statLbl}>{isDb ? "Uloga" : "Konekcije"}</p>
@@ -89,9 +107,14 @@ export default function AdminDashboard() {
   return (
     <div>
       <PageHeader eyebrow="Admin · Control Panel" title="Dashboard"
-        action={<Link to="/admin/users"><PgBtn variant="ghost" size="sm">Korisnici →</PgBtn></Link>} />
+        action={
+          <div style={{ display: "flex", gap: 8 }}>
+            <Link to="/admin/games"><PgBtn variant="ghost" size="sm">🎮 Igre</PgBtn></Link>
+            <Link to="/admin/tournaments"><PgBtn variant="ghost" size="sm">🏆 Turniri</PgBtn></Link>
+            <Link to="/admin/users"><PgBtn variant="ghost" size="sm">👥 Korisnici</PgBtn></Link>
+          </div>
+        } />
 
-      {/* Overview */}
       <motion.div variants={staggerContainer(0.08)} initial="hidden" animate="show"
         style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 16, marginBottom: 32 }}>
         <motion.div variants={fadeUp}><StatCard label="Ukupno čvorova" value={<Counter value={all.length} />} icon="🖥️" /></motion.div>
@@ -105,13 +128,13 @@ export default function AdminDashboard() {
           <SectionTitle label="Database Nodes" right={`AUTO-REFRESH 10s · tick#${tick}`} />
           <motion.div variants={staggerContainer(0.08)} initial="hidden" animate="show"
             style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(290px, 1fr))", gap: 16, marginBottom: 32 }}>
-            {dbNodes.map((n, i) => <NodeCard key={i} node={n} />)}
+            {dbNodes.length === 0 ? <p style={{ color: "var(--text-muted)", fontSize: 13 }}>Nema podataka o DB čvorovima.</p> : dbNodes.map((n, i) => <NodeCard key={i} node={n} />)}
           </motion.div>
 
           <SectionTitle label="API Server Nodes" />
           <motion.div variants={staggerContainer(0.08)} initial="hidden" animate="show"
             style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(290px, 1fr))", gap: 16 }}>
-            {apiNodes.map((n, i) => <NodeCard key={i} node={n} />)}
+            {apiNodes.length === 0 ? <p style={{ color: "var(--text-muted)", fontSize: 13 }}>Nema podataka o API čvorovima.</p> : apiNodes.map((n, i) => <NodeCard key={i} node={n} />)}
           </motion.div>
         </>
       )}

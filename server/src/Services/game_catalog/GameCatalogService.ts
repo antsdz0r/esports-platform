@@ -1,5 +1,3 @@
-
-
 import { GameCatalog } from "../../Domain/models/GameCatalog";
 import { IGameCatalogRepository } from "../../Domain/repositories/game_catalog/IGameCatalogRepository";
 import { ITournamentRepository } from "../../Domain/repositories/tournaments/ITournamentRepository";
@@ -10,7 +8,6 @@ export class GameCatalogService implements IGameCatalogService {
     private readonly gameRepo: IGameCatalogRepository,
     private readonly tournamentRepo: ITournamentRepository,
   ) {}
-
 
   async getAll(): Promise<GameCatalog[]> {
     return this.gameRepo.findAll();
@@ -25,17 +22,18 @@ export class GameCatalogService implements IGameCatalogService {
     tag: string;
     genre: string;
     maxPlayers: number;
-    }): Promise<{ ok: boolean; game?: GameCatalog; error?: string }> {
+    imageUrl?: string | null;
+  }): Promise<{ ok: boolean; game?: GameCatalog; error?: string }> {
     const byName = await this.gameRepo.findByName(payload.name);
-    if (byName.gameId !== 0) return { ok: false, error: "Igra sa tim imenom već postoji" };
+    if (byName.gameId !== 0) return { ok: false, error: "Igra sa tim imenom vec postoji" };
 
     const byTag = await this.gameRepo.findByTag(payload.tag);
-    if (byTag.gameId !== 0) return { ok: false, error: "Igra sa tim tagom već postoji" };
+    if (byTag.gameId !== 0) return { ok: false, error: "Igra sa tim tagom vec postoji" };
 
     const created = await this.gameRepo.create(
-      new GameCatalog(0, payload.name, payload.tag, payload.genre, payload.maxPlayers)
+      new GameCatalog(0, payload.name, payload.tag, payload.genre, payload.maxPlayers, payload.imageUrl ?? null)
     );
-    if (created.gameId === 0) return { ok: false, error: "Greška pri kreiranju igre" };
+    if (created.gameId === 0) return { ok: false, error: "Greska pri kreiranju igre" };
 
     return { ok: true, game: created };
   }
@@ -47,6 +45,7 @@ export class GameCatalogService implements IGameCatalogService {
       tag: string;
       genre: string;
       maxPlayers: number;
+      imageUrl?: string | null;
     }
   ): Promise<boolean> {
     const existing = await this.gameRepo.findById(gameId);
@@ -59,13 +58,7 @@ export class GameCatalogService implements IGameCatalogService {
     if (byTag.gameId !== 0 && byTag.gameId !== gameId) return false;
 
     return this.gameRepo.update(
-      new GameCatalog(
-        gameId,
-        payload.name,
-        payload.tag,
-        payload.genre,
-        payload.maxPlayers,
-      )
+      new GameCatalog(gameId, payload.name, payload.tag, payload.genre, payload.maxPlayers, payload.imageUrl ?? null)
     );
   }
 

@@ -2,10 +2,13 @@ import { useState, useEffect, type ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/auth/useAuthHook";
-import { StatCard, Counter, TiltCard, PgBtn, StatusBadge } from "../../components/ui/UI";
+import { StatCard, Counter, TiltCard, PgBtn, StatusBadge, Spinner } from "../../components/ui/UI";
 import { fadeUp, staggerContainer, fadeInView, slideInView } from "../../components/ui/motion";
+import { parseData, parseItem } from "../../helpers/api";
 
-/* Gaming hero / card imagery (Unsplash — demo placeholders) */
+const BASE = import.meta.env.VITE_API_URL;
+const STATIC_BASE = (import.meta.env.VITE_API_URL as string).replace(/\/api\/?$/, "");
+
 const IMG = {
   hero2: "https://www.riotgames.com/darkroom/1440/a4e88f6b04bf83f1c417e87292b85606:b62ff9b783f3dd26a6321e1440efe13b/riot-games-the-team-behind-worlds-2022-esports-broadcast-league-of-legends.png",
   hero1: "https://www.hotspawn.com/wp-content/uploads/2025/06/ESL-One-Cologne-2016-SK-Gaming-CSGO-Major-Winners.jpg",
@@ -15,68 +18,69 @@ const IMG = {
   fps: "https://i.pinimg.com/736x/60/89/95/608995178e1c50ed475464496ae3a63a.jpg",
   strat: "https://i.pinimg.com/736x/fd/89/2c/fd892c3ac7bf9f520b92c3bcaaa782e2.jpg",
   sport: "https://www.trixo.gg/wp-content/uploads/2024/08/Rocket-League.webp",
-  fifa: "https://i.ytimg.com/vi/TSi0iJYSQ24/maxresdefault.jpg",
-  fragpunk : "https://upload.wikimedia.org/wikipedia/en/thumb/b/be/Fragpunk_cover_art.jpg/250px-Fragpunk_cover_art.jpg",
-  deadlock : "https://upload.wikimedia.org/wikipedia/en/thumb/0/0c/Deadlock_box_art_cover%2C_%27Old_Gods%2C_New_Blood%27_update.jpg/250px-Deadlock_box_art_cover%2C_%27Old_Gods%2C_New_Blood%27_update.jpg",
-  stormgate: "https://img.ep-cdn.com/i/500/500/bo/bozlnewkigjuyctqdpmr/stormgate-pc-key-global-cene.jpg",
-  rematch : "https://images.g2a.com/360x600/1x1x1/rematch-p10000510851/48b94ba61c7d493da36e2f12",
-  lec : "https://yt3.googleusercontent.com/q9qgVsF5L9ptOrptarexCq1J19LrqhNyQE02Q9b02h0wlO2JLS4dRhmzprnhYwFEt5pJJxpadH4=s900-c-k-c0x00ffffff-no-rj",
-  pgl: "https://static.gosugamers.net/87/e1/1f/24bfdf7e58bf2e10375d2bfa2b4cbbea2e9c9342a012783d3460981179.webp",
-  blast: "https://pbs.twimg.com/profile_images/1945828193174159360/p0cw-9y-_400x400.jpg",
-  masterSantiago: "https://static.ptocdn.net/especiales/vct001_valorant-2026/img/portada-movil.jpg",
+  default: "https://i.pinimg.com/736x/60/89/95/608995178e1c50ed475464496ae3a63a.jpg",
+};
+
+const GENRE_IMG: Record<string, string> = {
+  fps: IMG.fps,
+  moba: IMG.moba,
+  strategy: IMG.strat,
+  sports: IMG.sport,
+  "battle royale": IMG.cs,
 };
 
 const HERO_SLIDES = [
-  {
-    img: IMG.hero1,
-    tags: ["Explore", "Play", "Win"],
-    title: "Igraj i osvajaj",
-    desc: "Podigni esports iskustvo — timovi, turniri i mečevi na jednoj platformi.",
-  },
-  {
-    img: IMG.hero2,
-    tags: ["Explore", "Compete", "Rank"],
-    title: "Istraži turnire",
-    desc: "Pronađi otvorene turnire, prijavi tim i prati rezultate uživo.",
-  },
-  {
-    img: IMG.hero3,
-    tags: ["Join", "Team", "Dominate"],
-    title: "Pridruži se zajednici",
-    desc: "Pozovi igrače, formiraj ekipu i kreni u sledeći meč.",
-  },
+  { img: IMG.hero1, tags: ["Explore", "Play", "Win"], title: "Igraj i osvajaj", desc: "Podigni esports iskustvo — timovi, turniri i mečevi na jednoj platformi." },
+  { img: IMG.hero2, tags: ["Explore", "Compete", "Rank"], title: "Istraži turnire", desc: "Pronađi otvorene turnire, prijavi tim i prati rezultate uživo." },
+  { img: IMG.hero3, tags: ["Join", "Team", "Dominate"], title: "Pridruži se zajednici", desc: "Pozovi igrače, formiraj ekipu i kreni u sledeći meč." },
 ];
 
-const MOST_PLAYED = [
-  { name: "Counter-Strike 2", ranked: 98756, img: IMG.cs, trend: "+12%" },
-  { name: "League of Legends", ranked: 84210, img: IMG.moba, trend: "+8%" },
-  { name: "Valorant", ranked: 62100, img: IMG.fps, trend: "+5%" },
-  { name: "Dota 2", ranked: 55400, img: IMG.strat, trend: "+3%" },
-  { name: "Rocket League", ranked: 31200, img: IMG.sport, trend: "+15%" },
-  { name: "EA Sports FC 26", ranked: 18900, img: IMG.fifa, trend: "+2%" },
-];
+interface GameCatalog {
+  gameId: number;
+  name: string;
+  tag: string;
+  genre: string;
+  maxPlayers: number;
+  imageUrl: string | null;
+}
 
-const TRENDING = [
-  { title: "PGL Wallachia Season 9 ", viewers: "111.7k", ago: "4 dana", tags: ["Player", "Live", "Strategy"], img: IMG.pgl },
-  { title: "LEC Week 2 Day 1", viewers: "82.3k", ago: "2 dana", tags: ["Game", "Live", "Simulation"], img: IMG.lec },
-  { title: "BLAST Paris Major", viewers: "215.7k", ago: "4 dana", tags: ["Game", "Live", "Strategy"], img: IMG.blast },
-  { title: "VALORANT Masters Santiago 2026", viewers: "33.5k", ago: "2 dana", tags: ["Action", "Live", "Shooter"], img: IMG.masterSantiago },
-];
+interface Tournament {
+  tournamentId: number;
+  name: string;
+  status: string;
+  gameName: string;
+  format: string;
+  registeredCount: number;
+  maxTeams: number;
+}
 
-const RECENT = [
-  { title: "Fragpunk", desc: "Uzbudljiva heroj pucačina 5v5 u kojoj vam karte krhotina (Shard Cards) omogućavaju da kršite pravila borbe i osigurate da nijedna runda nikada ne bude ista.", img: IMG.fragpunk },
-  { title: "Deadlock", desc: "Zaboravi sve što znaš o pucačinama, Deadlock je sledeći nivo – savršen spoj skila, magija i taktike gde samo najjači opstaju na mapi!", img: IMG.deadlock },
-  { title: "Stormgate", desc: "Vreme je za pravi RTS i ludački APM. Pokupi ekipu i dominiraj mapom u Stormgate-u!", img: IMG.stormgate },
-  { title: "Rematch", desc: "REMATCH: Čist fudbalski adrenalin bez pravila i prekida – kontroliši svog igrača i dominiraj terenom!", img: IMG.rematch },
-];
+interface Match {
+  gameId: number;
+  tournamentId: number;
+  team1Name: string | null;
+  team2Name: string | null;
+  score: string;
+  status: string;
+  round: number;
+}
 
-const UPCOMING = [
-  { time: "10:50", teams: ["Brazil", "Czech Republic"], flag: "🌎" },
-  { time: "11:30", teams: ["China", "Germany"], flag: "⚔️" },
-  { time: "14:00", teams: ["Pulse Squad", "Nova Core"], flag: "◈" },
-];
+interface DashboardData {
+  games: GameCatalog[];
+  tournaments: Tournament[];
+  teams: { teamId: number }[];
+  watchlist: Tournament[];
+  wins: number;
+  liveTournament: Tournament | null;
+  liveMatch: Match | null;
+  upcoming: Match[];
+}
 
 const viewOpts = { once: true, margin: "-60px" as const };
+
+function gameImg(genre: string, imageUrl?: string | null) {
+  if (imageUrl) return imageUrl.startsWith("http") ? imageUrl : STATIC_BASE + imageUrl;
+  return GENRE_IMG[genre.toLowerCase()] ?? IMG.default;
+}
 
 function SectionTitle({ eyebrow, title, action }: { eyebrow: string; title: string; action?: ReactNode }) {
   return (
@@ -108,14 +112,65 @@ function GameCard({ img, title, desc, meta, size = "md" }: { img: string; title:
 }
 
 export default function UserDashboard() {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const navigate = useNavigate();
   const [slide, setSlide] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<DashboardData>({
+    games: [], tournaments: [], teams: [], watchlist: [], wins: 0,
+    liveTournament: null, liveMatch: null, upcoming: [],
+  });
 
   useEffect(() => {
     const t = setInterval(() => setSlide((s) => (s + 1) % HERO_SLIDES.length), 5500);
     return () => clearInterval(t);
   }, []);
+
+  useEffect(() => {
+    if (!token) return;
+    const headers = { Authorization: `Bearer ${token}` };
+
+    const load = async () => {
+      setLoading(true);
+      try {
+        const [gamesRes, tournamentsRes, teamsRes, watchlistRes, winsRes, upcomingRes] = await Promise.all([
+          fetch(`${BASE}games`),
+          fetch(`${BASE}tournaments`),
+          fetch(`${BASE}teams`, { headers }),
+          fetch(`${BASE}tournaments/watchlist/my`, { headers }),
+          fetch(`${BASE}matches/my/wins`, { headers }),
+          fetch(`${BASE}matches/scheduled?limit=5`),
+        ]);
+
+        const games = parseData<GameCatalog>(await gamesRes.json());
+        const tournaments = parseData<Tournament>(await tournamentsRes.json());
+        const teams = parseData<{ teamId: number }>(await teamsRes.json());
+        const watchlist = parseData<Tournament>(await watchlistRes.json());
+        const winsJson = await winsRes.json();
+        const wins = parseItem<{ wins: number }>(winsJson)?.wins ?? 0;
+        const upcoming = parseData<Match>(await upcomingRes.json());
+
+        const liveTournament = tournaments.find((t) => t.status === "ongoing") ?? null;
+        let liveMatch: Match | null = null;
+
+        if (liveTournament) {
+          const mRes = await fetch(`${BASE}matches/tournament/${liveTournament.tournamentId}`);
+          const matches = parseData<Match>(await mRes.json());
+          liveMatch = matches.find((m) => m.status === "ongoing" || m.status === "in_progress")
+            ?? matches.find((m) => m.status === "completed")
+            ?? matches[0] ?? null;
+        }
+
+        setData({ games, tournaments, teams, watchlist, wins, liveTournament, liveMatch, upcoming });
+      } catch {
+        /* keep empty state */
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    void load();
+  }, [token]);
 
   const actions = [
     { to: "/dashboard/teams", icon: "◎", title: "Moji timovi", desc: "Sastav, pozivi, kapitenstvo.", glow: "var(--violet)" },
@@ -125,40 +180,24 @@ export default function UserDashboard() {
   ];
 
   const current = HERO_SLIDES[slide];
+  const sortedGames = [...data.games].sort((a, b) => b.maxPlayers - a.maxPlayers);
+  const trending = data.tournaments.filter((t) => t.status === "ongoing" || t.status === "open").slice(0, 4);
+  const recentGames = [...data.games].slice(-4).reverse();
+
+  if (loading) return <Spinner />;
 
   return (
     <div style={{ paddingBottom: 48 }}>
-      {/* ── Hero carousel (GameCo-style) ── */}
       <section className="pg-hero" style={{ marginBottom: 32 }}>
         <AnimatePresence mode="wait">
-          <motion.div
-            key={slide}
-            initial={{ opacity: 0, scale: 1.06 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
-            className="pg-hero__slide"
-            style={{ backgroundImage: `url(${current.img})` }}
-          />
+          <motion.div key={slide} initial={{ opacity: 0, scale: 1.06 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
+            transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }} className="pg-hero__slide" style={{ backgroundImage: `url(${current.img})` }} />
         </AnimatePresence>
         <div className="pg-hero__overlay" />
-        <motion.div
-          className="pg-hero__content"
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.15 }}
-        >
-          <div className="pg-hero__tags">
-            {current.tags.map((tag) => (
-              <span key={tag} className="pg-hero__tag">{tag}</span>
-            ))}
-          </div>
-          <p className="pg-eyebrow" style={{ marginBottom: 14, color: "var(--violet2)" }}>
-            Welcome back, {user?.username}
-          </p>
-          <h1 style={{ fontFamily: "var(--font-display)", fontSize: "clamp(32px,5vw,52px)", fontWeight: 900, lineHeight: 1.05, marginBottom: 16, textShadow: "0 0 40px rgba(124,92,255,0.35)" }}>
-            {current.title}
-          </h1>
+        <motion.div className="pg-hero__content" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.15 }}>
+          <div className="pg-hero__tags">{current.tags.map((tag) => <span key={tag} className="pg-hero__tag">{tag}</span>)}</div>
+          <p className="pg-eyebrow" style={{ marginBottom: 14, color: "var(--violet2)" }}>Welcome back, {user?.username}</p>
+          <h1 style={{ fontFamily: "var(--font-display)", fontSize: "clamp(32px,5vw,52px)", fontWeight: 900, lineHeight: 1.05, marginBottom: 16, textShadow: "0 0 40px rgba(124,92,255,0.35)" }}>{current.title}</h1>
           <p style={{ fontSize: 16, color: "var(--text-soft)", lineHeight: 1.65, marginBottom: 28, maxWidth: 480 }}>{current.desc}</p>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
             <PgBtn variant="primary" onClick={() => navigate("/dashboard/tournaments")}>Istraži turnire</PgBtn>
@@ -167,142 +206,132 @@ export default function UserDashboard() {
         </motion.div>
         <div className="pg-hero__dots">
           {HERO_SLIDES.map((_, i) => (
-            <button
-              key={i}
-              type="button"
-              aria-label={`Slide ${i + 1}`}
-              className={`pg-hero__dot ${i === slide ? "pg-hero__dot--active" : ""}`}
-              onClick={() => setSlide(i)}
-            />
+            <button key={i} type="button" aria-label={`Slide ${i + 1}`} className={`pg-hero__dot ${i === slide ? "pg-hero__dot--active" : ""}`} onClick={() => setSlide(i)} />
           ))}
         </div>
       </section>
 
       <div className="pg-section-pad">
-        {/* ── Live match + tournament CTA ── */}
-        <motion.div
-          variants={staggerContainer(0.12)}
-          initial="hidden"
-          whileInView="show"
-          viewport={viewOpts}
-          style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 20, marginBottom: 36 }}
-        >
+        <motion.div variants={staggerContainer(0.12)} initial="hidden" whileInView="show" viewport={viewOpts}
+          style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 20, marginBottom: 36 }}>
           <motion.div variants={fadeInView} className="pg-glass" style={{ padding: 24, position: "relative", overflow: "hidden" }}>
             <div style={{ position: "absolute", top: -40, right: -20, width: 140, height: 140, borderRadius: "50%", background: "radial-gradient(circle, rgba(255,45,126,0.25), transparent 70%)", pointerEvents: "none" }} />
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 18 }}>
+            {data.liveTournament ? (
+              <>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 18 }}>
+                  <div>
+                    <p className="pg-eyebrow" style={{ marginBottom: 8 }}>Live turnir</p>
+                    <h3 style={{ fontFamily: "var(--font-head)", fontSize: 18, fontWeight: 700 }}>{data.liveTournament.name}</h3>
+                    <p style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 4 }}>{data.liveTournament.gameName} · {data.liveTournament.registeredCount}/{data.liveTournament.maxTeams} timova</p>
+                  </div>
+                  <StatusBadge status={data.liveTournament.status} />
+                </div>
+                {data.liveMatch ? (
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 20, padding: "16px 0", borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)", marginBottom: 16 }}>
+                    <div style={{ textAlign: "center" }}>
+                      <p style={{ fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 800 }}>{data.liveMatch.team1Name ?? "TBD"}</p>
+                    </div>
+                    <span style={{ fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 900, color: "var(--cyan)", textShadow: "0 0 20px var(--glow-cyan)" }}>{data.liveMatch.score.replace(":", " : ")}</span>
+                    <div style={{ textAlign: "center" }}>
+                      <p style={{ fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 800 }}>{data.liveMatch.team2Name ?? "TBD"}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 16 }}>Nema aktivnih mečeva.</p>
+                )}
+                <PgBtn variant="cyan" size="sm" full onClick={() => navigate("/dashboard/tournaments")}>Pogledaj turnir</PgBtn>
+              </>
+            ) : (
               <div>
                 <p className="pg-eyebrow" style={{ marginBottom: 8 }}>Live turnir</p>
-                <h3 style={{ fontFamily: "var(--font-head)", fontSize: 18, fontWeight: 700 }}>League of Legends</h3>
-                <p style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 4 }}>Grupna faza — Dan 1 od 7</p>
+                <p style={{ fontSize: 14, color: "var(--text-muted)", marginBottom: 16 }}>Trenutno nema turnira u toku.</p>
+                <PgBtn variant="cyan" size="sm" full onClick={() => navigate("/dashboard/tournaments")}>Pregledaj turnire</PgBtn>
               </div>
-              <StatusBadge status="ongoing" />
-            </div>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 20, padding: "16px 0", borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)", marginBottom: 16 }}>
-              <div style={{ textAlign: "center" }}>
-                <p style={{ fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 800 }}>Butterfly</p>
-              </div>
-              <span style={{ fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 900, color: "var(--cyan)", textShadow: "0 0 20px var(--glow-cyan)" }}>2 : 0</span>
-              <div style={{ textAlign: "center" }}>
-                <p style={{ fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 800 }}>Peacock</p>
-              </div>
-            </div>
-            <PgBtn variant="cyan" size="sm" full onClick={() => navigate("/dashboard/tournaments")}>Pogledaj turnir</PgBtn>
+            )}
           </motion.div>
 
           <motion.div variants={fadeInView} className="pg-glass" style={{ padding: 24 }}>
-            <p className="pg-eyebrow" style={{ marginBottom: 12 }}>Kreiraj turnir?</p>
-            <p style={{ fontSize: 14, color: "var(--text-soft)", marginBottom: 20, lineHeight: 1.6 }}>
-              Premium nalog omogućava organizaciju turnira za tvoju zajednicu.
-            </p>
-            <p style={{ fontFamily: "var(--font-ui)", fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 14 }}>Sledeći mečevi</p>
+            <p className="pg-eyebrow" style={{ marginBottom: 12 }}>Sledeći mečevi</p>
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {UPCOMING.map((m) => (
-                <div key={m.time} style={{ display: "flex", alignItems: "center", gap: 14, padding: "10px 12px", borderRadius: 8, background: "rgba(124,92,255,0.06)", border: "1px solid var(--border)" }}>
-                  <span style={{ fontFamily: "var(--font-display)", fontSize: 13, color: "var(--cyan)", minWidth: 44 }}>{m.time}</span>
-                  <span style={{ fontSize: 16 }}>{m.flag}</span>
-                  <span style={{ fontSize: 13, color: "var(--text-soft)" }}>{m.teams[0]} <span style={{ color: "var(--text-dim)" }}>vs</span> {m.teams[1]}</span>
+              {data.upcoming.length > 0 ? data.upcoming.map((m) => (
+                <div key={m.gameId} style={{ display: "flex", alignItems: "center", gap: 14, padding: "10px 12px", borderRadius: 8, background: "rgba(124,92,255,0.06)", border: "1px solid var(--border)" }}>
+                  <span style={{ fontFamily: "var(--font-display)", fontSize: 13, color: "var(--cyan)", minWidth: 44 }}>R{m.round}</span>
+                  <span style={{ fontSize: 13, color: "var(--text-soft)" }}>{m.team1Name ?? "TBD"} <span style={{ color: "var(--text-dim)" }}>vs</span> {m.team2Name ?? "TBD"}</span>
                 </div>
-              ))}
+              )) : <p style={{ fontSize: 13, color: "var(--text-muted)" }}>Nema zakazanih mečeva.</p>}
             </div>
           </motion.div>
         </motion.div>
 
-        {/* ── Stats ── */}
-        <motion.div
-          variants={staggerContainer(0.08)}
-          initial="hidden"
-          whileInView="show"
-          viewport={viewOpts}
-          style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 16, marginBottom: 40 }}
-        >
+        <motion.div variants={staggerContainer(0.08)} initial="hidden" whileInView="show" viewport={viewOpts}
+          style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 16, marginBottom: 40 }}>
           <motion.div variants={fadeUp}><StatCard label="Uloga" value={user?.role ?? "player"} color="var(--violet2)" icon="🎮" /></motion.div>
-          <motion.div variants={fadeUp}><StatCard label="Timovi" value={<Counter value={2} />} color="var(--cyan)" icon="◎" sub="aktivnih" /></motion.div>
-          <motion.div variants={fadeUp}><StatCard label="Turniri" value={<Counter value={5} />} color="var(--green)" icon="◈" sub="praćenih" /></motion.div>
-          <motion.div variants={fadeUp}><StatCard label="Pobede" value={<Counter value={12} />} color="var(--gold)" icon="🏆" sub="ukupno" /></motion.div>
+          <motion.div variants={fadeUp}><StatCard label="Timovi" value={<Counter value={data.teams.length} />} color="var(--cyan)" icon="◎" sub="aktivnih" /></motion.div>
+          <motion.div variants={fadeUp}><StatCard label="Turniri" value={<Counter value={data.watchlist.length} />} color="var(--green)" icon="◈" sub="praćenih" /></motion.div>
+          <motion.div variants={fadeUp}><StatCard label="Pobede" value={<Counter value={data.wins} />} color="var(--gold)" icon="🏆" sub="ukupno" /></motion.div>
         </motion.div>
 
-        {/* ── Most played — auto marquee + manual scroll ── */}
-        <motion.section initial="hidden" whileInView="show" viewport={viewOpts} variants={fadeInView} style={{ marginBottom: 44 }}>
-          <SectionTitle eyebrow="Popularno" title="Najigranije igre" />
-          <div style={{ overflow: "hidden", marginBottom: 16, maskImage: "linear-gradient(90deg, transparent, black 8%, black 92%, transparent)" }}>
-            <div className="pg-marquee">
-              {[...MOST_PLAYED, ...MOST_PLAYED].map((g, i) => (
-                <div key={`${g.name}-${i}`} className="pg-glass" style={{ width: 220, padding: 16, display: "flex", gap: 14, alignItems: "center" }}>
-                  <img src={g.img} alt="" style={{ width: 56, height: 56, borderRadius: 10, objectFit: "cover", border: "1px solid var(--border)" }} />
-                  <div>
-                    <p style={{ fontFamily: "var(--font-head)", fontSize: 13, fontWeight: 700, marginBottom: 4 }}>{g.name}</p>
-                    <p style={{ fontSize: 11, color: "var(--text-muted)" }}>{g.ranked.toLocaleString("sr")} rangiranih</p>
-                    <span style={{ fontSize: 11, color: "var(--green)", fontWeight: 700 }}>{g.trend}</span>
+        {sortedGames.length > 0 && (
+          <motion.section initial="hidden" whileInView="show" viewport={viewOpts} variants={fadeInView} style={{ marginBottom: 44 }}>
+            <SectionTitle eyebrow="Popularno" title="Igre u katalogu" />
+            <div style={{ overflow: "hidden", marginBottom: 16, maskImage: "linear-gradient(90deg, transparent, black 8%, black 92%, transparent)" }}>
+              <div className="pg-marquee">
+                {[...sortedGames, ...sortedGames].map((g, i) => (
+                  <div key={`${g.gameId}-${i}`} className="pg-glass" style={{ width: 220, padding: 16, display: "flex", gap: 14, alignItems: "center" }}>
+                    <img src={gameImg(g.genre, g.imageUrl)} alt="" style={{ width: 56, height: 56, borderRadius: 10, objectFit: "cover", border: "1px solid var(--border)" }} />
+                    <div>
+                      <p style={{ fontFamily: "var(--font-head)", fontSize: 13, fontWeight: 700, marginBottom: 4 }}>{g.name}</p>
+                      <p style={{ fontSize: 11, color: "var(--text-muted)" }}>{g.maxPlayers} igrača · {g.genre}</p>
+                      <span style={{ fontSize: 11, color: "var(--green)", fontWeight: 700 }}>[{g.tag}]</span>
+                    </div>
                   </div>
-                </div>
+                ))}
+              </div>
+            </div>
+            <div className="pg-scroll-row">
+              {sortedGames.slice(0, 6).map((g) => (
+                <GameCard key={g.gameId} img={gameImg(g.genre, g.imageUrl)} title={g.name} size="sm"
+                  meta={<p style={{ fontSize: 11, color: "var(--cyan)", marginBottom: 6 }}>{g.maxPlayers} igrača · {g.genre}</p>} />
               ))}
             </div>
-          </div>
-          <div className="pg-scroll-row">
-            {MOST_PLAYED.map((g) => (
-              <GameCard key={g.name} img={g.img} title={g.name} size="sm" meta={<p style={{ fontSize: 11, color: "var(--cyan)", marginBottom: 6 }}>{g.ranked.toLocaleString("sr")} igrača</p>} />
-            ))}
-          </div>
-        </motion.section>
+          </motion.section>
+        )}
 
-        {/* ── Top trending ── */}
-        <motion.section initial="hidden" whileInView="show" viewport={viewOpts} variants={fadeInView} style={{ marginBottom: 44 }}>
-          <SectionTitle eyebrow="U trendu" title="Top trending" action={<PgBtn variant="ghost" size="sm">Sve</PgBtn>} />
-          <motion.div variants={staggerContainer(0.1)} initial="hidden" whileInView="show" viewport={viewOpts}
-            style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 20 }}>
-            {TRENDING.map((g) => (
-              <motion.div key={g.title} variants={slideInView}>
-                <GameCard
-                  img={g.img}
-                  title={g.title}
-                  size="lg"
-                  meta={
-                    <div style={{ marginBottom: 10 }}>
-                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
-                        {g.tags.map((t) => (
-                          <span key={t} style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", padding: "3px 8px", borderRadius: 4, background: "rgba(124,92,255,0.2)", color: "var(--violet2)" }}>{t}</span>
-                        ))}
+        {trending.length > 0 && (
+          <motion.section initial="hidden" whileInView="show" viewport={viewOpts} variants={fadeInView} style={{ marginBottom: 44 }}>
+            <SectionTitle eyebrow="U trendu" title="Aktivni turniri" action={<PgBtn variant="ghost" size="sm" onClick={() => navigate("/dashboard/tournaments")}>Sve</PgBtn>} />
+            <motion.div variants={staggerContainer(0.1)} initial="hidden" whileInView="show" viewport={viewOpts}
+              style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 20 }}>
+              {trending.map((t) => (
+                <motion.div key={t.tournamentId} variants={slideInView}>
+                  <GameCard img={gameImg(t.gameName)} title={t.name} size="lg"
+                    meta={
+                      <div style={{ marginBottom: 10 }}>
+                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
+                          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", padding: "3px 8px", borderRadius: 4, background: "rgba(124,92,255,0.2)", color: "var(--violet2)" }}>{t.gameName}</span>
+                          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", padding: "3px 8px", borderRadius: 4, background: "rgba(0,212,255,0.15)", color: "var(--cyan)" }}>{t.status}</span>
+                        </div>
+                        <p style={{ fontSize: 12, color: "var(--cyan)" }}>{t.registeredCount}/{t.maxTeams} timova prijavljeno</p>
                       </div>
-                      <p style={{ fontSize: 12, color: "var(--cyan)" }}>{g.viewers} gledalaca · {g.ago}</p>
-                    </div>
-                  }
-                />
-              </motion.div>
-            ))}
-          </motion.div>
-        </motion.section>
+                    }
+                  />
+                </motion.div>
+              ))}
+            </motion.div>
+          </motion.section>
+        )}
 
-        {/* ── Recent games — horizontal scroll ── */}
-        <motion.section initial="hidden" whileInView="show" viewport={viewOpts} variants={fadeInView} style={{ marginBottom: 44 }}>
-          <SectionTitle eyebrow="Nedavno" title="Skorašnje igre" />
-          <div className="pg-scroll-row">
-            {RECENT.map((g) => (
-              <GameCard key={g.title} img={g.img} title={g.title} desc={g.desc} size="lg" />
-            ))}
-          </div>
-        </motion.section>
+        {recentGames.length > 0 && (
+          <motion.section initial="hidden" whileInView="show" viewport={viewOpts} variants={fadeInView} style={{ marginBottom: 44 }}>
+            <SectionTitle eyebrow="Katalog" title="Igre u bazi" />
+            <div className="pg-scroll-row">
+              {recentGames.map((g) => (
+                <GameCard key={g.gameId} img={gameImg(g.genre, g.imageUrl)} title={g.name} desc={`${g.genre} · do ${g.maxPlayers} igrača · tag [${g.tag}]`} size="lg" />
+              ))}
+            </div>
+          </motion.section>
+        )}
 
-        {/* ── Quick actions ── */}
         <motion.section initial="hidden" whileInView="show" viewport={viewOpts} variants={fadeInView}>
           <SectionTitle eyebrow="Brzo" title="Tvoja komandna tabla" />
           <motion.div variants={staggerContainer(0.08)} initial="hidden" whileInView="show" viewport={viewOpts}

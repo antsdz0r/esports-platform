@@ -3,13 +3,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../../hooks/auth/useAuthHook";
 import { PageHeader, Spinner, Empty, ErrorBox, PgBtn, TiltCard, FormField } from "../../components/ui/UI";
 import { fadeUp, staggerContainer } from "../../components/ui/motion";
+import { parseData } from "../../helpers/api";
 
 interface Team {
-  team_id: number;
-  team_name: string;
+  teamId: number;
+  teamName: string;
   tag: string;
   logo: string;
-  description: string;
+  description: string | null;
 }
 
 const BASE = import.meta.env.VITE_API_URL;
@@ -26,20 +27,21 @@ export default function TeamsPage() {
 
   const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
 
+  const loadTeams = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${BASE}teams`, { headers });
+      const data = await res.json();
+      setTeams(parseData<Team>(data));
+    } catch {
+      setError("Neuspešno učitavanje timova");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      try {
-        const res = await fetch(`${BASE}teams`, { headers });
-        const data = await res.json();
-        setTeams(data.success ? data.data : []);
-      } catch {
-        setError("Neuspešno učitavanje timova");
-      } finally {
-        setLoading(false);
-      }
-    };
-    void load();
+    void loadTeams();
   }, [token]);
 
   const createTeam = async () => {
@@ -48,8 +50,11 @@ export default function TeamsPage() {
     try {
       const res = await fetch(`${BASE}teams`, { method: "POST", headers, body: JSON.stringify(form) });
       const data = await res.json();
-      if (data.success) { setShowCreate(false); setForm({ teamName: "", tag: "", logo: "", description: "" }); window.location.reload(); }
-      else setError(data.message);
+      if (data.success) {
+        setShowCreate(false);
+        setForm({ teamName: "", tag: "", logo: "", description: "" });
+        await loadTeams();
+      } else setError(data.message);
     } catch {
       setError("Neuspešno kreiranje tima");
     } finally {
@@ -64,7 +69,6 @@ export default function TeamsPage() {
 
       {error && <ErrorBox message={error} />}
 
-      {/* Create form */}
       <AnimatePresence>
         {showCreate && (
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
@@ -104,7 +108,7 @@ export default function TeamsPage() {
           {teams.map((t, i) => {
             const glow = GLOWS[i % GLOWS.length];
             return (
-              <motion.div key={t.team_id} variants={fadeUp}>
+              <motion.div key={t.teamId} variants={fadeUp}>
                 <TiltCard glow={glow} style={{ padding: 22 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
                     <div style={{ width: 54, height: 54, borderRadius: 12, background: `${glow}1a`, border: `1px solid ${glow}45`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden", boxShadow: `0 0 18px ${glow}30` }}>
@@ -113,7 +117,7 @@ export default function TeamsPage() {
                         : <span style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 900, color: glow }}>{t.tag?.slice(0, 2)}</span>}
                     </div>
                     <div style={{ minWidth: 0 }}>
-                      <p style={{ fontFamily: "var(--font-head)", fontSize: 17, fontWeight: 700, color: "var(--text)" }}>{t.team_name}</p>
+                      <p style={{ fontFamily: "var(--font-head)", fontSize: 17, fontWeight: 700, color: "var(--text)" }}>{t.teamName}</p>
                       <span style={{ fontFamily: "var(--font-display)", fontSize: 12, fontWeight: 900, color: glow }}>[{t.tag}]</span>
                     </div>
                   </div>

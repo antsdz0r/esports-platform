@@ -280,6 +280,8 @@ body::after {
   display: flex;
   gap: 18px;
   overflow-x: auto;
+  overflow-y: visible;
+  padding-top: 12px;
   padding-bottom: 12px;
   scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;

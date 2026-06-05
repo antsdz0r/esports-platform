@@ -1,6 +1,7 @@
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 import { ITournamentRepository } from "../../../Domain/repositories/tournaments/ITournamentRepository";
 import { Tournament } from "../../../Domain/models/Tournament";
+import { TournamentListDto } from "../../../Domain/DTOs/tournaments/TournamentListDto";
 import { TournamentFormat } from "../../../Domain/enums/TournamentFormat";
 import { TournamentStatus } from "../../../Domain/enums/TournamentStatus";
 import { DbManager } from "../../connection/DbConnectionPool";
@@ -21,7 +22,8 @@ export class TournamentRepository implements ITournamentRepository {
       r.max_teams,
       new Date(r.registration_deadline),
       r.prize_pool,
-      r.status as TournamentStatus
+      r.status as TournamentStatus,
+      r.game_name ?? null,
     );
   }
 
@@ -75,7 +77,10 @@ export class TournamentRepository implements ITournamentRepository {
 
     try {
       const [rows] = await res.conn.execute<RowDataPacket[]>(
-        `SELECT * FROM TOURNAMENTS WHERE tournamentid = ?`,
+        `SELECT t.*, gc.name AS game_name
+         FROM TOURNAMENTS t
+         LEFT JOIN GAME_CATALOG gc ON t.game_id = gc.game_id
+         WHERE t.tournamentid = ?`,
         [id]
       );
 
@@ -83,6 +88,61 @@ export class TournamentRepository implements ITournamentRepository {
     } catch {
       this.logger.error("TournamentRepository", "findById failed");
       return new Tournament();
+    } finally {
+      res.conn.release();
+    }
+  }
+
+  private mapDetailed(r: RowDataPacket): TournamentListDto {
+    return new TournamentListDto(
+      r.tournamentid,
+      r.game_id,
+      r.name,
+      r.format as TournamentFormat,
+      r.max_teams,
+      new Date(r.registration_deadline),
+      Number(r.prize_pool),
+      r.status as TournamentStatus,
+      r.game_name ?? "",
+      Number(r.registered_count ?? 0),
+    );
+  }
+
+  async findAllDetailed(filters?: { gameId?: number; status?: TournamentStatus }): Promise<TournamentListDto[]> {
+    const res = await this.db.getReadConnection();
+    if (!res) return [];
+
+    try {
+      const conditions: string[] = [];
+      const params: (number | string)[] = [];
+
+      if (filters?.gameId) {
+        conditions.push("t.game_id = ?");
+        params.push(filters.gameId);
+      }
+      if (filters?.status) {
+        conditions.push("t.status = ?");
+        params.push(filters.status);
+      }
+
+      const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+
+      const [rows] = await res.conn.execute<RowDataPacket[]>(
+        `
+        SELECT t.*, gc.name AS game_name,
+          (SELECT COUNT(*) FROM TOURNAMENT_REGISTRATIONS tr WHERE tr.tournament_id = t.tournamentid) AS registered_count
+        FROM TOURNAMENTS t
+        LEFT JOIN GAME_CATALOG gc ON t.game_id = gc.game_id
+        ${where}
+        ORDER BY t.tournamentid ASC
+        `,
+        params,
+      );
+
+      return rows.map((r) => this.mapDetailed(r));
+    } catch {
+      this.logger.error("TournamentRepository", "findAllDetailed failed");
+      return [];
     } finally {
       res.conn.release();
     }

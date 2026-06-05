@@ -30,6 +30,7 @@ export class TournamentController {
 
     
     this.router.get("/tournaments", this.getAll.bind(this));
+    this.router.get("/tournaments/watchlist/my", authenticate, this.getMyWatchlist.bind(this));
 
     
     this.router.get("/tournaments/:id", this.getById.bind(this));
@@ -121,12 +122,21 @@ export class TournamentController {
     const gameId = req.query.gameId ? Number(req.query.gameId) : undefined;
     const status = req.query.status as TournamentStatus | undefined;
 
-    const tournaments = await this.tournamentService.getAll({ gameId, status });
-    res.json(tournaments);
+    const tournaments = await this.tournamentService.getAllDetailed({ gameId, status });
+    res.json({ success: true, data: tournaments });
   } catch (err) {
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 }
+
+  private async getMyWatchlist(req: Request, res: Response): Promise<void> {
+    try {
+      const tournaments = await this.tournamentService.getMyWatchlist(req.user!.id);
+      res.json({ success: true, data: tournaments });
+    } catch {
+      res.status(500).json({ success: false, message: "Internal server error" });
+    }
+  }
 
   private async getById(req: Request, res: Response): Promise<void> {
     try{
