@@ -83,6 +83,12 @@ a { color: inherit; text-decoration: none; }
    ANIMATED BACKGROUND  (mesh gradients + beams + particles)
    */
 .pg-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.pg-bg__particles {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+}
 .pg-bg__mesh {
   position: absolute; border-radius: 50%;
   filter: blur(70px); opacity: 0.7;
@@ -198,12 +204,6 @@ body::after {
 }
 .pg-input::placeholder { color: var(--text-dim); }
 .pg-input:focus { border-color: var(--violet); box-shadow: 0 0 0 3px rgba(124,92,255,0.18); }
-
-/* 
-   PARTICLES
-   */
-.pg-particle { position:absolute; width:3px; height:3px; border-radius:50%; background: var(--cyan);
-  box-shadow: 0 0 6px var(--cyan); animation: particle linear infinite; }
 
 /* Eyebrow label */
 .pg-eyebrow { font-family: var(--font-ui); font-size:11px; font-weight:700; letter-spacing:0.25em;

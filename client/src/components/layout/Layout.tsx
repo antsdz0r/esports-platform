@@ -29,7 +29,7 @@ export function Layout({ children }: { children: ReactNode }) {
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: "var(--bg-deep)", position: "relative" }}>
-      <AnimatedBackground particles={14} />
+      <AnimatedBackground particles={42} />
 
       {/* ── Sidebar ── */}
       <motion.aside

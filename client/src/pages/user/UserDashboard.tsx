@@ -7,8 +7,8 @@ import { fadeUp, staggerContainer, fadeInView, slideInView } from "../../compone
 
 /* Gaming hero / card imagery (Unsplash — demo placeholders) */
 const IMG = {
-  hero1: "https://www.riotgames.com/darkroom/1440/a4e88f6b04bf83f1c417e87292b85606:b62ff9b783f3dd26a6321e1440efe13b/riot-games-the-team-behind-worlds-2022-esports-broadcast-league-of-legends.png",
-  hero2: "https://www.hotspawn.com/wp-content/uploads/2025/06/ESL-One-Cologne-2016-SK-Gaming-CSGO-Major-Winners.jpg",
+  hero2: "https://www.riotgames.com/darkroom/1440/a4e88f6b04bf83f1c417e87292b85606:b62ff9b783f3dd26a6321e1440efe13b/riot-games-the-team-behind-worlds-2022-esports-broadcast-league-of-legends.png",
+  hero1: "https://www.hotspawn.com/wp-content/uploads/2025/06/ESL-One-Cologne-2016-SK-Gaming-CSGO-Major-Winners.jpg",
   hero3: "https://img.redbull.com/images/c_crop,w_2880,h_1440,x_0,y_215/c_auto,w_1200,h_600/f_auto,q_auto/redbullcom/2019/03/04/05fb881c-e953-48b3-8eab-04602a13d2fe/ence-iem-katowice-2019",
   cs: "https://i.pinimg.com/736x/e8/09/ee/e809eea0c53550f261eb4c1c7652e452.jpg",
   moba: "https://i.pinimg.com/736x/53/e1/0b/53e10b01dc09634d4419fed9d6862e23.jpg",
@@ -20,6 +20,10 @@ const IMG = {
   deadlock : "https://upload.wikimedia.org/wikipedia/en/thumb/0/0c/Deadlock_box_art_cover%2C_%27Old_Gods%2C_New_Blood%27_update.jpg/250px-Deadlock_box_art_cover%2C_%27Old_Gods%2C_New_Blood%27_update.jpg",
   stormgate: "https://img.ep-cdn.com/i/500/500/bo/bozlnewkigjuyctqdpmr/stormgate-pc-key-global-cene.jpg",
   rematch : "https://images.g2a.com/360x600/1x1x1/rematch-p10000510851/48b94ba61c7d493da36e2f12",
+  lec : "https://yt3.googleusercontent.com/q9qgVsF5L9ptOrptarexCq1J19LrqhNyQE02Q9b02h0wlO2JLS4dRhmzprnhYwFEt5pJJxpadH4=s900-c-k-c0x00ffffff-no-rj",
+  pgl: "https://static.gosugamers.net/87/e1/1f/24bfdf7e58bf2e10375d2bfa2b4cbbea2e9c9342a012783d3460981179.webp",
+  blast: "https://pbs.twimg.com/profile_images/1945828193174159360/p0cw-9y-_400x400.jpg",
+  masterSantiago: "https://static.ptocdn.net/especiales/vct001_valorant-2026/img/portada-movil.jpg",
 };
 
 const HERO_SLIDES = [
@@ -53,10 +57,10 @@ const MOST_PLAYED = [
 ];
 
 const TRENDING = [
-  { title: "Neo Frontiers: Build Rule Prosper", viewers: "4.7k", ago: "4 dana", tags: ["Player", "Live", "Strategy"], img: IMG.strat },
-  { title: "Metropolis Tycoon: Urban Empire", viewers: "2.5k", ago: "2 dana", tags: ["Game", "Live", "Simulation"], img: IMG.moba },
-  { title: "Mythos Forge: Craft Your Legacy", viewers: "4.7k", ago: "4 dana", tags: ["Game", "Live", "Strategy"], img: IMG.fifa },
-  { title: "Enchanted Echoes: Uncover Fate", viewers: "2.5k", ago: "2 dana", tags: ["Action", "Live", "Shooter"], img: IMG.fps },
+  { title: "PGL Wallachia Season 9 ", viewers: "111.7k", ago: "4 dana", tags: ["Player", "Live", "Strategy"], img: IMG.pgl },
+  { title: "LEC Week 2 Day 1", viewers: "82.3k", ago: "2 dana", tags: ["Game", "Live", "Simulation"], img: IMG.lec },
+  { title: "BLAST Paris Major", viewers: "215.7k", ago: "4 dana", tags: ["Game", "Live", "Strategy"], img: IMG.blast },
+  { title: "VALORANT Masters Santiago 2026", viewers: "33.5k", ago: "2 dana", tags: ["Action", "Live", "Shooter"], img: IMG.masterSantiago },
 ];
 
 const RECENT = [
