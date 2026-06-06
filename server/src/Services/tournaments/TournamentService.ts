@@ -2,6 +2,7 @@ import { Tournament } from "../../Domain/models/Tournament";
 import { TournamentDetailed } from "../../Domain/models/TournamentDetailed";
 import { TournamentRegistration } from "../../Domain/models/TournamentRegistration";
 import { TournamentFormat } from "../../Domain/enums/TournamentFormat";
+import { GameStatus } from "../../Domain/enums/GameStatus";
 import { TournamentStatus } from "../../Domain/enums/TournamentStatus";
 import { TournamentRegistrationStatus } from "../../Domain/enums/TournamentRegistrationStatus";
 import { ITournamentRepository } from "../../Domain/repositories/tournaments/ITournamentRepository";
@@ -61,7 +62,8 @@ export class TournamentService implements ITournamentService {
     const tournament = new Tournament(
       0, data.gameId, data.name, data.format,
       data.maxTeams, data.registrationDeadline,
-      data.prizePool, TournamentStatus.OPEN
+      data.prizePool, TournamentStatus.OPEN,
+      null, data.imageUrl ?? null
     );
     const created = await this.tournamentRepo.create(tournament);
     return created.tournamentId === 0
@@ -77,7 +79,8 @@ export class TournamentService implements ITournamentService {
     const updated = new Tournament(
       id, data.gameId, data.name, data.format,
       data.maxTeams, data.registrationDeadline,
-      data.prizePool, data.status
+      data.prizePool, data.status,
+      null, data.imageUrl ?? null
     );
     return this.tournamentRepo.update(updated);
   }
@@ -173,7 +176,7 @@ export class TournamentService implements ITournamentService {
     winnerTeamId: number
     ): Promise<{ ok: boolean; error?: string }> {
     
-    const ok = await this.gameRepo.updateResult(gameId, score, winnerTeamId);
+    const ok = await this.gameRepo.updateResult(gameId, score, winnerTeamId, GameStatus.COMPLETED);
     return ok ? { ok: true } : { ok: false, error: "Ažuriranje nije uspelo" };
   }
 

@@ -12,5 +12,6 @@ export class MatchWithTeams {
     public score: string = "0:0",
     public status: GameStatus | string = GameStatus.SCHEDULED,
     public winnerTeamId: number | null = null,
+    public scheduledTime: Date | null = null,
   ) {}
 }

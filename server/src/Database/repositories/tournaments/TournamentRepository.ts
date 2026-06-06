@@ -24,6 +24,7 @@ export class TournamentRepository implements ITournamentRepository {
       r.prize_pool,
       r.status as TournamentStatus,
       r.game_name ?? null,
+      r.image_url ?? null,
     );
   }
 
@@ -36,8 +37,8 @@ export class TournamentRepository implements ITournamentRepository {
       const [result] = await res.conn.execute<ResultSetHeader>(
         `
         INSERT INTO TOURNAMENTS
-        (game_id, name, format, max_teams, registration_deadline, prize_pool, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        (game_id, name, format, max_teams, registration_deadline, prize_pool, status, image_url)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         `,
         [
           t.gameId,
@@ -47,6 +48,7 @@ export class TournamentRepository implements ITournamentRepository {
           t.registrationDeadLine,
           t.prizePool,
           t.status,
+          t.imageUrl ?? null,
         ]
       );
 
@@ -60,7 +62,9 @@ export class TournamentRepository implements ITournamentRepository {
         t.maxTeams,
         t.registrationDeadLine,
         t.prizePool,
-        t.status
+        t.status,
+        null,
+        t.imageUrl ?? null,
       );
     } catch {
       this.logger.error("TournamentRepository", "create failed");
@@ -105,6 +109,7 @@ export class TournamentRepository implements ITournamentRepository {
       r.status as TournamentStatus,
       r.game_name ?? "",
       Number(r.registered_count ?? 0),
+      r.image_url ?? null,
     );
   }
 
@@ -202,7 +207,8 @@ export class TournamentRepository implements ITournamentRepository {
             max_teams = ?,
             registration_deadline = ?,
             prize_pool = ?,
-            status = ?
+            status = ?,
+            image_url = ?
         WHERE tournamentid = ?
         `,
         [
@@ -213,6 +219,7 @@ export class TournamentRepository implements ITournamentRepository {
           t.registrationDeadLine,
           t.prizePool,
           t.status,
+          t.imageUrl ?? null,
           t.tournamentId,
         ]
       );

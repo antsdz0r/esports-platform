@@ -13,5 +13,6 @@ export class TournamentDetailed {
     public status: TournamentStatus = TournamentStatus.OPEN,
     public gameName: string = "",
     public registeredCount: number = 0,
+    public imageUrl: string | null = null,
   ) {}
 }

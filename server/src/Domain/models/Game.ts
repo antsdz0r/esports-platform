@@ -10,6 +10,6 @@ export class Game{
         public score : string = "0:0",
         public status: GameStatus = GameStatus.SCHEDULED,
         public winnerTeamId : number | null = null,
-
+        public scheduledTime : Date | null = null,
     ){}
 }

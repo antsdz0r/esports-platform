@@ -21,7 +21,8 @@ export class GameRepository implements IGameRepository {
       r.round,
       r.score,
       r.status as GameStatus,
-      r.winner_team_id
+      r.winner_team_id,
+      r.scheduled_time ? new Date(r.scheduled_time) : null,
     );
   }
 
@@ -117,6 +118,7 @@ export class GameRepository implements IGameRepository {
       r.score,
       r.status,
       r.winner_team_id,
+      r.scheduled_time ? new Date(r.scheduled_time) : null,
     );
   }
 
@@ -303,26 +305,40 @@ export class GameRepository implements IGameRepository {
   async updateResult(
     gameId: number,
     score: string,
-    winnerTeamId: number | null
+    winnerTeamId: number | null,
+    status: GameStatus,
   ): Promise<boolean> {
     const res = await this.db.getWriteConnection();
     if (!res) return false;
 
     try {
       const [result] = await res.conn.execute<ResultSetHeader>(
-        `
-        UPDATE GAMES
-        SET score = ?,
-            winner_team_id = ?,
-            status = ?
-        WHERE game_id = ?
-        `,
-        [score, winnerTeamId, GameStatus.COMPLETED, gameId]
+        `UPDATE GAMES SET score = ?, winner_team_id = ?, status = ? WHERE game_id = ?`,
+        [score, winnerTeamId, status, gameId]
       );
 
       return result.affectedRows > 0;
     } catch {
       this.logger.error("GameRepository", "updateResult failed");
+      return false;
+    } finally {
+      res.conn.release();
+    }
+  }
+
+  async updateScheduledTime(gameId: number, scheduledTime: Date | null): Promise<boolean> {
+    const res = await this.db.getWriteConnection();
+    if (!res) return false;
+
+    try {
+      const [result] = await res.conn.execute<ResultSetHeader>(
+        `UPDATE GAMES SET scheduled_time = ? WHERE game_id = ?`,
+        [scheduledTime, gameId]
+      );
+
+      return result.affectedRows > 0;
+    } catch {
+      this.logger.error("GameRepository", "updateScheduledTime failed");
       return false;
     } finally {
       res.conn.release();

@@ -158,7 +158,7 @@ export class TournamentController {
 
   private async create(req: Request, res: Response): Promise<void> {
     try{
-    const { gameId, name, format, maxTeams, registrationDeadline, prizePool } = req.body;
+    const { gameId, name, format, maxTeams, registrationDeadline, prizePool, imageUrl } = req.body;
 
     
 
@@ -181,7 +181,8 @@ export class TournamentController {
         String(format) as TournamentFormat,
         Number(maxTeams),
         deadline,
-        prizePool ? Number(prizePool) : 0
+        prizePool ? Number(prizePool) : 0,
+        imageUrl ? String(imageUrl) : null
       )
     );
 
@@ -200,7 +201,7 @@ export class TournamentController {
   private async update(req: Request, res: Response): Promise<void> {
     try{
     const id = Number(req.params.id);
-    const { gameId, name, format, maxTeams, registrationDeadline, prizePool, status } = req.body;
+    const { gameId, name, format, maxTeams, registrationDeadline, prizePool, status, imageUrl } = req.body;
 
     const deadline = new Date(registrationDeadline);
     if (isNaN(deadline.getTime())) {
@@ -222,7 +223,8 @@ export class TournamentController {
         Number(maxTeams),
         new Date(registrationDeadline),
         prizePool ? Number(prizePool) : 0,
-        status as TournamentStatus ?? TournamentStatus.OPEN
+        status as TournamentStatus ?? TournamentStatus.OPEN,
+        imageUrl ? String(imageUrl) : null
       )
     );
 

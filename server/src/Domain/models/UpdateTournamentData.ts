@@ -10,5 +10,6 @@ export class UpdateTournamentData {
     public readonly registrationDeadline: Date,
     public readonly prizePool: number,
     public readonly status: TournamentStatus,
+    public readonly imageUrl: string | null = null,
   ) {}
 }

@@ -8,5 +8,6 @@ export class CreateTournamentData {
     public readonly maxTeams: number,
     public readonly registrationDeadline: Date,
     public readonly prizePool: number = 0,
+    public readonly imageUrl: string | null = null,
   ) {}
 }

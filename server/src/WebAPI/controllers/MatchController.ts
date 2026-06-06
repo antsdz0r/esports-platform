@@ -3,6 +3,7 @@ import { IMatchService } from "../../Domain/services/matches/IMatchService";
 import { authenticate } from "../../Middlewares/authentification/AuthMiddleware";
 import { authorize } from "../../Middlewares/authorization/AuthorizeMiddleware";
 import { UserRole } from "../../Domain/enums/UserRole";
+import { GameStatus } from "../../Domain/enums/GameStatus";
 
 export class MatchController {
   private readonly router = Router();
@@ -12,6 +13,8 @@ export class MatchController {
     this.router.get("/matches/my/wins", authenticate, this.getMyWins.bind(this));
     this.router.get("/matches/tournament/:tournamentId", this.getByTournament.bind(this));
     this.router.get("/matches/:id", this.getById.bind(this));
+    this.router.patch("/matches/:id/result", authenticate, authorize(UserRole.ADMIN), this.updateResult.bind(this));
+    this.router.patch("/matches/:id/schedule", authenticate, authorize(UserRole.ADMIN), this.updateSchedule.bind(this));
     this.router.post("/matches/:id/players", authenticate, this.addPlayer.bind(this));
     this.router.put("/matches/:id/players/:userId", authenticate, this.updatePerformance.bind(this));
     this.router.delete("/matches/:id/players/:userId", authenticate, this.removePlayer.bind(this));
@@ -100,6 +103,42 @@ export class MatchController {
 
       const ok = await this.matchService.removePlayer(gameId, playerId, captainId);
       res.status(ok ? 200 : 404).json({ success: ok, message: ok ? "Igrač uklonjen" : "Nije pronađeno" });
+    } catch {
+      res.status(500).json({ success: false, message: "Internal server error" });
+    }
+  }
+
+  private async updateResult(req: Request, res: Response): Promise<void> {
+    try {
+      const id = parseInt(req.params.id as string, 10);
+      if (isNaN(id)) { res.status(400).json({ success: false, message: "Invalid id" }); return; }
+
+      const { score, winnerTeamId, status } = req.body;
+      const validStatuses: string[] = [GameStatus.SCHEDULED, GameStatus.IN_PROGRESS, GameStatus.COMPLETED];
+      if (!score || !status || !validStatuses.includes(status as string)) {
+        res.status(400).json({ success: false, message: "score i status su obavezni" }); return;
+      }
+
+      const ok = await this.matchService.updateResult(id, score as string, winnerTeamId != null ? Number(winnerTeamId) : null, status as GameStatus);
+      res.status(ok ? 200 : 404).json({ success: ok, message: ok ? "Rezultat ažuriran" : "Meč nije pronađen" });
+    } catch {
+      res.status(500).json({ success: false, message: "Internal server error" });
+    }
+  }
+
+  private async updateSchedule(req: Request, res: Response): Promise<void> {
+    try {
+      const id = parseInt(req.params.id as string, 10);
+      if (isNaN(id)) { res.status(400).json({ success: false, message: "Invalid id" }); return; }
+
+      const { scheduledTime } = req.body;
+      const dt = scheduledTime ? new Date(scheduledTime as string) : null;
+      if (scheduledTime && isNaN(dt!.getTime())) {
+        res.status(400).json({ success: false, message: "Neispravan format datuma" }); return;
+      }
+
+      const ok = await this.matchService.updateScheduledTime(id, dt);
+      res.status(ok ? 200 : 404).json({ success: ok, message: ok ? "Vreme meca ažurirano" : "Meč nije pronađen" });
     } catch {
       res.status(500).json({ success: false, message: "Internal server error" });
     }

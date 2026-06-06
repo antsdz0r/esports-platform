@@ -3,6 +3,7 @@ import { IGameRepository } from "../../Domain/repositories/games/IGameRepository
 import { IMatchPlayerRepository } from "../../Domain/repositories/match_players/IMatchPlayerRepository";
 import { ITeamMemberRepository } from "../../Domain/repositories/team_members/ITeamMemberRepository";
 import { Game } from "../../Domain/models/Game";
+import { GameStatus } from "../../Domain/enums/GameStatus";
 import { MatchPlayer } from "../../Domain/models/MatchPlayer";
 import { TeamMemberRole } from "../../Domain/enums/TeamMemberRole";
 
@@ -70,5 +71,13 @@ export class MatchService implements IMatchService {
     const exists = await this.matchPlayerRepo.exists(gameId, playerId);
     if (!exists) return false;
     return this.matchPlayerRepo.removePlayer(gameId, playerId);
+  }
+
+  async updateResult(gameId: number, score: string, winnerTeamId: number | null, status: GameStatus): Promise<boolean> {
+    return this.gameRepo.updateResult(gameId, score, winnerTeamId, status);
+  }
+
+  async updateScheduledTime(gameId: number, scheduledTime: Date | null): Promise<boolean> {
+    return this.gameRepo.updateScheduledTime(gameId, scheduledTime);
   }
 }

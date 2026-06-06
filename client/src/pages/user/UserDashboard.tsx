@@ -1,4 +1,5 @@
 import { useState, useEffect, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/auth/useAuthHook";
@@ -46,22 +47,42 @@ interface GameCatalog {
 
 interface Tournament {
   tournamentId: number;
+  gameId: number;
   name: string;
   status: string;
   gameName: string;
   format: string;
   registeredCount: number;
   maxTeams: number;
+  imageUrl?: string | null;
 }
 
 interface Match {
   gameId: number;
   tournamentId: number;
+  team1Id: number | null;
+  team2Id: number | null;
   team1Name: string | null;
   team2Name: string | null;
   score: string;
   status: string;
   round: number;
+  winnerTeamId: number | null;
+  scheduledTime: string | null;
+}
+
+interface UpcomingMatch extends Match {
+  tournamentName: string;
+}
+
+interface Champion {
+  tournamentId: number;
+  tournamentName: string;
+  gameName: string;
+  winnerTeamId: number;
+  winnerTeamName: string;
+  winnerTeamLogo: string;
+  score: string;
 }
 
 interface DashboardData {
@@ -72,7 +93,9 @@ interface DashboardData {
   wins: number;
   liveTournament: Tournament | null;
   liveMatch: Match | null;
-  upcoming: Match[];
+  upcoming: UpcomingMatch[];
+  teamLogos: Record<number, string>;
+  champions: Champion[];
 }
 
 const viewOpts = { once: true, margin: "-60px" as const };
@@ -91,6 +114,64 @@ function SectionTitle({ eyebrow, title, action }: { eyebrow: string; title: stri
       </div>
       {action}
     </div>
+  );
+}
+
+function TeamAvatar({ name, color, size = 38, logo }: { name: string | null | undefined; color: string; size?: number; logo?: string }) {
+  const initials = name ? name.slice(0, 2).toUpperCase() : "?";
+  const radius = size * 0.28;
+  return (
+    <div style={{ width: size, height: size, borderRadius: radius, background: `${color}22`, border: `1px solid ${color}55`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: `0 0 10px ${color}30`, overflow: "hidden" }}>
+      {logo
+        ? <img src={logo.startsWith("http") ? logo : STATIC_BASE + logo} alt={name ?? ""} style={{ width: size, height: size, objectFit: "cover" }} />
+        : <span style={{ fontFamily: "var(--font-display)", fontSize: size * 0.36, fontWeight: 900, color }}>{initials}</span>}
+    </div>
+  );
+}
+
+function ChampionCard({ champion: c }: { champion: Champion }) {
+  const logo = c.winnerTeamLogo
+    ? (c.winnerTeamLogo.startsWith("http") ? c.winnerTeamLogo : STATIC_BASE + c.winnerTeamLogo)
+    : null;
+  const initials = c.winnerTeamName ? c.winnerTeamName.slice(0, 2).toUpperCase() : "?";
+
+  return (
+    <motion.div variants={fadeUp}>
+      <div style={{ position: "relative", borderRadius: 18, overflow: "hidden", background: "linear-gradient(135deg, rgba(20,14,40,0.95) 0%, rgba(10,8,20,0.98) 100%)", border: "1px solid rgba(255,200,0,0.25)", boxShadow: "0 0 40px rgba(255,200,0,0.08), inset 0 1px 0 rgba(255,200,0,0.12)" }}>
+        {/* Gold shimmer strip */}
+        <div style={{ height: 3, background: "linear-gradient(90deg, transparent, var(--gold), transparent)", opacity: 0.8 }} />
+
+        {/* Background glow */}
+        <div style={{ position: "absolute", top: -30, right: -30, width: 160, height: 160, borderRadius: "50%", background: "radial-gradient(circle, rgba(255,200,0,0.12), transparent 70%)", pointerEvents: "none" }} />
+
+        <div style={{ padding: "20px 22px 22px" }}>
+          {/* Eyebrow */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+            <div>
+              <p style={{ fontFamily: "var(--font-ui)", fontSize: 9, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--gold)", opacity: 0.8, marginBottom: 3 }}>{c.gameName}</p>
+              <p style={{ fontFamily: "var(--font-ui)", fontSize: 11, fontWeight: 600, color: "var(--text-muted)" }}>{c.tournamentName}</p>
+            </div>
+            <span style={{ fontSize: 28 }}>🏆</span>
+          </div>
+
+          {/* Winner */}
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <div style={{ width: 56, height: 56, borderRadius: 14, background: "rgba(255,200,0,0.12)", border: "2px solid rgba(255,200,0,0.35)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden", boxShadow: "0 0 20px rgba(255,200,0,0.2)" }}>
+              {logo
+                ? <img src={logo} alt={c.winnerTeamName} style={{ width: 56, height: 56, objectFit: "cover" }} />
+                : <span style={{ fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 900, color: "var(--gold)" }}>{initials}</span>}
+            </div>
+            <div>
+              <p style={{ fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 900, color: "var(--gold)", letterSpacing: "0.04em", textShadow: "0 0 20px rgba(255,200,0,0.4)" }}>{c.winnerTeamName}</p>
+              <p style={{ fontFamily: "var(--font-ui)", fontSize: 11, color: "rgba(255,200,0,0.55)", marginTop: 3 }}>Final · {c.score}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom gold strip */}
+        <div style={{ height: 2, background: "linear-gradient(90deg, transparent, rgba(255,200,0,0.3), transparent)" }} />
+      </div>
+    </motion.div>
   );
 }
 
@@ -118,7 +199,7 @@ export default function UserDashboard() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<DashboardData>({
     games: [], tournaments: [], teams: [], watchlist: [], wins: 0,
-    liveTournament: null, liveMatch: null, upcoming: [],
+    liveTournament: null, liveMatch: null, upcoming: [], teamLogos: {}, champions: [],
   });
 
   useEffect(() => {
@@ -133,13 +214,12 @@ export default function UserDashboard() {
     const load = async () => {
       setLoading(true);
       try {
-        const [gamesRes, tournamentsRes, teamsRes, watchlistRes, winsRes, upcomingRes] = await Promise.all([
+        const [gamesRes, tournamentsRes, teamsRes, watchlistRes, winsRes] = await Promise.all([
           fetch(`${BASE}games`),
           fetch(`${BASE}tournaments`),
           fetch(`${BASE}teams`, { headers }),
           fetch(`${BASE}tournaments/watchlist/my`, { headers }),
           fetch(`${BASE}matches/my/wins`, { headers }),
-          fetch(`${BASE}matches/scheduled?limit=5`),
         ]);
 
         const games = parseData<GameCatalog>(await gamesRes.json());
@@ -148,20 +228,84 @@ export default function UserDashboard() {
         const watchlist = parseData<Tournament>(await watchlistRes.json());
         const winsJson = await winsRes.json();
         const wins = parseItem<{ wins: number }>(winsJson)?.wins ?? 0;
-        const upcoming = parseData<Match>(await upcomingRes.json());
 
         const liveTournament = tournaments.find((t) => t.status === "ongoing") ?? null;
         let liveMatch: Match | null = null;
+        const upcoming: UpcomingMatch[] = [];
 
+        const teamLogos: Record<number, string> = {};
+
+        // Fetch matches from ALL active tournaments (ongoing + locked)
+        const activeTournaments = tournaments.filter((t) => t.status === "ongoing" || t.status === "locked");
+        const matchesByTournament = await Promise.all(
+          activeTournaments.map(async (t) => {
+            try {
+              const mRes = await fetch(`${BASE}matches/tournament/${t.tournamentId}`);
+              const matches = parseData<Match>(await mRes.json());
+              return { tournament: t, matches };
+            } catch { return { tournament: t, matches: [] }; }
+          })
+        );
+
+        // Live match from the ongoing tournament
         if (liveTournament) {
-          const mRes = await fetch(`${BASE}matches/tournament/${liveTournament.tournamentId}`);
-          const matches = parseData<Match>(await mRes.json());
-          liveMatch = matches.find((m) => m.status === "ongoing" || m.status === "in_progress")
-            ?? matches.find((m) => m.status === "completed")
-            ?? matches[0] ?? null;
+          const liveEntry = matchesByTournament.find((e) => e.tournament.tournamentId === liveTournament.tournamentId);
+          if (liveEntry) {
+            liveMatch = liveEntry.matches.find((m) => m.status === "in_progress" || m.status === "ongoing")
+              ?? liveEntry.matches.find((m) => m.status === "completed")
+              ?? liveEntry.matches[0] ?? null;
+          }
         }
 
-        setData({ games, tournaments, teams, watchlist, wins, liveTournament, liveMatch, upcoming });
+        // Collect scheduled matches from all active tournaments
+        for (const { tournament, matches } of matchesByTournament) {
+          for (const m of matches) {
+            if (m.status === "scheduled") {
+              upcoming.push({ ...m, tournamentName: tournament.name });
+            }
+          }
+        }
+
+        // Batch-fetch logos for every unique team across all active tournament matches
+        const allMatchTeamIds = [...new Set(
+          matchesByTournament.flatMap((e) => e.matches).flatMap((m) => [m.team1Id, m.team2Id]).filter((id): id is number => id !== null)
+        )];
+        await Promise.all(allMatchTeamIds.map(async (id) => {
+          try {
+            const r = await fetch(`${BASE}teams/${id}`);
+            const d = await r.json();
+            if (d.success && d.data?.logo) teamLogos[id] = d.data.logo as string;
+          } catch { /* skip */ }
+        }));
+
+        // Fetch champions for completed tournaments (last 3)
+        const champions: Champion[] = [];
+        const completedTournaments = tournaments.filter((t) => t.status === "completed").slice(-3).reverse();
+        await Promise.all(completedTournaments.map(async (t) => {
+          try {
+            const mRes = await fetch(`${BASE}matches/tournament/${t.tournamentId}`);
+            const matches = parseData<Match>(await mRes.json());
+            if (matches.length === 0) return;
+            const maxRound = Math.max(...matches.map((m) => m.round));
+            const final = matches
+              .filter((m) => m.round === maxRound && m.status === "completed" && m.winnerTeamId !== null)
+              .sort((a, b) => b.gameId - a.gameId)[0];
+            if (!final?.winnerTeamId) return;
+            const winnerId = final.winnerTeamId;
+            const winnerName = winnerId === final.team1Id ? (final.team1Name ?? "") : (final.team2Name ?? "");
+            let logo = teamLogos[winnerId] ?? "";
+            if (!logo) {
+              try {
+                const tr = await fetch(`${BASE}teams/${winnerId}`);
+                const td = await tr.json();
+                if (td.success && td.data?.logo) { logo = td.data.logo as string; teamLogos[winnerId] = logo; }
+              } catch { /* skip */ }
+            }
+            champions.push({ tournamentId: t.tournamentId, tournamentName: t.name, gameName: t.gameName, winnerTeamId: winnerId, winnerTeamName: winnerName, winnerTeamLogo: logo, score: final.score });
+          } catch { /* skip */ }
+        }));
+
+        setData({ games, tournaments, teams, watchlist, wins, liveTournament, liveMatch, upcoming, teamLogos, champions });
       } catch {
         /* keep empty state */
       } finally {
@@ -179,10 +323,28 @@ export default function UserDashboard() {
     { to: "/dashboard/watchlist", icon: "★", title: "Watchlist", desc: "Prati omiljene turnire.", glow: "var(--gold)" },
   ];
 
+  const [selectedGame, setSelectedGame] = useState<GameCatalog | null>(null);
+
   const current = HERO_SLIDES[slide];
-  const sortedGames = [...data.games].sort((a, b) => b.maxPlayers - a.maxPlayers);
+
+  // Rank games by number of tournaments that use them
+  const tournamentCountByGame = data.tournaments.reduce<Record<number, number>>((acc, t) => {
+    if (t.gameId) acc[t.gameId] = (acc[t.gameId] ?? 0) + 1;
+    return acc;
+  }, {});
+  const activeTournamentCountByGame = data.tournaments.reduce<Record<number, number>>((acc, t) => {
+    if (t.gameId && (t.status === "ongoing" || t.status === "open")) acc[t.gameId] = (acc[t.gameId] ?? 0) + 1;
+    return acc;
+  }, {});
+  const sortedGames = [...data.games].sort((a, b) => {
+    const total = (tournamentCountByGame[b.gameId] ?? 0) - (tournamentCountByGame[a.gameId] ?? 0);
+    if (total !== 0) return total;
+    return (activeTournamentCountByGame[b.gameId] ?? 0) - (activeTournamentCountByGame[a.gameId] ?? 0);
+  });
+
   const trending = data.tournaments.filter((t) => t.status === "ongoing" || t.status === "open").slice(0, 4);
   const recentGames = [...data.games].slice(-4).reverse();
+  const hasChampions = data.champions.length > 0;
 
   if (loading) return <Spinner />;
 
@@ -227,13 +389,15 @@ export default function UserDashboard() {
                   <StatusBadge status={data.liveTournament.status} />
                 </div>
                 {data.liveMatch ? (
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 20, padding: "16px 0", borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)", marginBottom: 16 }}>
-                    <div style={{ textAlign: "center" }}>
-                      <p style={{ fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 800 }}>{data.liveMatch.team1Name ?? "TBD"}</p>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 12, padding: "16px 0", borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)", marginBottom: 16 }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 10 }}>
+                      <p style={{ fontFamily: "var(--font-display)", fontSize: 14, fontWeight: 800, color: "var(--text)", textAlign: "right" }}>{data.liveMatch.team1Name ?? "TBD"}</p>
+                      <TeamAvatar name={data.liveMatch.team1Name} color="var(--violet)" logo={data.liveMatch.team1Id ? data.teamLogos[data.liveMatch.team1Id] : undefined} />
                     </div>
-                    <span style={{ fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 900, color: "var(--cyan)", textShadow: "0 0 20px var(--glow-cyan)" }}>{data.liveMatch.score.replace(":", " : ")}</span>
-                    <div style={{ textAlign: "center" }}>
-                      <p style={{ fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 800 }}>{data.liveMatch.team2Name ?? "TBD"}</p>
+                    <span style={{ fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 900, color: "var(--cyan)", textShadow: "0 0 20px var(--glow-cyan)", textAlign: "center", whiteSpace: "nowrap" }}>{data.liveMatch.score.replace(":", " : ")}</span>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-start", gap: 10 }}>
+                      <TeamAvatar name={data.liveMatch.team2Name} color="var(--pink)" logo={data.liveMatch.team2Id ? data.teamLogos[data.liveMatch.team2Id] : undefined} />
+                      <p style={{ fontFamily: "var(--font-display)", fontSize: 14, fontWeight: 800, color: "var(--text)" }}>{data.liveMatch.team2Name ?? "TBD"}</p>
                     </div>
                   </div>
                 ) : (
@@ -252,11 +416,28 @@ export default function UserDashboard() {
 
           <motion.div variants={fadeInView} className="pg-glass" style={{ padding: 24 }}>
             <p className="pg-eyebrow" style={{ marginBottom: 12 }}>Sledeći mečevi</p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 320, overflowY: "auto", paddingRight: 2 }}>
               {data.upcoming.length > 0 ? data.upcoming.map((m) => (
-                <div key={m.gameId} style={{ display: "flex", alignItems: "center", gap: 14, padding: "10px 12px", borderRadius: 8, background: "rgba(124,92,255,0.06)", border: "1px solid var(--border)" }}>
-                  <span style={{ fontFamily: "var(--font-display)", fontSize: 13, color: "var(--cyan)", minWidth: 44 }}>R{m.round}</span>
-                  <span style={{ fontSize: 13, color: "var(--text-soft)" }}>{m.team1Name ?? "TBD"} <span style={{ color: "var(--text-dim)" }}>vs</span> {m.team2Name ?? "TBD"}</span>
+                <div key={m.gameId} style={{ borderRadius: 8, background: "rgba(124,92,255,0.06)", border: "1px solid var(--border)", overflow: "hidden" }}>
+                  <div style={{ padding: "4px 10px", borderBottom: "1px solid var(--border)", background: "rgba(0,0,0,0.2)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontFamily: "var(--font-ui)", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--cyan)", opacity: 0.8 }}>{m.tournamentName} · R{m.round}</span>
+                    {m.scheduledTime && (
+                      <span style={{ fontFamily: "var(--font-ui)", fontSize: 10, color: "var(--gold)", fontWeight: 600 }}>
+                        🕐 {new Date(m.scheduledTime).toLocaleDateString("sr", { day: "2-digit", month: "2-digit" })} {new Date(m.scheduledTime).toLocaleTimeString("sr", { hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 8, padding: "8px 12px" }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 7 }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text)", textAlign: "right" }}>{m.team1Name ?? "TBD"}</span>
+                      <TeamAvatar name={m.team1Name} color="var(--violet)" size={26} logo={m.team1Id ? data.teamLogos[m.team1Id] : undefined} />
+                    </div>
+                    <span style={{ fontFamily: "var(--font-display)", fontSize: 11, fontWeight: 700, color: "var(--text-dim)", textAlign: "center", padding: "0 4px" }}>vs</span>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-start", gap: 7 }}>
+                      <TeamAvatar name={m.team2Name} color="var(--pink)" size={26} logo={m.team2Id ? data.teamLogos[m.team2Id] : undefined} />
+                      <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text)" }}>{m.team2Name ?? "TBD"}</span>
+                    </div>
+                  </div>
                 </div>
               )) : <p style={{ fontSize: 13, color: "var(--text-muted)" }}>Nema zakazanih mečeva.</p>}
             </div>
@@ -277,7 +458,8 @@ export default function UserDashboard() {
             <div style={{ overflow: "hidden", marginBottom: 16, maskImage: "linear-gradient(90deg, transparent, black 8%, black 92%, transparent)" }}>
               <div className="pg-marquee">
                 {[...sortedGames, ...sortedGames].map((g, i) => (
-                  <div key={`${g.gameId}-${i}`} className="pg-glass" style={{ width: 220, padding: 16, display: "flex", gap: 14, alignItems: "center" }}>
+                  <div key={`${g.gameId}-${i}`} className="pg-glass" onClick={() => setSelectedGame(sortedGames.find(x => x.gameId === g.gameId) ?? null)}
+                    style={{ width: 220, padding: 16, display: "flex", gap: 14, alignItems: "center", cursor: "pointer", transition: "border-color 0.15s" }}>
                     <img src={gameImg(g.genre, g.imageUrl)} alt="" style={{ width: 56, height: 56, borderRadius: 10, objectFit: "cover", border: "1px solid var(--border)" }} />
                     <div>
                       <p style={{ fontFamily: "var(--font-head)", fontSize: 13, fontWeight: 700, marginBottom: 4 }}>{g.name}</p>
@@ -290,10 +472,22 @@ export default function UserDashboard() {
             </div>
             <div className="pg-scroll-row">
               {sortedGames.slice(0, 6).map((g) => (
-                <GameCard key={g.gameId} img={gameImg(g.genre, g.imageUrl)} title={g.name} size="sm"
-                  meta={<p style={{ fontSize: 11, color: "var(--cyan)", marginBottom: 6 }}>{g.maxPlayers} igrača · {g.genre}</p>} />
+                <div key={g.gameId} onClick={() => setSelectedGame(g)} style={{ cursor: "pointer" }}>
+                  <GameCard img={gameImg(g.genre, g.imageUrl)} title={g.name} size="sm"
+                    meta={<p style={{ fontSize: 11, color: "var(--cyan)", marginBottom: 6 }}>{g.maxPlayers} igrača · {g.genre}</p>} />
+                </div>
               ))}
             </div>
+          </motion.section>
+        )}
+
+        {hasChampions && (
+          <motion.section initial="hidden" whileInView="show" viewport={viewOpts} variants={fadeInView} style={{ marginBottom: 44 }}>
+            <SectionTitle eyebrow="Slavlje pobede" title="Šampioni turnira" />
+            <motion.div variants={staggerContainer(0.12)} initial="hidden" whileInView="show" viewport={viewOpts}
+              style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 20 }}>
+              {data.champions.map((c) => <ChampionCard key={c.tournamentId} champion={c} />)}
+            </motion.div>
           </motion.section>
         )}
 
@@ -303,8 +497,10 @@ export default function UserDashboard() {
             <motion.div variants={staggerContainer(0.1)} initial="hidden" whileInView="show" viewport={viewOpts}
               style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 20 }}>
               {trending.map((t) => (
-                <motion.div key={t.tournamentId} variants={slideInView}>
-                  <GameCard img={gameImg(t.gameName)} title={t.name} size="lg"
+                <motion.div key={t.tournamentId} variants={slideInView}
+                  onClick={() => navigate(`/dashboard/tournaments/${t.tournamentId}`)}
+                  style={{ cursor: "pointer" }}>
+                  <GameCard img={gameImg(t.gameName, t.imageUrl)} title={t.name} size="lg"
                     meta={
                       <div style={{ marginBottom: 10 }}>
                         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
@@ -326,7 +522,9 @@ export default function UserDashboard() {
             <SectionTitle eyebrow="Katalog" title="Igre u bazi" />
             <div className="pg-scroll-row">
               {recentGames.map((g) => (
-                <GameCard key={g.gameId} img={gameImg(g.genre, g.imageUrl)} title={g.name} desc={`${g.genre} · do ${g.maxPlayers} igrača · tag [${g.tag}]`} size="lg" />
+                <div key={g.gameId} onClick={() => setSelectedGame(g)} style={{ cursor: "pointer" }}>
+                  <GameCard img={gameImg(g.genre, g.imageUrl)} title={g.name} desc={`${g.genre} · do ${g.maxPlayers} igrača · tag [${g.tag}]`} size="lg" />
+                </div>
               ))}
             </div>
           </motion.section>
@@ -350,6 +548,79 @@ export default function UserDashboard() {
           </motion.div>
         </motion.section>
       </div>
+
+      {selectedGame && (
+        <GameDetailModal
+          game={selectedGame}
+          tournamentCount={tournamentCountByGame[selectedGame.gameId] ?? 0}
+          activeTournamentCount={activeTournamentCountByGame[selectedGame.gameId] ?? 0}
+          onClose={() => setSelectedGame(null)}
+        />
+      )}
     </div>
+  );
+}
+
+/* ─── Game Detail Modal ─── */
+
+function GameDetailModal({ game, tournamentCount, activeTournamentCount, onClose }: {
+  game: GameCatalog;
+  tournamentCount: number;
+  activeTournamentCount: number;
+  onClose: () => void;
+}) {
+  const img = game.imageUrl
+    ? (game.imageUrl.startsWith("http") ? game.imageUrl : (import.meta.env.VITE_API_URL as string).replace(/\/api\/?$/, "") + game.imageUrl)
+    : (GENRE_IMG[game.genre.toLowerCase()] ?? IMG.default);
+
+  const stats = [
+    { label: "Žanr", value: game.genre },
+    { label: "Max igrača", value: String(game.maxPlayers) },
+    { label: "Tag", value: `[${game.tag}]` },
+    { label: "Ukupno turnira", value: String(tournamentCount) },
+    { label: "Aktivnih turnira", value: String(activeTournamentCount), highlight: activeTournamentCount > 0 },
+  ];
+
+  return createPortal(
+    <AnimatePresence>
+      <motion.div key="game-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        onClick={onClose}
+        style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.72)", zIndex: 1200, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+        <motion.div initial={{ opacity: 0, scale: 0.93, y: 18 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.93 }}
+          transition={{ type: "spring", stiffness: 320, damping: 28 }}
+          onClick={(e) => e.stopPropagation()}
+          style={{ width: "100%", maxWidth: 480, borderRadius: 20, overflow: "hidden", border: "1px solid var(--border-bright)", background: "var(--bg-card, #0d0b1a)" }}>
+
+          {/* Hero image */}
+          <div style={{ position: "relative", height: 200, overflow: "hidden" }}>
+            <img src={img} alt={game.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, transparent 40%, rgba(13,11,26,0.95) 100%)" }} />
+            <button onClick={onClose}
+              style={{ position: "absolute", top: 12, right: 14, background: "rgba(0,0,0,0.5)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 8, color: "var(--text-muted)", cursor: "pointer", fontSize: 18, width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>
+            {activeTournamentCount > 0 && (
+              <span style={{ position: "absolute", top: 12, left: 14, fontFamily: "var(--font-ui)", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", padding: "3px 10px", borderRadius: 6, background: "rgba(0,212,255,0.2)", border: "1px solid rgba(0,212,255,0.4)", color: "var(--cyan)" }}>
+                🔴 LIVE
+              </span>
+            )}
+            <div style={{ position: "absolute", bottom: 16, left: 20 }}>
+              <h2 style={{ fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 900, color: "var(--text)", letterSpacing: "0.03em" }}>{game.name}</h2>
+            </div>
+          </div>
+
+          {/* Stats */}
+          <div style={{ padding: "20px 22px 24px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
+              {stats.map((s) => (
+                <div key={s.label} style={{ padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: "1px solid var(--border)" }}>
+                  <p style={{ fontFamily: "var(--font-ui)", fontSize: 9, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 4 }}>{s.label}</p>
+                  <p style={{ fontFamily: "var(--font-head)", fontSize: 15, fontWeight: 700, color: s.highlight ? "var(--cyan)" : "var(--text)" }}>{s.value}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>,
+    document.body
   );
 }

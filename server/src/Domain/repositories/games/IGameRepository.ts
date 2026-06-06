@@ -27,8 +27,11 @@ export interface IGameRepository {
   updateResult(
     gameId: number,
     score: string,
-    winnerTeamId: number | null
+    winnerTeamId: number | null,
+    status: GameStatus,
   ): Promise<boolean>;
+
+  updateScheduledTime(gameId: number, scheduledTime: Date | null): Promise<boolean>;
 
   delete(gameId: number): Promise<boolean>;
   exists(gameId: number): Promise<boolean>;

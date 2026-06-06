@@ -1,6 +1,7 @@
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 import { ITeamMemberRepository } from "../../../Domain/repositories/team_members/ITeamMemberRepository";
 import { TeamMember } from "../../../Domain/models/TeamMember";
+import { TeamMemberWithUser } from "../../../Domain/models/TeamMemberWithUser";
 import { TeamMemberRole } from "../../../Domain/enums/TeamMemberRole";
 import { DbManager } from "../../connection/DbConnectionPool";
 import { ILoggerService } from "../../../Domain/services/logger/ILoggerService";
@@ -85,6 +86,34 @@ export class TeamMemberRepository implements ITeamMemberRepository {
       return rows.map((r) => this.map(r));
     } catch {
       this.logger.error("TeamMemberRepository", "getMembersByTeam failed");
+      return [];
+    } finally {
+      res.conn.release();
+    }
+  }
+
+  async getMembersWithUserInfo(teamId: number): Promise<TeamMemberWithUser[]> {
+    const res = await this.db.getReadConnection();
+    if (!res) return [];
+
+    try {
+      const [rows] = await res.conn.execute<RowDataPacket[]>(
+        `SELECT tm.player_id, u.gamer_tag, u.full_name, tm.role, tm.joined_at
+         FROM TEAM_MEMBERS tm
+         JOIN users u ON tm.player_id = u.id
+         WHERE tm.team_id = ?`,
+        [teamId]
+      );
+
+      return rows.map((r) => new TeamMemberWithUser(
+        r.player_id,
+        r.gamer_tag,
+        r.full_name,
+        r.role as TeamMemberRole,
+        r.joined_at ? new Date(r.joined_at) : new Date(),
+      ));
+    } catch {
+      this.logger.error("TeamMemberRepository", "getMembersWithUserInfo failed");
       return [];
     } finally {
       res.conn.release();

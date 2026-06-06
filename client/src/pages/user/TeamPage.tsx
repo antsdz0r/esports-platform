@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { createPortal } from "react-dom";
 import { useAuth } from "../../hooks/auth/useAuthHook";
 import { PageHeader, Spinner, Empty, ErrorBox, PgBtn, TiltCard, FormField } from "../../components/ui/UI";
 import { fadeUp, staggerContainer } from "../../components/ui/motion";
@@ -13,6 +14,14 @@ interface Team {
   description: string | null;
 }
 
+interface TeamMemberInfo {
+  playerId: number;
+  gamerTag: string;
+  fullName: string;
+  role: string;
+  joinedAt: string;
+}
+
 const BASE = import.meta.env.VITE_API_URL;
 const GLOWS = ["var(--violet)", "var(--cyan)", "var(--pink)", "var(--green)", "var(--gold)"];
 
@@ -24,6 +33,7 @@ export default function TeamsPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState({ teamName: "", tag: "", logo: "", description: "" });
   const [creating, setCreating] = useState(false);
+  const [membersModal, setMembersModal] = useState<{ teamId: number; teamName: string } | null>(null);
 
   const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
 
@@ -108,7 +118,10 @@ export default function TeamsPage() {
           {teams.map((t, i) => {
             const glow = GLOWS[i % GLOWS.length];
             return (
-              <motion.div key={t.teamId} variants={fadeUp}>
+              <motion.div key={t.teamId} variants={fadeUp}
+                onClick={() => setMembersModal({ teamId: t.teamId, teamName: t.teamName })}
+                style={{ cursor: "pointer" }}
+                title="Klikni za detalje članova">
                 <TiltCard glow={glow} style={{ padding: 22 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
                     <div style={{ width: 54, height: 54, borderRadius: 12, background: `${glow}1a`, border: `1px solid ${glow}45`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden", boxShadow: `0 0 18px ${glow}30` }}>
@@ -122,12 +135,118 @@ export default function TeamsPage() {
                     </div>
                   </div>
                   <p style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.5, minHeight: 38 }}>{t.description || "Nema opisa."}</p>
+                  <p style={{ fontFamily: "var(--font-ui)", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", color: glow, marginTop: 12, opacity: 0.7 }}>POGLEDAJ ČLANOVE →</p>
                 </TiltCard>
               </motion.div>
             );
           })}
         </motion.div>
       )}
+
+      {membersModal && (
+        <TeamMembersModal
+          teamId={membersModal.teamId}
+          teamName={membersModal.teamName}
+          token={token ?? ""}
+          onClose={() => setMembersModal(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ─── Team Members Modal ─── */
+
+function TeamMembersModal({ teamId, teamName, token, onClose }: {
+  teamId: number;
+  teamName: string;
+  token: string;
+  onClose: () => void;
+}) {
+  const [members, setMembers] = useState<TeamMemberInfo[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const fetchMembers = async () => {
+      try {
+        const res = await fetch(`${BASE}teams/${teamId}/members`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (data.success) setMembers(data.data as TeamMemberInfo[]);
+        else setError("Neuspešno učitavanje članova");
+      } catch {
+        setError("Greška pri učitavanju");
+      } finally {
+        setLoading(false);
+      }
+    };
+    void fetchMembers();
+  }, [teamId, token]);
+
+  const captain = members.find(m => m.role === "captain");
+  const others = members.filter(m => m.role !== "captain");
+
+  return createPortal(
+    <AnimatePresence>
+      <motion.div
+        key="overlay"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.65)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.93, y: 16 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.93 }}
+          transition={{ type: "spring", stiffness: 340, damping: 28 }}
+          onClick={(e) => e.stopPropagation()}
+          className="pg-glass"
+          style={{ width: "100%", maxWidth: 440, borderRadius: 18, padding: 28, border: "1px solid var(--border-bright)" }}>
+
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 22 }}>
+            <div>
+              <p style={{ fontFamily: "var(--font-ui)", fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 4 }}>Članovi tima</p>
+              <p style={{ fontFamily: "var(--font-head)", fontSize: 20, fontWeight: 800, color: "var(--text)" }}>{teamName}</p>
+            </div>
+            <button onClick={onClose} style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: 22, lineHeight: 1, padding: 4 }}>×</button>
+          </div>
+
+          {loading ? (
+            <div style={{ display: "flex", justifyContent: "center", padding: "24px 0" }}><Spinner /></div>
+          ) : error ? (
+            <ErrorBox message={error} />
+          ) : members.length === 0 ? (
+            <p style={{ color: "var(--text-muted)", fontSize: 13, textAlign: "center", padding: "16px 0" }}>Nema članova.</p>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {captain && <MemberRow member={captain} />}
+              {others.map(m => <MemberRow key={m.playerId} member={m} />)}
+            </div>
+          )}
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>,
+    document.body
+  );
+}
+
+function MemberRow({ member }: { member: TeamMemberInfo }) {
+  const isCaptain = member.role === "captain";
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderRadius: 10, background: isCaptain ? "rgba(124,92,255,0.08)" : "rgba(255,255,255,0.03)", border: `1px solid ${isCaptain ? "rgba(124,92,255,0.25)" : "var(--border)"}` }}>
+      <div style={{ width: 34, height: 34, borderRadius: 10, background: isCaptain ? "rgba(124,92,255,0.18)" : "rgba(255,255,255,0.07)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        <span style={{ fontSize: 16 }}>{isCaptain ? "👑" : "🎮"}</span>
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ fontFamily: "var(--font-head)", fontSize: 14, fontWeight: 700, color: "var(--text)" }}>{member.gamerTag}</p>
+        {member.fullName && <p style={{ fontFamily: "var(--font-ui)", fontSize: 11, color: "var(--text-muted)" }}>{member.fullName}</p>}
+      </div>
+      <span style={{ fontFamily: "var(--font-ui)", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: isCaptain ? "var(--violet)" : "var(--text-dim)", background: isCaptain ? "rgba(124,92,255,0.12)" : "rgba(255,255,255,0.06)", padding: "2px 8px", borderRadius: 6 }}>
+        {isCaptain ? "kapiten" : "član"}
+      </span>
     </div>
   );
 }

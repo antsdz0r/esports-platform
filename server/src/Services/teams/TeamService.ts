@@ -2,6 +2,7 @@
 import { TeamMemberRole } from "../../Domain/enums/TeamMemberRole";
 import { Team } from "../../Domain/models/Team";
 import { TeamMember } from "../../Domain/models/TeamMember";
+import { TeamMemberWithUser } from "../../Domain/models/TeamMemberWithUser";
 import { ITeamMemberRepository } from "../../Domain/repositories/team_members/ITeamMemberRepository";
 import { ITeamRepository } from "../../Domain/repositories/teams/ITeamRepository";
 import { ITeamService } from "../../Domain/services/teams/ITeamService";
@@ -33,6 +34,10 @@ export class TeamService implements ITeamService {
 
   async getById(teamId: number): Promise<Team> {
     return this.teamRepo.findById(teamId);
+  }
+
+  async getTeamMembers(teamId: number): Promise<TeamMemberWithUser[]> {
+    return this.teamMemberRepo.getMembersWithUserInfo(teamId);
   }
 
   async create(payload: {

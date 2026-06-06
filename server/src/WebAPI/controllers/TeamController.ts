@@ -13,6 +13,7 @@ export class TeamController {
     this.router.get("/teams", authenticate, this.getMyTeams.bind(this));
     this.router.post("/teams", authenticate, this.create.bind(this));
     this.router.get("/teams/:id", this.getById.bind(this));
+    this.router.get("/teams/:id/members", this.getMembers.bind(this));
     this.router.put("/teams/:id", authenticate, this.update.bind(this));
     this.router.delete("/teams/:id", authenticate, this.delete.bind(this));
     this.router.patch("/teams/:id/members/:userId/role", authenticate, this.transferCaptain.bind(this));
@@ -193,6 +194,20 @@ private async getMyInvites(req: Request, res: Response): Promise<void> {
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 }
+
+  private async getMembers(req: Request, res: Response): Promise<void> {
+    try {
+      const id = parseInt(req.params.id as string, 10);
+      if (isNaN(id)) {
+        res.status(400).json({ success: false, message: "Invalid id" });
+        return;
+      }
+      const members = await this.teamService.getTeamMembers(id);
+      res.status(200).json({ success: true, data: members });
+    } catch {
+      res.status(500).json({ success: false, message: "Internal server error" });
+    }
+  }
 
   public getRouter(): Router {
     return this.router;

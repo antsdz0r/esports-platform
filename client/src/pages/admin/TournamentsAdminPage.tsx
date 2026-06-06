@@ -22,6 +22,7 @@ interface Tournament {
   gameName?: string;
   gameId?: number;
   registeredCount?: number;
+  imageUrl?: string | null;
 }
 
 interface TournamentForm {
@@ -32,11 +33,12 @@ interface TournamentForm {
   registrationDeadline: string;
   prizePool: string;
   status: string;
+  imageUrl: string;
 }
 
 const EMPTY_FORM: TournamentForm = {
   name: "", gameId: "", format: "single_elim", maxTeams: "8",
-  registrationDeadline: "", prizePool: "0", status: "open",
+  registrationDeadline: "", prizePool: "0", status: "open", imageUrl: "",
 };
 
 const FORMAT_LABEL: Record<string, string> = {
@@ -119,6 +121,7 @@ export default function TournamentsAdminPage() {
       registrationDeadline: toLocalDatetimeInput(t.registrationDeadline),
       prizePool: String(t.prizePool),
       status: t.status,
+      imageUrl: t.imageUrl ?? "",
     });
     setError("");
     setSuccess("");
@@ -145,6 +148,7 @@ export default function TournamentsAdminPage() {
         maxTeams,
         registrationDeadline: new Date(form.registrationDeadline).toISOString(),
         prizePool,
+        imageUrl: form.imageUrl.trim() || null,
         ...(editTournament ? { status: form.status } : {}),
       };
       const res = await fetch(
@@ -281,6 +285,9 @@ export default function TournamentsAdminPage() {
             </FormField>
             <FormField label="Nagradni fond ($)">
               <input style={inputStyle} type="number" min={0} value={form.prizePool} onChange={e => setForm(f => ({ ...f, prizePool: e.target.value }))} placeholder="0" />
+            </FormField>
+            <FormField label="Slika turnira (URL)">
+              <input style={inputStyle} type="url" value={form.imageUrl} onChange={e => setForm(f => ({ ...f, imageUrl: e.target.value }))} placeholder="https://primer.com/slika.jpg (opciono)" />
             </FormField>
             {editTournament && (
               <FormField label="Status">
