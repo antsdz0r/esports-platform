@@ -1,4 +1,5 @@
 import { Request, Response, Router } from "express";
+import "multer";
 import { UserRole } from "../../Domain/enums/UserRole";
 import { IGameCatalogService } from "../../Domain/services/games/IGameCatalogService";
 import { authenticate } from "../../Middlewares/authentification/AuthMiddleware";

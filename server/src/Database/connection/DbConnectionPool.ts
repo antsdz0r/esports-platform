@@ -2,7 +2,7 @@ import mysql, { Pool, PoolConnection } from "mysql2/promise";
 import dotenv from "dotenv";
 import { DbNode } from "../../Domain/models/DbNode";
 import { NodeStatus } from "../../Domain/enums/NodeStatus";
-import { HEALTH_CHECK_TIMEOUT, HEALTH_CHECK_INTERVAL_MS } from "../../Domain/constants/Constants";
+import { HEALTH_CHECK_TIMEOUT, HEALTH_CHECK_INTERVAL_MS, DEGRADED_THRESHOLD_MS } from "../../Domain/constants/Constants";
 import { ILoggerService } from "../../Domain/services/logger/ILoggerService";
 
 dotenv.config();
@@ -68,7 +68,7 @@ export class DbManager {
       conn = await info.pool.getConnection();
       await conn.query("SELECT 1");
       const ms = Date.now() - start;
-      info.node.status = ms > HEALTH_CHECK_TIMEOUT ? NodeStatus.DEGRADED : NodeStatus.HEALTHY;
+      info.node.status = ms > DEGRADED_THRESHOLD_MS ? NodeStatus.DEGRADED : NodeStatus.HEALTHY;
     } catch (err) {
       info.node.status = NodeStatus.OFFLINE;
       info.node.failedWrites++;

@@ -1,10 +1,10 @@
 import { Game } from "../../models/Game";
 import { MatchPlayer } from "../../models/MatchPlayer";
-import { MatchWithTeamsDto } from "../../DTOs/games/MatchWithTeamsDto";
+import { MatchWithTeams } from "../../models/MatchWithTeams";
 
 export interface IMatchService {
-  getByTournament(tournamentId: number): Promise<MatchWithTeamsDto[]>;
-  getScheduled(limit: number): Promise<MatchWithTeamsDto[]>;
+  getByTournament(tournamentId: number): Promise<MatchWithTeams[]>;
+  getScheduled(limit: number): Promise<MatchWithTeams[]>;
   countWinsForUser(userId: number): Promise<number>;
   getById(gameId: number): Promise<{ game: Game; players: MatchPlayer[] }>;
   addPlayer(gameId: number, playerId: number, teamId: number, captainId: number): Promise<{ ok: boolean; error?: string }>;

@@ -1,13 +1,13 @@
 import { Tournament } from "../../models/Tournament";
 import { TournamentStatus } from "../../enums/TournamentStatus";
-import { TournamentListDto } from "../../DTOs/tournaments/TournamentListDto";
+import { TournamentDetailed } from "../../models/TournamentDetailed";
 
 export interface ITournamentRepository {
   create(tournament: Tournament): Promise<Tournament>;
 
   findById(tournamentId: number): Promise<Tournament>;
   findAll(): Promise<Tournament[]>;
-  findAllDetailed(filters?: { gameId?: number; status?: TournamentStatus }): Promise<TournamentListDto[]>;
+  findAllDetailed(filters?: { gameId?: number; status?: TournamentStatus }): Promise<TournamentDetailed[]>;
   findByGameId(gameId: number): Promise<Tournament[]>;
 
   update(tournament: Tournament): Promise<boolean>;

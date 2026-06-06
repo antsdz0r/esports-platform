@@ -1,7 +1,7 @@
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 import { ITournamentRepository } from "../../../Domain/repositories/tournaments/ITournamentRepository";
 import { Tournament } from "../../../Domain/models/Tournament";
-import { TournamentListDto } from "../../../Domain/DTOs/tournaments/TournamentListDto";
+import { TournamentDetailed } from "../../../Domain/models/TournamentDetailed";
 import { TournamentFormat } from "../../../Domain/enums/TournamentFormat";
 import { TournamentStatus } from "../../../Domain/enums/TournamentStatus";
 import { DbManager } from "../../connection/DbConnectionPool";
@@ -93,8 +93,8 @@ export class TournamentRepository implements ITournamentRepository {
     }
   }
 
-  private mapDetailed(r: RowDataPacket): TournamentListDto {
-    return new TournamentListDto(
+  private mapDetailed(r: RowDataPacket): TournamentDetailed {
+    return new TournamentDetailed(
       r.tournamentid,
       r.game_id,
       r.name,
@@ -108,7 +108,7 @@ export class TournamentRepository implements ITournamentRepository {
     );
   }
 
-  async findAllDetailed(filters?: { gameId?: number; status?: TournamentStatus }): Promise<TournamentListDto[]> {
+  async findAllDetailed(filters?: { gameId?: number; status?: TournamentStatus }): Promise<TournamentDetailed[]> {
     const res = await this.db.getReadConnection();
     if (!res) return [];
 

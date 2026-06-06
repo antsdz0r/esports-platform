@@ -1,5 +1,5 @@
 import { Tournament } from "../../models/Tournament";
-import { TournamentListDto } from "../../DTOs/tournaments/TournamentListDto";
+import { TournamentDetailed } from "../../models/TournamentDetailed";
 import { TournamentRegistration } from "../../models/TournamentRegistration";
 import { TournamentRegistrationStatus } from "../../enums/TournamentRegistrationStatus";
 import { TournamentStatus } from "../../enums/TournamentStatus";
@@ -9,8 +9,8 @@ import { UpdateTournamentData } from "../../models/UpdateTournamentData";
 export interface ITournamentService {
   
   getAll(filters?: { gameId?: number; status?: TournamentStatus }): Promise<Tournament[]>;
-  getAllDetailed(filters?: { gameId?: number; status?: TournamentStatus }): Promise<TournamentListDto[]>;
-  getMyWatchlist(userId: number): Promise<TournamentListDto[]>;
+  getAllDetailed(filters?: { gameId?: number; status?: TournamentStatus }): Promise<TournamentDetailed[]>;
+  getMyWatchlist(userId: number): Promise<TournamentDetailed[]>;
   getById(id: number): Promise<Tournament>;
   create(data: CreateTournamentData): Promise<{ ok: boolean; tournament?: Tournament; error?: string }>;
   update(id: number, data: UpdateTournamentData): Promise<boolean>;

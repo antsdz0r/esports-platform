@@ -1,6 +1,6 @@
 import { Game } from "../../models/Game";
 import { GameStatus } from "../../enums/GameStatus";
-import { MatchWithTeamsDto } from "../../DTOs/games/MatchWithTeamsDto";
+import { MatchWithTeams } from "../../models/MatchWithTeams";
 
 export interface IGameRepository {
   create(game: Game): Promise<Game>;
@@ -17,8 +17,8 @@ export interface IGameRepository {
   findAll(): Promise<Game[]>;
 
   findByTournamentId(tournamentId: number): Promise<Game[]>;
-  findByTournamentIdWithTeams(tournamentId: number): Promise<MatchWithTeamsDto[]>;
-  findScheduledWithTeams(limit: number): Promise<MatchWithTeamsDto[]>;
+  findByTournamentIdWithTeams(tournamentId: number): Promise<MatchWithTeams[]>;
+  findScheduledWithTeams(limit: number): Promise<MatchWithTeams[]>;
   countWinsForUser(userId: number): Promise<number>;
   findByTeamId(teamId: number): Promise<Game[]>;
 

@@ -1,5 +1,5 @@
 import { Tournament } from "../../Domain/models/Tournament";
-import { TournamentListDto } from "../../Domain/DTOs/tournaments/TournamentListDto";
+import { TournamentDetailed } from "../../Domain/models/TournamentDetailed";
 import { TournamentRegistration } from "../../Domain/models/TournamentRegistration";
 import { TournamentFormat } from "../../Domain/enums/TournamentFormat";
 import { TournamentStatus } from "../../Domain/enums/TournamentStatus";
@@ -36,11 +36,11 @@ export class TournamentService implements ITournamentService {
     return all;
   }
 
-  async getAllDetailed(filters?: { gameId?: number; status?: TournamentStatus }): Promise<TournamentListDto[]> {
+  async getAllDetailed(filters?: { gameId?: number; status?: TournamentStatus }): Promise<TournamentDetailed[]> {
     return this.tournamentRepo.findAllDetailed(filters);
   }
 
-  async getMyWatchlist(userId: number): Promise<TournamentListDto[]> {
+  async getMyWatchlist(userId: number): Promise<TournamentDetailed[]> {
     const ids = await this.watchlistRepo.getByUser(userId);
     if (ids.length === 0) return [];
 

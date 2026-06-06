@@ -1,7 +1,7 @@
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 import { IGameRepository } from "../../../Domain/repositories/games/IGameRepository";
 import { Game } from "../../../Domain/models/Game";
-import { MatchWithTeamsDto } from "../../../Domain/DTOs/games/MatchWithTeamsDto";
+import { MatchWithTeams } from "../../../Domain/models/MatchWithTeams";
 import { GameStatus } from "../../../Domain/enums/GameStatus";
 import { DbManager } from "../../connection/DbConnectionPool";
 import { ILoggerService } from "../../../Domain/services/logger/ILoggerService";
@@ -105,8 +105,8 @@ export class GameRepository implements IGameRepository {
     }
   }
 
-  private mapWithTeams(r: RowDataPacket): MatchWithTeamsDto {
-    return new MatchWithTeamsDto(
+  private mapWithTeams(r: RowDataPacket): MatchWithTeams {
+    return new MatchWithTeams(
       r.game_id,
       r.tournament_id,
       r.team1_id,
@@ -120,7 +120,7 @@ export class GameRepository implements IGameRepository {
     );
   }
 
-  async findByTournamentIdWithTeams(tournamentId: number): Promise<MatchWithTeamsDto[]> {
+  async findByTournamentIdWithTeams(tournamentId: number): Promise<MatchWithTeams[]> {
     const res = await this.db.getReadConnection();
     if (!res) return [];
 
@@ -146,7 +146,7 @@ export class GameRepository implements IGameRepository {
     }
   }
 
-  async findScheduledWithTeams(limit: number): Promise<MatchWithTeamsDto[]> {
+  async findScheduledWithTeams(limit: number): Promise<MatchWithTeams[]> {
     const res = await this.db.getReadConnection();
     if (!res) return [];
 
