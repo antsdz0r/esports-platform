@@ -14,18 +14,18 @@ export class TeamInviteRepository implements ITeamInviteRepository {
     return new TeamInvite(r.id, r.team_id, r.inviter_id, r.invitee_id, r.status, new Date(r.created_at), r.team_name ?? null);
   }
 
-  public async create(teamId: number, inviterId: number, inviteeId: number): Promise<TeamInvite | null> {
+  public async create(teamId: number, inviterId: number, inviteeId: number): Promise<TeamInvite> {
     const res = await this.db.getWriteConnection();
-    if (!res) return null;
+    if (!res) return new TeamInvite();
     try {
       const [result] = await res.conn.execute<ResultSetHeader>(
         `INSERT INTO TEAM_INVITES (team_id, inviter_id, invitee_id) VALUES (?, ?, ?)`,
         [teamId, inviterId, inviteeId]
       );
-      return result.insertId > 0 ? new TeamInvite(result.insertId, teamId, inviterId, inviteeId) : null;
+      return result.insertId > 0 ? new TeamInvite(result.insertId, teamId, inviterId, inviteeId) : new TeamInvite();
     } catch {
       this.logger.error("TeamInviteRepository", "create failed");
-      return null;
+      return new TeamInvite();
     } finally {
       res.conn.release();
     }
@@ -51,18 +51,18 @@ export class TeamInviteRepository implements ITeamInviteRepository {
     }
   }
 
-  public async findById(id: number): Promise<TeamInvite | null> {
+  public async findById(id: number): Promise<TeamInvite> {
     const res = await this.db.getReadConnection();
-    if (!res) return null;
+    if (!res) return new TeamInvite();
     try {
       const [rows] = await res.conn.execute<RowDataPacket[]>(
         `SELECT * FROM TEAM_INVITES WHERE id = ?`,
         [id]
       );
-      return rows.length > 0 ? this.map(rows[0]) : null;
+      return rows.length > 0 ? this.map(rows[0]) : new TeamInvite();
     } catch {
       this.logger.error("TeamInviteRepository", "findById failed");
-      return null;
+      return new TeamInvite();
     } finally {
       res.conn.release();
     }

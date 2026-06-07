@@ -7,6 +7,8 @@ import { ITeamRepository } from "../../Domain/repositories/teams/ITeamRepository
 import { ITeamService } from "../../Domain/services/teams/ITeamService";
 import { ITeamInviteRepository } from "../../Domain/repositories/team_invites/ITeamInvitesRepository";
 import { TeamInvite } from "../../Domain/models/TeamInvites";
+import { CreateTeamData } from "../../Domain/models/CreateTeamData";
+import { UpdateTeamData } from "../../Domain/models/UpdateTeamData";
 
 export class TeamService implements ITeamService {
   public constructor(
@@ -41,48 +43,38 @@ export class TeamService implements ITeamService {
     return this.teamMemberRepo.getMembersWithUserInfo(teamId);
   }
 
-  async create(payload: {
-    userId: number;
-    teamName: string;
-    tag: string;
-    logo: string;
-    description?: string | null;
-  }): Promise<{ ok: boolean; team?: Team; error?: string }> {
-    const byName = await this.teamRepo.findByName(payload.teamName);
+  async create(data: CreateTeamData): Promise<{ ok: boolean; team?: Team; error?: string }> {
+    const byName = await this.teamRepo.findByName(data.teamName);
     if (byName.teamId !== 0) return { ok: false, error: "Tim sa tim imenom već postoji" };
 
-    const byTag = await this.teamRepo.findByTag(payload.tag);
+    const byTag = await this.teamRepo.findByTag(data.tag);
     if (byTag.teamId !== 0) return { ok: false, error: "Tim sa tim tagom već postoji" };
 
     const team = await this.teamRepo.create(
-      new Team(0, payload.teamName, payload.tag, payload.logo, payload.description ?? null)
+      new Team(0, data.teamName, data.tag, data.logo, data.description ?? null)
     );
     if (team.teamId === 0) return { ok: false, error: "Greška pri kreiranju tima" };
 
     const added = await this.teamMemberRepo.addMember(
-      new TeamMember(team.teamId, payload.userId, TeamMemberRole.CAPTAIN, new Date())
+      new TeamMember(team.teamId, data.userId, TeamMemberRole.CAPTAIN, new Date())
     );
     if (!added) return { ok: false, error: "Greška pri dodavanju kapitena" };
 
     return { ok: true, team };
   }
 
-  async update(
-    userId: number,
-    teamId: number,
-    payload: { teamName: string; tag: string; logo: string; description?: string | null }
-  ): Promise<boolean> {
+  async update(userId: number, teamId: number, data: UpdateTeamData): Promise<boolean> {
     const captain = await this.isCaptain(userId, teamId);
     if (!captain) return false;
 
-    const byName = await this.teamRepo.findByName(payload.teamName);
+    const byName = await this.teamRepo.findByName(data.teamName);
     if (byName.teamId !== 0 && byName.teamId !== teamId) return false;
 
-    const byTag = await this.teamRepo.findByTag(payload.tag);
+    const byTag = await this.teamRepo.findByTag(data.tag);
     if (byTag.teamId !== 0 && byTag.teamId !== teamId) return false;
 
     return this.teamRepo.update(
-      new Team(teamId, payload.teamName, payload.tag, payload.logo, payload.description ?? null)
+      new Team(teamId, data.teamName, data.tag, data.logo, data.description ?? null)
     );
   }
 
@@ -129,12 +121,12 @@ export class TeamService implements ITeamService {
     if (alreadyInvited) return { ok: false, error: "Pozivnica već postoji" };
 
     const invite = await this.teamInviteRepo.create(teamId, captainId, inviteeId);
-    return invite ? { ok: true } : { ok: false, error: "Greška pri slanju pozivnice" };
+    return invite.id !== 0 ? { ok: true } : { ok: false, error: "Greška pri slanju pozivnice" };
   }
 
   async respondInvite(userId: number, inviteId: number, accept: boolean): Promise<{ ok: boolean; error?: string }> {
     const invite = await this.teamInviteRepo.findById(inviteId);
-    if (!invite) return { ok: false, error: "Pozivnica nije pronađena" };
+    if (invite.id === 0) return { ok: false, error: "Pozivnica nije pronađena" };
     if (invite.inviteeId !== userId) return { ok: false, error: "Nije vaša pozivnica" };
 
     const status = accept ? "accepted" : "declined";

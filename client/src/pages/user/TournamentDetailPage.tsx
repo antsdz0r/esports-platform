@@ -817,7 +817,7 @@ function MemberRow({ member, onRemove }: { member: TeamMemberInfo; onRemove?: ()
 
 interface MatchPlayer { gameId: number; playerId: number; teamId: number; performance: string | null; }
 
-function MatchCard({ match, isAdmin, token, tournamentId, onRefresh }: {
+function MatchCard({ match, isAdmin, token, onRefresh }: {
   match: Match;
   isAdmin: boolean;
   token: string;

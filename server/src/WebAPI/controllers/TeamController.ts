@@ -2,6 +2,8 @@ import { Request, Response, Router } from "express";
 import { ITeamService } from "../../Domain/services/teams/ITeamService";
 import { authenticate } from "../../Middlewares/authentification/AuthMiddleware";
 import { validateTeam } from "../validators/teams/validateTeams";
+import { CreateTeamData } from "../../Domain/models/CreateTeamData";
+import { UpdateTeamData } from "../../Domain/models/UpdateTeamData";
 
 export class TeamController {
   private readonly router = Router();
@@ -50,7 +52,9 @@ export class TeamController {
         res.status(400).json({ success: false, message: validation.message });
         return;
       }
-      const created = await this.teamService.create({ userId: req.user!.id, teamName, tag, logo, description });
+      const created = await this.teamService.create(
+        new CreateTeamData(req.user!.id, teamName, tag, logo ?? "", description ?? null)
+      );
       if (!created.ok) {
         res.status(400).json({ success: false, message: created.error ?? "Team create failed" });
         return;
@@ -91,7 +95,9 @@ export class TeamController {
       const { teamName, tag, logo, description } = req.body;
       const validation = validateTeam(teamName, tag, logo);
       if (!validation.valid) { res.status(400).json({ success: false, message: validation.message }); return; }
-      const ok = await this.teamService.update(req.user!.id, id, { teamName, tag, logo, description });
+      const ok = await this.teamService.update(
+        req.user!.id, id, new UpdateTeamData(teamName, tag, logo ?? "", description ?? null)
+      );
       res.status(ok ? 200 : 403).json({ success: ok, message: ok ? "Team updated" : "Update denied" });
     } catch {
       res.status(500).json({ success: false, message: "Internal server error" });

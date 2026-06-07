@@ -11,6 +11,8 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import UsersPage from "./pages/admin/UsersPage";
 import GamesPage from "./pages/admin/GamesPage";
 import TournamentsAdminPage from "./pages/admin/TournamentsAdminPage";
+import AuditLogPage from "./pages/admin/AuditLogPage";
+import HealthPage from "./pages/admin/HealthPage";
 
 import TournamentsPage from "./pages/user/TournamentsPage";
 import TournamentDetailPage from "./pages/user/TournamentDetailPage";
@@ -24,7 +26,7 @@ export default function App() {
     <Routes>
       <Route path="/login"    element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
-      
+
 
       {/* User routes */}
       <Route path="/dashboard" element={<ProtectedRoute requiredRole="player"><UserDashboard /></ProtectedRoute>} />
@@ -39,9 +41,11 @@ export default function App() {
       <Route path="/admin/users"          element={<ProtectedRoute requiredRole="admin"><UsersPage /></ProtectedRoute>} />
       <Route path="/admin/games"          element={<ProtectedRoute requiredRole="admin"><GamesPage /></ProtectedRoute>} />
       <Route path="/admin/tournaments"    element={<ProtectedRoute requiredRole="admin"><TournamentsAdminPage /></ProtectedRoute>} />
+      <Route path="/admin/audit"          element={<ProtectedRoute requiredRole="admin"><AuditLogPage /></ProtectedRoute>} />
+      <Route path="/admin/health"         element={<ProtectedRoute requiredRole="admin"><HealthPage /></ProtectedRoute>} />
       <Route path="/admin/tournaments/:id" element={<ProtectedRoute requiredRole="admin"><TournamentDetailPage isAdmin /></ProtectedRoute>} />
 
-      {/* Public — no login required */}
+      {/* Public */}
       <Route path="/tournaments/:id" element={<TournamentDetailPage />} />
 
       <Route path="/"    element={<Navigate to="/login" replace />} />

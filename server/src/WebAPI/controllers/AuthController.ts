@@ -18,7 +18,7 @@ export class AuthController {
 }
 
   private initializeRoutes(): void {
-    
+
     this.router.post("/auth/login", this.login.bind(this));
     this.router.post("/auth/register", this.register.bind(this));
     this.router.post("/auth/logout", authenticate, this.logout.bind(this));
@@ -52,6 +52,9 @@ export class AuthController {
         gamerTag: result.gamerTag,
         role: result.role,
       });
+
+      const loginIp = req.socket.remoteAddress ?? null;
+      await this.auditLogService.log(result.id, "LOGIN", "user", result.id, `Korisnik ${result.gamerTag} se prijavio`, loginIp);
 
       res.status(200).json({
         success: true,
@@ -88,7 +91,7 @@ export class AuthController {
       }
 
 
-      
+
       const result = await this.authService.register(
           gamerTag,
           email,
@@ -110,6 +113,9 @@ export class AuthController {
         gamerTag: result.gamerTag,
         role: result.role,
       });
+
+      const registerIp = req.socket.remoteAddress ?? null;
+      await this.auditLogService.log(result.id, "REGISTER", "user", result.id, `Nov korisnik registrovan: ${result.gamerTag}`, registerIp);
 
       res.status(201).json({
         success: true,

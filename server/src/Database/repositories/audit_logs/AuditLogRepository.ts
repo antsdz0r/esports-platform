@@ -41,13 +41,17 @@ export class AuditLogRepository implements IAuditLogRepository {
   }
 
   public async findAll(page: number, limit: number): Promise<{ logs: AuditLog[]; total: number }> {
-    const res = await this.db.getWriteConnection();
-    console.log("findAll connection:", res ? res.nodeName : "NULL");
+    const res = await this.db.getReadConnection();
     if (!res) return { logs: [], total: 0 };
     try {
-      const offset = (page - 1) * limit;
+      // Sanitizacija u cele brojeve — mysql2 prepared mode ne podrzava ? za LIMIT/OFFSET,
+      // pa garantujemo da se interpoliraju iskljucivo bezbedni celobrojni rasponi.
+      const safeLimit = Math.min(100, Math.max(1, Math.trunc(Number(limit)) || 20));
+      const safePage = Math.max(1, Math.trunc(Number(page)) || 1);
+      const safeOffset = (safePage - 1) * safeLimit;
+
       const [rows] = await res.conn.execute<RowDataPacket[]>(
-        `SELECT * FROM AUDIT_LOGS ORDER BY created_at DESC LIMIT ${limit} OFFSET ${offset}`
+        `SELECT * FROM AUDIT_LOGS ORDER BY created_at DESC LIMIT ${safeLimit} OFFSET ${safeOffset}`
       );
       const [countRows] = await res.conn.execute<RowDataPacket[]>(
         `SELECT COUNT(*) as total FROM AUDIT_LOGS`

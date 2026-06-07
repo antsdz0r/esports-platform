@@ -2,140 +2,121 @@ import { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../hooks/auth/useAuthHook";
-import { PageHeader, StatCard, NodeBadge, Spinner, Counter, PgBtn } from "../../components/ui/UI";
+import { PageHeader, StatCard, Counter, Spinner, PgBtn } from "../../components/ui/UI";
 import { fadeUp, staggerContainer } from "../../components/ui/motion";
 import { parseData } from "../../helpers/api";
+import { auditLogApi } from "../../api_services/audit_logs/AuditLogAPIService";
+import type { AuditLogDto } from "../../models/audit/AuditLogTypes";
 
-interface DbNode  { name: string; role: string; host: string; port: number; status: string; latency_ms?: number; last_check: string; }
-interface ApiNode { name: string; url: string;  status: string; latency_ms?: number; active_connections?: number; last_check: string; }
+interface TournamentRow { tournamentId: number; status: string }
+interface DbNodeRow { status?: string }
 
 const BASE = import.meta.env.VITE_API_URL;
 
-function mapDbNode(raw: Record<string, unknown>): DbNode {
-  const name = String(raw.name ?? "");
-  return {
-    name: name === "master" ? "MySQL Master" : name === "slave1" ? "MySQL Slave 1" : name === "slave2" ? "MySQL Slave 2" : name,
-    role: name === "master" ? "master" : "slave",
-    host: String(raw.host ?? ""),
-    port: Number(raw.port ?? 0),
-    status: String(raw.status ?? "offline"),
-    last_check: raw.lastCheck ? String(raw.lastCheck) : new Date().toISOString(),
-  };
-}
-
-function mapApiNode(raw: Record<string, unknown>): ApiNode {
-  return {
-    name: String(raw.name ?? "API Server"),
-    url: String(raw.url ?? ""),
-    status: String(raw.status ?? "unreachable"),
-    latency_ms: raw.latencyMs != null ? Number(raw.latencyMs) : undefined,
-    active_connections: raw.activeConnections != null ? Number(raw.activeConnections) : 0,
-    last_check: raw.lastCheck ? String(raw.lastCheck) : new Date().toISOString(),
-  };
+function actionColor(action: string): string {
+  const a = action.toUpperCase();
+  if (a.includes("DELETE") || a.includes("DISQUALIF") || a.includes("FAIL")) return "var(--pink)";
+  if (a.includes("CREATE") || a.includes("REGISTER")) return "var(--green)";
+  if (a.includes("UPDATE") || a.includes("EDIT") || a.includes("PATCH")) return "var(--gold)";
+  if (a.includes("LOGIN") || a.includes("LOGOUT")) return "var(--violet2)";
+  return "var(--text-soft)";
 }
 
 export default function AdminDashboard() {
   const { token } = useAuth();
-  const [dbNodes, setDbNodes] = useState<DbNode[]>([]);
-  const [apiNodes, setApiNodes] = useState<ApiNode[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [tick, setTick] = useState(0);
+  const headers = { Authorization: `Bearer ${token}` };
 
-  const fetchHealth = useCallback(async () => {
+  const [loading, setLoading] = useState(true);
+  const [usersCount, setUsersCount] = useState(0);
+  const [gamesCount, setGamesCount] = useState(0);
+  const [tournaments, setTournaments] = useState<TournamentRow[]>([]);
+  const [recent, setRecent] = useState<AuditLogDto[]>([]);
+  const [dbHealthy, setDbHealthy] = useState(0);
+  const [dbTotal, setDbTotal] = useState(0);
+
+  const load = useCallback(async () => {
     try {
-      const [dbRes, apiRes] = await Promise.allSettled([
-        fetch(`${BASE}health/db`, { headers: { Authorization: `Bearer ${token}` } }).then((r) => r.json()),
-        fetch(`${BASE}health/api`, { headers: { Authorization: `Bearer ${token}` } }).then((r) => r.json()),
+      const [usersRes, gamesRes, tournRes, auditRes, dbRes] = await Promise.allSettled([
+        fetch(`${BASE}users`, { headers }).then((r) => r.json()),
+        fetch(`${BASE}games`, { headers }).then((r) => r.json()),
+        fetch(`${BASE}tournaments`, { headers }).then((r) => r.json()),
+        auditLogApi.getAll(1, 6),
+        fetch(`${BASE}health/db`, { headers }).then((r) => r.json()),
       ]);
+
+      if (usersRes.status === "fulfilled") setUsersCount(parseData<object>(usersRes.value).length);
+      if (gamesRes.status === "fulfilled") setGamesCount(parseData<object>(gamesRes.value).length);
+      if (tournRes.status === "fulfilled") setTournaments(parseData<TournamentRow>(tournRes.value));
+      if (auditRes.status === "fulfilled" && auditRes.value.success) setRecent(auditRes.value.data ?? []);
       if (dbRes.status === "fulfilled") {
-        setDbNodes(parseData<Record<string, unknown>>(dbRes.value).map(mapDbNode));
-      }
-      if (apiRes.status === "fulfilled") {
-        setApiNodes(parseData<Record<string, unknown>>(apiRes.value).map(mapApiNode));
+        const nodes = parseData<DbNodeRow>(dbRes.value);
+        setDbTotal(nodes.length);
+        setDbHealthy(nodes.filter((n) => n.status === "healthy").length);
       }
     } catch {
-      setDbNodes([]);
-      setApiNodes([]);
+      /* ignore */
     } finally {
       setLoading(false);
     }
   }, [token]);
 
-  useEffect(() => {
-    void fetchHealth();
-    const interval = setInterval(() => { void fetchHealth(); setTick((t) => t + 1); }, 10000);
-    return () => clearInterval(interval);
-  }, [fetchHealth]);
+  useEffect(() => { void load(); }, [load]);
 
-  const all = [...dbNodes, ...apiNodes];
-  const healthy = all.filter((n) => n.status === "healthy").length;
-  const degraded = all.filter((n) => n.status === "degraded").length;
-  const down = all.filter((n) => n.status === "unreachable" || n.status === "offline").length;
-
-  const NodeCard = ({ node }: { node: DbNode | ApiNode }) => {
-    const isDb = "role" in node;
-    const accent = node.status === "healthy" ? "var(--green)" : node.status === "degraded" ? "var(--gold)" : "var(--pink)";
-    const latColor = node.latency_ms && node.latency_ms > 500 ? "var(--gold)" : "var(--green)";
-    return (
-      <motion.div variants={fadeUp} whileHover={{ y: -4 }} className="pg-glass"
-        style={{ padding: 20, position: "relative", overflow: "hidden", border: `1px solid ${accent}33` }}>
-        <div style={{ position: "absolute", top: -40, right: -40, width: 110, height: 110, borderRadius: "50%", background: `radial-gradient(circle, ${accent}22, transparent 70%)`, pointerEvents: "none" }} />
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16, gap: 12 }}>
-          <div>
-            <p style={{ fontFamily: "var(--font-head)", fontSize: 15, fontWeight: 700, color: "var(--text)", marginBottom: 3 }}>{node.name}</p>
-            <p style={{ fontFamily: "monospace", fontSize: 11, color: "var(--text-dim)" }}>{isDb ? `${(node as DbNode).host}:${(node as DbNode).port}` : (node as ApiNode).url}</p>
-          </div>
-          <NodeBadge status={node.status} />
-        </div>
-        <div style={{ display: "flex", gap: 22, marginBottom: 12 }}>
-          <div>
-            <p style={statLbl}>Latencija</p>
-            <p style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 900, color: node.status === "unreachable" ? "var(--pink)" : latColor }}>{node.latency_ms != null ? `${node.latency_ms}ms` : "N/A"}</p>
-          </div>
-          <div>
-            <p style={statLbl}>{isDb ? "Uloga" : "Konekcije"}</p>
-            {isDb
-              ? <span className="pg-badge" style={{ background: (node as DbNode).role === "master" ? "rgba(255,45,126,0.12)" : "rgba(124,92,255,0.12)", color: (node as DbNode).role === "master" ? "var(--pink)" : "var(--violet2)", border: `1px solid ${(node as DbNode).role === "master" ? "rgba(255,45,126,0.3)" : "rgba(124,92,255,0.3)"}`, marginTop: 4 }}>{(node as DbNode).role.toUpperCase()}</span>
-              : <p style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 900, color: "var(--text)" }}>{(node as ApiNode).active_connections ?? 0}</p>}
-          </div>
-        </div>
-        <p style={{ fontFamily: "monospace", fontSize: 10, color: "var(--text-dim)" }}>Provera: {new Date(node.last_check).toLocaleTimeString("sr")}</p>
-      </motion.div>
-    );
-  };
+  const tOpen = tournaments.filter((t) => t.status === "open").length;
+  const tOngoing = tournaments.filter((t) => t.status === "ongoing" || t.status === "locked").length;
+  const tCompleted = tournaments.filter((t) => t.status === "completed").length;
 
   return (
     <div>
-      <PageHeader eyebrow="Admin · Control Panel" title="Dashboard"
+      <PageHeader eyebrow="Admin · Pregled" title="Dashboard"
         action={
-          <div style={{ display: "flex", gap: 8 }}>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <Link to="/admin/tournaments"><PgBtn variant="primary" size="sm">+ Turnir</PgBtn></Link>
             <Link to="/admin/games"><PgBtn variant="ghost" size="sm">🎮 Igre</PgBtn></Link>
-            <Link to="/admin/tournaments"><PgBtn variant="ghost" size="sm">🏆 Turniri</PgBtn></Link>
             <Link to="/admin/users"><PgBtn variant="ghost" size="sm">👥 Korisnici</PgBtn></Link>
+            <Link to="/admin/audit"><PgBtn variant="ghost" size="sm">📜 Audit</PgBtn></Link>
+            <Link to="/admin/health"><PgBtn variant="ghost" size="sm">♥ Health</PgBtn></Link>
           </div>
         } />
 
-      <motion.div variants={staggerContainer(0.08)} initial="hidden" animate="show"
-        style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 16, marginBottom: 32 }}>
-        <motion.div variants={fadeUp}><StatCard label="Ukupno čvorova" value={<Counter value={all.length} />} icon="🖥️" /></motion.div>
-        <motion.div variants={fadeUp}><StatCard label="Healthy"  value={<Counter value={healthy} />}  color="var(--green)" icon="✅" /></motion.div>
-        <motion.div variants={fadeUp}><StatCard label="Degraded" value={<Counter value={degraded} />} color="var(--gold)"  icon="⚠️" /></motion.div>
-        <motion.div variants={fadeUp}><StatCard label="Offline"  value={<Counter value={down} />}     color="var(--pink)"  icon="❌" /></motion.div>
-      </motion.div>
-
       {loading ? <Spinner /> : (
         <>
-          <SectionTitle label="Database Nodes" right={`AUTO-REFRESH 10s · tick#${tick}`} />
-          <motion.div variants={staggerContainer(0.08)} initial="hidden" animate="show"
-            style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(290px, 1fr))", gap: 16, marginBottom: 32 }}>
-            {dbNodes.length === 0 ? <p style={{ color: "var(--text-muted)", fontSize: 13 }}>Nema podataka o DB čvorovima.</p> : dbNodes.map((n, i) => <NodeCard key={i} node={n} />)}
+          <motion.div variants={staggerContainer(0.07)} initial="hidden" animate="show"
+            style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 16, marginBottom: 28 }}>
+            <motion.div variants={fadeUp}><StatCard label="Korisnici" value={<Counter value={usersCount} />} icon="👥" /></motion.div>
+            <motion.div variants={fadeUp}><StatCard label="Igre u katalogu" value={<Counter value={gamesCount} />} icon="🎮" /></motion.div>
+            <motion.div variants={fadeUp}><StatCard label="Turniri (ukupno)" value={<Counter value={tournaments.length} />} icon="🏆" /></motion.div>
+            <motion.div variants={fadeUp}><StatCard label="Aktivni turniri" value={<Counter value={tOngoing} />} color="var(--gold)" icon="⚔️" /></motion.div>
           </motion.div>
 
-          <SectionTitle label="API Server Nodes" />
-          <motion.div variants={staggerContainer(0.08)} initial="hidden" animate="show"
-            style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(290px, 1fr))", gap: 16 }}>
-            {apiNodes.length === 0 ? <p style={{ color: "var(--text-muted)", fontSize: 13 }}>Nema podataka o API čvorovima.</p> : apiNodes.map((n, i) => <NodeCard key={i} node={n} />)}
+          <motion.div variants={staggerContainer(0.07)} initial="hidden" animate="show"
+            style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 16, marginBottom: 32 }}>
+            <motion.div variants={fadeUp}><StatCard label="Otvorene prijave" value={<Counter value={tOpen} />} color="var(--green)" icon="📝" /></motion.div>
+            <motion.div variants={fadeUp}><StatCard label="Završeni turniri" value={<Counter value={tCompleted} />} color="var(--violet2)" icon="🏁" /></motion.div>
+            <motion.div variants={fadeUp}>
+              <Link to="/admin/health" style={{ textDecoration: "none" }}>
+                <StatCard label="Zdravlje baze" value={`${dbHealthy}/${dbTotal}`} color={dbTotal > 0 && dbHealthy === dbTotal ? "var(--green)" : "var(--pink)"} icon="🛢️" sub="klikni za Health" />
+              </Link>
+            </motion.div>
           </motion.div>
+
+          <SectionTitle label="Najnovija aktivnost" right="audit log" />
+          <div className="pg-glass" style={{ padding: 8, border: "1px solid var(--border)" }}>
+            {recent.length === 0 ? (
+              <p style={{ color: "var(--text-muted)", fontSize: 13, padding: 16 }}>Nema zabeležene aktivnosti.</p>
+            ) : recent.map((l, i) => (
+              <motion.div key={l.id}
+                initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.03 }}
+                style={{ display: "flex", alignItems: "center", gap: 14, padding: "11px 14px", borderTop: i === 0 ? "none" : "1px solid var(--border)" }}>
+                <span className="pg-badge" style={{ minWidth: 130, textAlign: "center", color: actionColor(l.action), border: `1px solid ${actionColor(l.action)}33`, background: `${actionColor(l.action)}14`, fontFamily: "var(--font-ui)", fontSize: 11, fontWeight: 700 }}>{l.action}</span>
+                <span style={{ flex: 1, fontSize: 13, color: "var(--text-soft)" }}>{l.description ?? (l.entity ?? "—")}</span>
+                <span style={{ fontFamily: "monospace", fontSize: 11, color: "var(--text-dim)", whiteSpace: "nowrap" }}>{new Date(l.createdAt).toLocaleString("sr")}</span>
+              </motion.div>
+            ))}
+            <div style={{ padding: "10px 14px", borderTop: "1px solid var(--border)" }}>
+              <Link to="/admin/audit" style={{ fontFamily: "var(--font-ui)", fontSize: 12, fontWeight: 700, color: "var(--violet2)", textDecoration: "none" }}>Ceo audit log →</Link>
+            </div>
+          </div>
         </>
       )}
     </div>
@@ -151,5 +132,3 @@ function SectionTitle({ label, right }: { label: string; right?: string }) {
     </div>
   );
 }
-
-const statLbl: React.CSSProperties = { fontFamily: "var(--font-ui)", fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 4 };

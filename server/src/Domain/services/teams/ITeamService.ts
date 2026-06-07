@@ -1,24 +1,16 @@
-
 import { Team } from "../../models/Team";
 import { TeamMemberWithUser } from "../../models/TeamMemberWithUser";
 import { TeamInvite } from "../../models/TeamInvites";
+import { CreateTeamData } from "../../models/CreateTeamData";
+import { UpdateTeamData } from "../../models/UpdateTeamData";
+
 export interface ITeamService {
   getMyTeams(userId: number): Promise<Team[]>;
   getCaptainTeams(userId: number): Promise<Team[]>;
   getById(teamId: number): Promise<Team>;
   getTeamMembers(teamId: number): Promise<TeamMemberWithUser[]>;
-  create(payload: {
-    userId: number;
-    teamName: string;
-    tag: string;
-    logo: string;
-    description?: string | null;
-  }): Promise<{ ok: boolean; team?: Team; error?: string }>;
-  update(
-    userId: number,
-    teamId: number,
-    payload: { teamName: string; tag: string; logo: string; description?: string | null }
-  ): Promise<boolean>;
+  create(data: CreateTeamData): Promise<{ ok: boolean; team?: Team; error?: string }>;
+  update(userId: number, teamId: number, data: UpdateTeamData): Promise<boolean>;
   delete(userId: number, teamId: number): Promise<boolean>;
   transferCaptain(userId: number, teamId: number, targetUserId: number): Promise<boolean>;
   removeMember(userId: number, teamId: number, targetUserId: number): Promise<boolean>;

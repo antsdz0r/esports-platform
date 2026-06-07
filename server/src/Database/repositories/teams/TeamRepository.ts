@@ -35,8 +35,8 @@ export class TeamRepository implements ITeamRepository {
         [
           team.teamName,
           team.tag,
-          team.logo,
-          team.description,
+          team.logo ?? "",
+          team.description ?? null,
         ]
       );
 
@@ -49,8 +49,8 @@ export class TeamRepository implements ITeamRepository {
         team.logo,
         team.description
       );
-    } catch {
-      this.logger.error("TeamRepository", "create failed");
+    } catch (err) {
+      this.logger.error("TeamRepository", "create failed: " + (err instanceof Error ? err.message : String(err)));
       return new Team();
     } finally {
       res.conn.release();
@@ -149,8 +149,8 @@ export class TeamRepository implements ITeamRepository {
         [
           team.teamName,
           team.tag,
-          team.logo,
-          team.description,
+          team.logo ?? "",
+          team.description ?? null,
           team.teamId,
         ]
       );

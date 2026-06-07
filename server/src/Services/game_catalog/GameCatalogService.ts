@@ -2,6 +2,8 @@ import { GameCatalog } from "../../Domain/models/GameCatalog";
 import { IGameCatalogRepository } from "../../Domain/repositories/game_catalog/IGameCatalogRepository";
 import { ITournamentRepository } from "../../Domain/repositories/tournaments/ITournamentRepository";
 import { IGameCatalogService } from "../../Domain/services/games/IGameCatalogService";
+import { CreateGameData } from "../../Domain/models/CreateGameData";
+import { UpdateGameData } from "../../Domain/models/UpdateGameData";
 
 export class GameCatalogService implements IGameCatalogService {
   public constructor(
@@ -17,48 +19,33 @@ export class GameCatalogService implements IGameCatalogService {
     return this.gameRepo.findById(gameId);
   }
 
-  async create(payload: {
-    name: string;
-    tag: string;
-    genre: string;
-    maxPlayers: number;
-    imageUrl?: string | null;
-  }): Promise<{ ok: boolean; game?: GameCatalog; error?: string }> {
-    const byName = await this.gameRepo.findByName(payload.name);
+  async create(data: CreateGameData): Promise<{ ok: boolean; game?: GameCatalog; error?: string }> {
+    const byName = await this.gameRepo.findByName(data.name);
     if (byName.gameId !== 0) return { ok: false, error: "Igra sa tim imenom vec postoji" };
 
-    const byTag = await this.gameRepo.findByTag(payload.tag);
+    const byTag = await this.gameRepo.findByTag(data.tag);
     if (byTag.gameId !== 0) return { ok: false, error: "Igra sa tim tagom vec postoji" };
 
     const created = await this.gameRepo.create(
-      new GameCatalog(0, payload.name, payload.tag, payload.genre, payload.maxPlayers, payload.imageUrl ?? null)
+      new GameCatalog(0, data.name, data.tag, data.genre, data.maxPlayers, data.imageUrl ?? null)
     );
     if (created.gameId === 0) return { ok: false, error: "Greska pri kreiranju igre" };
 
     return { ok: true, game: created };
   }
 
-  async update(
-    gameId: number,
-    payload: {
-      name: string;
-      tag: string;
-      genre: string;
-      maxPlayers: number;
-      imageUrl?: string | null;
-    }
-  ): Promise<boolean> {
+  async update(gameId: number, data: UpdateGameData): Promise<boolean> {
     const existing = await this.gameRepo.findById(gameId);
     if (existing.gameId === 0) return false;
 
-    const byName = await this.gameRepo.findByName(payload.name);
+    const byName = await this.gameRepo.findByName(data.name);
     if (byName.gameId !== 0 && byName.gameId !== gameId) return false;
 
-    const byTag = await this.gameRepo.findByTag(payload.tag);
+    const byTag = await this.gameRepo.findByTag(data.tag);
     if (byTag.gameId !== 0 && byTag.gameId !== gameId) return false;
 
     return this.gameRepo.update(
-      new GameCatalog(gameId, payload.name, payload.tag, payload.genre, payload.maxPlayers, payload.imageUrl ?? null)
+      new GameCatalog(gameId, data.name, data.tag, data.genre, data.maxPlayers, data.imageUrl ?? null)
     );
   }
 

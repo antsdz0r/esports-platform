@@ -4,17 +4,14 @@ import { authenticate } from "../../Middlewares/authentification/AuthMiddleware"
 import { authorize } from "../../Middlewares/authorization/AuthorizeMiddleware";
 import { UserRole } from "../../Domain/enums/UserRole";
 
-
-
 export class AuditLogController {
   private readonly router = Router();
 
-   public constructor(private readonly auditLogService: IAuditLogService) {
+  public constructor(private readonly auditLogService: IAuditLogService) {
     this.router.get("/audits/logs", authenticate, authorize(UserRole.ADMIN), this.getAll.bind(this));
   }
 
   private async getAll(req: Request, res: Response): Promise<void> {
-    console.log("getAll called");
     try {
       const page  = parseInt(req.query.page  as string ?? "1",  10) || 1;
       const limit = parseInt(req.query.limit as string ?? "20", 10) || 20;

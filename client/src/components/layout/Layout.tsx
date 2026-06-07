@@ -1,4 +1,4 @@
-import { type ReactNode, useState } from "react";
+import { type ReactNode, type CSSProperties, useState, useEffect } from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../../hooks/auth/useAuthHook";
@@ -20,6 +20,23 @@ const adminNav = [
   { to: "/admin/health", label: "Health",    icon: "♥" },
 ];
 
+const pgRnd = (i: number, k: number): number => {
+  const v = Math.sin((i + 1) * (k + 1) * 12.9898) * 43758.5453;
+  return Math.round((v - Math.floor(v) - 0.5) * 2 * 26);
+};
+
+const PG_SCATTER: { x: number; y: number; r: number }[] = [
+  { x: -300, y: -130, r: -50 },
+  { x: 240,  y: -90,  r: 40 },
+  { x: -180, y: 140,  r: -30 },
+  { x: 320,  y: 60,   r: 55 },
+  { x: -260, y: -40,  r: -45 },
+  { x: 180,  y: 120,  r: 30 },
+  { x: -140, y: -150, r: -25 },
+  { x: 280,  y: -120, r: 48 },
+  { x: -220, y: 100,  r: -38 },
+];
+
 export function Layout({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -29,6 +46,18 @@ export function Layout({ children }: { children: ReactNode }) {
   const [profileOpen, setProfileOpen] = useState(false);
   const nav = user?.role === "admin" ? adminNav : userNav;
   const W = collapsed ? 76 : 232;
+  const [theme, setTheme] = useState<"dark" | "light">(() => (localStorage.getItem("theme") === "light" ? "light" : "dark"));
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("theme", theme);
+  }, [theme]);
+
+  const [reveal, setReveal] = useState<null | "dark" | "light">(null);
+
+  const toggleTheme = () => {
+    if (reveal) return;
+    setReveal(theme === "dark" ? "light" : "dark");
+  };
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: "var(--bg-deep)", position: "relative" }}>
@@ -41,7 +70,7 @@ export function Layout({ children }: { children: ReactNode }) {
         style={{ flexShrink: 0, position: "sticky", top: 0, height: "100vh", zIndex: 20,
           display: "flex", flexDirection: "column",
           borderRight: "1px solid var(--border)",
-          background: "rgba(9,11,26,0.75)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}
+          background: "var(--panel-bg)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}
       >
         {/* Logo */}
         <div style={{ padding: collapsed ? "0 18px" : "0 20px", height: 68, display: "flex", alignItems: "center", gap: 12, borderBottom: "1px solid var(--border)" }}>
@@ -107,6 +136,24 @@ export function Layout({ children }: { children: ReactNode }) {
                 <p style={{ fontFamily: "var(--font-ui)", fontSize: 13, fontWeight: 700, color: "var(--text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{user?.username}</p>
               </div>
             )}
+            {!collapsed && (
+              <button onClick={toggleTheme}
+                title={theme === "dark" ? "Pređi na light mode" : "Pređi na dark mode"}
+                aria-label="Promeni temu"
+                style={{ marginLeft: "auto", position: "relative", width: 62, height: 30, borderRadius: 999, flexShrink: 0, cursor: "pointer", padding: 0, border: "1px solid var(--border-bright)", background: "var(--bg-glass)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", display: "flex", alignItems: "center", overflow: "hidden", boxShadow: "inset 0 1px 3px rgba(0,0,0,0.2)" }}>
+                <span style={{ position: "absolute", left: 8, display: "flex", color: "var(--gold)", opacity: theme === "light" ? 1 : 0.45, transition: "opacity 0.3s" }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></svg>
+                </span>
+                <span style={{ position: "absolute", right: 8, display: "flex", color: "var(--blue)", opacity: theme === "dark" ? 1 : 0.45, transition: "opacity 0.3s" }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" /></svg>
+                </span>
+                <motion.span
+                  animate={{ x: theme === "dark" ? 34 : 2 }}
+                  transition={{ type: "spring", stiffness: 500, damping: 32 }}
+                  style={{ position: "absolute", top: 2, left: 0, width: 26, height: 26, borderRadius: "50%", background: "rgba(255,255,255,0.30)", border: "1px solid var(--border-bright)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", boxShadow: "0 2px 8px rgba(0,0,0,0.35)" }}
+                />
+              </button>
+            )}
           </div>
           {!collapsed && (
             <button onClick={() => { logout(); navigate("/login"); }}
@@ -122,7 +169,7 @@ export function Layout({ children }: { children: ReactNode }) {
       {/* ── Main ── */}
       <main style={{ flex: 1, overflow: "auto", position: "relative", zIndex: 2 }}>
         {/* Top bar */}
-        <div style={{ height: 68, borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 32px", background: "rgba(9,11,26,0.55)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", position: "sticky", top: 0, zIndex: 15 }}>
+        <div style={{ height: 68, borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 32px", background: "var(--topbar-bg)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", position: "sticky", top: 0, zIndex: 15 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--green)", boxShadow: "0 0 8px var(--green)" }} className="pg-dot-pulse" />
             <span style={{ fontFamily: "var(--font-ui)", fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>System Online</span>
@@ -155,6 +202,53 @@ export function Layout({ children }: { children: ReactNode }) {
         </div>
       </main>
       <ProfileModal open={profileOpen} onClose={() => setProfileOpen(false)} />
+
+      {reveal && (
+        <>
+          <motion.div
+            key="theme-reveal"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ duration: 0.7, ease: [0.83, 0, 0.17, 1] }}
+            onAnimationComplete={() => {
+              setTheme(reveal);
+              window.setTimeout(() => setReveal(null), 1800);
+            }}
+            style={{ position: "fixed", left: "-125vmax", bottom: "-125vmax", width: "250vmax", height: "250vmax", borderRadius: "50%", background: reveal === "light" ? "#eef0f8" : "#05060f", zIndex: 9999, pointerEvents: "none", willChange: "transform" }}
+          />
+          <div style={{ position: "fixed", inset: 0, zIndex: 10000, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
+            <div className="pulse-final" style={{ display: "inline-block" }}>
+            <div style={{ display: "flex", fontFamily: "var(--font-display)", fontSize: "clamp(40px, 9vw, 112px)", fontWeight: 900, letterSpacing: "0.14em", color: reveal === "light" ? "#14172e" : "#eef0ff" }}>
+              {"PULSEGRID".split("").map((ch, i) => {
+                const sc = PG_SCATTER[i % PG_SCATTER.length];
+                return (
+                  <motion.span key={i} className="pulse-glitch" data-text={ch}
+                    initial={{ opacity: 0, x: sc.x, y: sc.y, rotate: sc.r, scale: 1.35 }}
+                    animate={{
+                      opacity: [0, 1, 0.2, 1, 0.6, 1],
+                      x: [sc.x, sc.x * 0.5, -12, 5, 0, 0],
+                      y: [sc.y, sc.y * 0.5, 9, -4, 0, 0],
+                      rotate: [sc.r, sc.r * 0.4, 0, 0, 0, 0],
+                      scale: [1.35, 1.08, 1, 1, 1, 1],
+                    }}
+                    transition={{ delay: 0.5 + i * 0.045, duration: 0.8, ease: "easeInOut", times: [0, 0.28, 0.5, 0.72, 0.88, 1] }}
+                    style={{ display: "inline-block", position: "relative" }}>
+                    <span className="char-burst" data-text={ch} style={{
+                      display: "inline-block", position: "relative",
+                      "--jx1": `${pgRnd(i, 1)}px`, "--jy1": `${pgRnd(i, 2)}px`,
+                      "--jx2": `${pgRnd(i, 3)}px`, "--jy2": `${pgRnd(i, 4)}px`,
+                      "--jx3": `${pgRnd(i, 5)}px`, "--jy3": `${pgRnd(i, 6)}px`,
+                      "--jx4": `${pgRnd(i, 7)}px`, "--jy4": `${pgRnd(i, 8)}px`,
+                      "--jx5": `${pgRnd(i, 9)}px`, "--jy5": `${pgRnd(i, 10)}px`,
+                    } as CSSProperties}>{ch}</span>
+                  </motion.span>
+                );
+              })}
+            </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

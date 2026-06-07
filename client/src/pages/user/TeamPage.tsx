@@ -63,7 +63,15 @@ export default function TeamsPage() {
       if (data.success) {
         setShowCreate(false);
         setForm({ teamName: "", tag: "", logo: "", description: "" });
-        await loadTeams();
+        // Read-after-write: upis ide na master, a lista cita sa slave-a koji
+        // mozda jos nije replicirao. Zato odmah ubacimo vraceni tim u stanje,
+        // umesto da re-fetchujemo sa potencijalno zaostalog slave-a.
+        const createdTeam = data.data as Team | undefined;
+        if (createdTeam && createdTeam.teamId) {
+          setTeams((prev) => prev.some((t) => t.teamId === createdTeam.teamId) ? prev : [...prev, createdTeam]);
+        } else {
+          await loadTeams();
+        }
       } else setError(data.message);
     } catch {
       setError("Neuspešno kreiranje tima");

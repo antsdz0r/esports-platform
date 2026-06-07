@@ -1,4 +1,4 @@
-import { type ReactNode, useRef, useState, useEffect } from "react";
+import { type ReactNode, type MouseEvent, useRef, useState, useEffect } from "react";
 import { motion } from "framer-motion";
 
 /* 
@@ -243,7 +243,7 @@ export function PageHeader({ eyebrow, title, action }: { eyebrow: string; title:
    Neon button
    */
 export function PgBtn({ children, onClick, variant = "primary", size = "md", disabled, type = "button", full }: {
-  children: ReactNode; onClick?: () => void; variant?: "primary" | "cyan" | "ghost" | "danger"; size?: "sm" | "md"; disabled?: boolean; type?: "button" | "submit"; full?: boolean;
+  children: ReactNode; onClick?: (e: MouseEvent<HTMLButtonElement>) => void; variant?: "primary" | "cyan" | "ghost" | "danger"; size?: "sm" | "md"; disabled?: boolean; type?: "button" | "submit"; full?: boolean;
 }) {
   return (
     <button type={type} onClick={onClick} disabled={disabled}

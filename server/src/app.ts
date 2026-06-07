@@ -78,7 +78,7 @@ const matchService = new MatchService(gameRepo, matchPlayerRepo, teamMemberRepo)
 const auditLogService = new AuditLogService(auditLogRepo);
 const healthService = new HealthService(db);
 
-// Express rute 
+// Express rute
 const app = express();
 app.use(cors({ origin: process.env.CLIENT_URL ?? "*" }));
 app.use(express.json());
@@ -86,10 +86,10 @@ app.set('etag', false);
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 app.use("/api", new AuthController(authService, auditLogService).getRouter());
-app.use("/api", new UserController(userService).getRouter());
-app.use("/api", new GameCatalogController(gameCatalogService).getRouter());
+app.use("/api", new UserController(userService, auditLogService).getRouter());
+app.use("/api", new GameCatalogController(gameCatalogService, auditLogService).getRouter());
 app.use("/api", new TeamController(teamService).getRouter());
-app.use("/api", new TournamentController(tournamentService).getRouter());
+app.use("/api", new TournamentController(tournamentService, auditLogService).getRouter());
 app.use("/api", new HealthCheckController(healthService).getRouter());
 app.use("/api", new MatchController(matchService).getRouter());
 app.use("/api", new AuditLogController(auditLogService).getRouter());

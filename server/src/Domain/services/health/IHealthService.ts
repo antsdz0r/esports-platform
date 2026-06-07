@@ -4,6 +4,8 @@ export interface NodeStatus {
   port: number;
   status: string;
   lastCheck: Date | null;
+  latencyMs?: number | null;
+  replicaOk?: boolean;
 }
 
 export interface ApiNodeStatus {

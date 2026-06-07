@@ -88,7 +88,7 @@ CREATE TABLE MATCH_PLAYERS(
     game_id int NOT NULL,
     player_id int unsigned NOT NULL,
     team_id int NOT NULL,
-    performance_stats TEXT,
+    performance_notes TEXT,
     PRIMARY KEY (game_id, player_id),
     FOREIGN KEY (game_id) REFERENCES GAMES(game_id) ON DELETE CASCADE,
     FOREIGN KEY (player_id) REFERENCES users(id) ON DELETE CASCADE,

@@ -1,5 +1,6 @@
 import { Request, Response, Router } from "express";
 import { IUserService } from "../../Domain/services/users/IUserService";
+import { IAuditLogService } from "../../Domain/services/audit_logs/IAuditLogService";
 import { authenticate } from "../../Middlewares/authentification/AuthMiddleware";
 import { authorize } from "../../Middlewares/authorization/AuthorizeMiddleware";
 import { UserRole } from "../../Domain/enums/UserRole";
@@ -8,7 +9,10 @@ import { avatarUpload } from "../utils/upload";
 export class UserController {
   private readonly router = Router();
 
-  public constructor(private readonly userService: IUserService) {
+  public constructor(
+    private readonly userService: IUserService,
+    private readonly auditLogService: IAuditLogService,
+  ) {
     this.router.get("/users/me",         authenticate, this.getMe.bind(this));
     this.router.post("/users/me/avatar", authenticate, avatarUpload, this.uploadAvatar.bind(this));
     this.router.get("/users",            authenticate, authorize(UserRole.ADMIN), this.getAll.bind(this));
@@ -74,6 +78,7 @@ export class UserController {
       const id = parseInt(req.params.id as string, 10);
       if (isNaN(id)) { res.status(400).json({ success: false, message: "Invalid id" }); return; }
       const ok = await this.userService.deactivate(id);
+      if (ok) await this.auditLogService.log(req.user?.id ?? null, "DEACTIVATE_USER", "user", id, `Deaktiviran korisnik #${id}`, req.socket.remoteAddress ?? null);
       res.status(ok ? 200 : 500).json({ success: ok, message: ok ? "User deactivated" : "Failed" });
     } catch {
       res.status(500).json({ success: false, message: "Internal server error" });
@@ -88,6 +93,7 @@ export class UserController {
       const validRoles = Object.values(UserRole);
       if (!role || !validRoles.includes(role)) { res.status(400).json({ success: false, message: "Neispravna uloga" }); return; }
       const ok = await this.userService.updateRole(id, role);
+      if (ok) await this.auditLogService.log(req.user?.id ?? null, "CHANGE_ROLE", "user", id, `Promenjena uloga korisnika #${id} na ${role}`, req.socket.remoteAddress ?? null);
       res.status(ok ? 200 : 404).json({ success: ok, message: ok ? "Uloga promenjena" : "Korisnik nije pronađen" });
     } catch {
       res.status(500).json({ success: false, message: "Internal server error" });
