@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/auth/useAuthHook";
-import { StatCard, Counter, TiltCard, PgBtn, StatusBadge, Spinner } from "../../components/ui/UI";
+import { StatCard, Counter, TiltCard, PgBtn, StatusBadge, Spinner, ErrorBox } from "../../components/ui/UI";
 import { fadeUp, staggerContainer, fadeInView, slideInView } from "../../components/ui/motion";
 import { parseData, parseItem } from "../../helpers/api";
 
@@ -98,6 +98,9 @@ interface DashboardData {
   champions: Champion[];
 }
 
+interface Team { teamId: number; teamName: string; tag: string; }
+interface MyReg { tournamentId: number; teamId: number; }
+
 const viewOpts = { once: true, margin: "-60px" as const };
 
 function gameImg(genre: string, imageUrl?: string | null) {
@@ -138,14 +141,9 @@ function ChampionCard({ champion: c }: { champion: Champion }) {
   return (
     <motion.div variants={fadeUp}>
       <div style={{ position: "relative", borderRadius: 18, overflow: "hidden", background: "linear-gradient(135deg, rgba(20,14,40,0.95) 0%, rgba(10,8,20,0.98) 100%)", border: "1px solid rgba(255,200,0,0.25)", boxShadow: "0 0 40px rgba(255,200,0,0.08), inset 0 1px 0 rgba(255,200,0,0.12)" }}>
-        {/* Gold shimmer strip */}
         <div style={{ height: 3, background: "linear-gradient(90deg, transparent, var(--gold), transparent)", opacity: 0.8 }} />
-
-        {/* Background glow */}
         <div style={{ position: "absolute", top: -30, right: -30, width: 160, height: 160, borderRadius: "50%", background: "radial-gradient(circle, rgba(255,200,0,0.12), transparent 70%)", pointerEvents: "none" }} />
-
         <div style={{ padding: "20px 22px 22px" }}>
-          {/* Eyebrow */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
             <div>
               <p style={{ fontFamily: "var(--font-ui)", fontSize: 9, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--gold)", opacity: 0.8, marginBottom: 3 }}>{c.gameName}</p>
@@ -153,8 +151,6 @@ function ChampionCard({ champion: c }: { champion: Champion }) {
             </div>
             <span style={{ fontSize: 28 }}>🏆</span>
           </div>
-
-          {/* Winner */}
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             <div style={{ width: 56, height: 56, borderRadius: 14, background: "rgba(255,200,0,0.12)", border: "2px solid rgba(255,200,0,0.35)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden", boxShadow: "0 0 20px rgba(255,200,0,0.2)" }}>
               {logo
@@ -167,8 +163,6 @@ function ChampionCard({ champion: c }: { champion: Champion }) {
             </div>
           </div>
         </div>
-
-        {/* Bottom gold strip */}
         <div style={{ height: 2, background: "linear-gradient(90deg, transparent, rgba(255,200,0,0.3), transparent)" }} />
       </div>
     </motion.div>
@@ -202,14 +196,39 @@ export default function UserDashboard() {
     liveTournament: null, liveMatch: null, upcoming: [], teamLogos: {}, champions: [],
   });
 
+  // Registration state
+  const [captainTeams, setCaptainTeams] = useState<Team[]>([]);
+  const [myRegs, setMyRegs] = useState<MyReg[]>([]);
+  const [regModal, setRegModal] = useState<Tournament | null>(null);
+  const [selectedTeamId, setSelectedTeamId] = useState<number | null>(null);
+  const [regSaving, setRegSaving] = useState(false);
+  const [cancellingId, setCancellingId] = useState<number | null>(null);
+  const [regError, setRegError] = useState("");
+
   useEffect(() => {
     const t = setInterval(() => setSlide((s) => (s + 1) % HERO_SLIDES.length), 5500);
     return () => clearInterval(t);
   }, []);
 
+  const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
+
+  const loadRegData = async () => {
+    if (!token) return;
+    try {
+      const [teamsRes, regsRes] = await Promise.all([
+        fetch(`${BASE}teams/captain`, { headers }),
+        fetch(`${BASE}tournaments/my-registrations`, { headers }),
+      ]);
+      const teamsData = await teamsRes.json();
+      const regsData = await regsRes.json();
+      setCaptainTeams(teamsData.success ? (teamsData.data as Team[]) : []);
+      setMyRegs(regsData.success ? (regsData.data as MyReg[]) : []);
+    } catch { /* non-fatal */ }
+  };
+
   useEffect(() => {
     if (!token) return;
-    const headers = { Authorization: `Bearer ${token}` };
+    const hdrs = { Authorization: `Bearer ${token}` };
 
     const load = async () => {
       setLoading(true);
@@ -217,9 +236,9 @@ export default function UserDashboard() {
         const [gamesRes, tournamentsRes, teamsRes, watchlistRes, winsRes] = await Promise.all([
           fetch(`${BASE}games`),
           fetch(`${BASE}tournaments`),
-          fetch(`${BASE}teams`, { headers }),
-          fetch(`${BASE}tournaments/watchlist/my`, { headers }),
-          fetch(`${BASE}matches/my/wins`, { headers }),
+          fetch(`${BASE}teams`, { headers: hdrs }),
+          fetch(`${BASE}tournaments/watchlist/my`, { headers: hdrs }),
+          fetch(`${BASE}matches/my/wins`, { headers: hdrs }),
         ]);
 
         const games = parseData<GameCatalog>(await gamesRes.json());
@@ -232,10 +251,8 @@ export default function UserDashboard() {
         const liveTournament = tournaments.find((t) => t.status === "ongoing") ?? null;
         let liveMatch: Match | null = null;
         const upcoming: UpcomingMatch[] = [];
-
         const teamLogos: Record<number, string> = {};
 
-        // Fetch matches from ALL active tournaments (ongoing + locked)
         const activeTournaments = tournaments.filter((t) => t.status === "ongoing" || t.status === "locked");
         const matchesByTournament = await Promise.all(
           activeTournaments.map(async (t) => {
@@ -247,7 +264,6 @@ export default function UserDashboard() {
           })
         );
 
-        // Live match from the ongoing tournament
         if (liveTournament) {
           const liveEntry = matchesByTournament.find((e) => e.tournament.tournamentId === liveTournament.tournamentId);
           if (liveEntry) {
@@ -257,7 +273,6 @@ export default function UserDashboard() {
           }
         }
 
-        // Collect scheduled matches from all active tournaments
         for (const { tournament, matches } of matchesByTournament) {
           for (const m of matches) {
             if (m.status === "scheduled") {
@@ -266,7 +281,6 @@ export default function UserDashboard() {
           }
         }
 
-        // Batch-fetch logos for every unique team across all active tournament matches
         const allMatchTeamIds = [...new Set(
           matchesByTournament.flatMap((e) => e.matches).flatMap((m) => [m.team1Id, m.team2Id]).filter((id): id is number => id !== null)
         )];
@@ -278,7 +292,6 @@ export default function UserDashboard() {
           } catch { /* skip */ }
         }));
 
-        // Fetch champions for completed tournaments (last 3)
         const champions: Champion[] = [];
         const completedTournaments = tournaments.filter((t) => t.status === "completed").slice(-3).reverse();
         await Promise.all(completedTournaments.map(async (t) => {
@@ -314,7 +327,42 @@ export default function UserDashboard() {
     };
 
     void load();
+    void loadRegData();
   }, [token]);
+
+  const openRegModal = (t: Tournament, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setRegError("");
+    if (captainTeams.length === 0) { setRegError("Nisi kapiten nijednog tima."); return; }
+    setSelectedTeamId(captainTeams.length === 1 ? captainTeams[0].teamId : null);
+    setRegModal(t);
+  };
+
+  const register = async () => {
+    if (!regModal || !selectedTeamId) return;
+    setRegSaving(true);
+    try {
+      const res = await fetch(`${BASE}tournaments/${regModal.tournamentId}/register`, {
+        method: "POST", headers, body: JSON.stringify({ teamId: selectedTeamId }),
+      });
+      const d = await res.json();
+      if (!res.ok) { setRegError(d.message ?? "Neuspešna prijava"); }
+      else { setRegModal(null); await loadRegData(); }
+    } catch { setRegError("Neuspešna prijava"); }
+    finally { setRegSaving(false); }
+  };
+
+  const cancelReg = async (t: Tournament, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const myReg = myRegs.find(r => r.tournamentId === t.tournamentId);
+    if (!myReg) return;
+    setCancellingId(t.tournamentId);
+    try {
+      await fetch(`${BASE}tournaments/${t.tournamentId}/register/${myReg.teamId}`, { method: "DELETE", headers });
+      await loadRegData();
+    } catch { /* silent */ }
+    finally { setCancellingId(null); }
+  };
 
   const actions = [
     { to: "/dashboard/teams", icon: "◎", title: "Moji timovi", desc: "Sastav, pozivi, kapitenstvo.", glow: "var(--violet)" },
@@ -327,7 +375,6 @@ export default function UserDashboard() {
 
   const current = HERO_SLIDES[slide];
 
-  // Rank games by number of tournaments that use them
   const tournamentCountByGame = data.tournaments.reduce<Record<number, number>>((acc, t) => {
     if (t.gameId) acc[t.gameId] = (acc[t.gameId] ?? 0) + 1;
     return acc;
@@ -494,25 +541,52 @@ export default function UserDashboard() {
         {trending.length > 0 && (
           <motion.section initial="hidden" whileInView="show" viewport={viewOpts} variants={fadeInView} style={{ marginBottom: 44 }}>
             <SectionTitle eyebrow="U trendu" title="Aktivni turniri" action={<PgBtn variant="ghost" size="sm" onClick={() => navigate("/dashboard/tournaments")}>Sve</PgBtn>} />
+            {regError && <div style={{ marginBottom: 12 }}><ErrorBox message={regError} /></div>}
             <motion.div variants={staggerContainer(0.1)} initial="hidden" whileInView="show" viewport={viewOpts}
               style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 20 }}>
-              {trending.map((t) => (
-                <motion.div key={t.tournamentId} variants={slideInView}
-                  onClick={() => navigate(`/dashboard/tournaments/${t.tournamentId}`)}
-                  style={{ cursor: "pointer" }}>
-                  <GameCard img={gameImg(t.gameName, t.imageUrl)} title={t.name} size="lg"
-                    meta={
-                      <div style={{ marginBottom: 10 }}>
-                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
-                          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", padding: "3px 8px", borderRadius: 4, background: "rgba(124,92,255,0.2)", color: "var(--violet2)" }}>{t.gameName}</span>
-                          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", padding: "3px 8px", borderRadius: 4, background: "rgba(0,212,255,0.15)", color: "var(--cyan)" }}>{t.status}</span>
+              {trending.map((t) => {
+                const myReg = myRegs.find(r => r.tournamentId === t.tournamentId);
+                const isRegistered = !!myReg;
+                const isOpen = t.status === "open";
+                return (
+                  <motion.div key={t.tournamentId} variants={slideInView}
+                    onClick={() => navigate(`/dashboard/tournaments/${t.tournamentId}`)}
+                    style={{ cursor: "pointer" }}>
+                    <GameCard img={gameImg(t.gameName, t.imageUrl)} title={t.name} size="lg"
+                      meta={
+                        <div style={{ marginBottom: 10 }}>
+                          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
+                            <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", padding: "3px 8px", borderRadius: 4, background: "rgba(124,92,255,0.2)", color: "var(--violet2)" }}>{t.gameName}</span>
+                            <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", padding: "3px 8px", borderRadius: 4, background: "rgba(0,212,255,0.15)", color: "var(--cyan)" }}>{t.status}</span>
+                          </div>
+                          <p style={{ fontSize: 12, color: "var(--cyan)", marginBottom: 8 }}>{t.registeredCount}/{t.maxTeams} timova prijavljeno</p>
+                          {isOpen && (
+                            <div onClick={e => e.stopPropagation()} style={{ display: "flex", gap: 6 }}>
+                              {isRegistered ? (
+                                <>
+                                  <span style={{ fontFamily: "var(--font-ui)", fontSize: 10, fontWeight: 700, color: "var(--green)", padding: "4px 8px", borderRadius: 6, border: "1px solid var(--green)", background: "rgba(0,240,160,0.08)" }}>✓ Prijavljen</span>
+                                  <button
+                                    disabled={cancellingId === t.tournamentId}
+                                    onClick={(e) => cancelReg(t, e)}
+                                    style={{ fontSize: 10, fontFamily: "var(--font-ui)", fontWeight: 700, padding: "4px 10px", borderRadius: 6, border: "1px solid rgba(255,80,80,0.5)", background: "rgba(255,60,60,0.08)", color: "#ff6060", cursor: "pointer" }}>
+                                    {cancellingId === t.tournamentId ? "..." : "Otkaži"}
+                                  </button>
+                                </>
+                              ) : (
+                                <button
+                                  onClick={(e) => openRegModal(t, e)}
+                                  style={{ fontSize: 10, fontFamily: "var(--font-ui)", fontWeight: 700, padding: "4px 12px", borderRadius: 6, border: "1px solid var(--violet)", background: "rgba(124,92,255,0.15)", color: "var(--violet2)", cursor: "pointer" }}>
+                                  Prijavi tim
+                                </button>
+                              )}
+                            </div>
+                          )}
                         </div>
-                        <p style={{ fontSize: 12, color: "var(--cyan)" }}>{t.registeredCount}/{t.maxTeams} timova prijavljeno</p>
-                      </div>
-                    }
-                  />
-                </motion.div>
-              ))}
+                      }
+                    />
+                  </motion.div>
+                );
+              })}
             </motion.div>
           </motion.section>
         )}
@@ -557,6 +631,57 @@ export default function UserDashboard() {
           onClose={() => setSelectedGame(null)}
         />
       )}
+
+      {/* Registration modal */}
+      {createPortal(
+        <AnimatePresence>
+          {regModal && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.72)", backdropFilter: "blur(6px)", zIndex: 99999, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
+              onClick={e => { if (e.target === e.currentTarget) setRegModal(null); }}>
+              <motion.div initial={{ opacity: 0, y: 20, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 16, scale: 0.96 }}
+                className="pg-glass" style={{ width: "100%", maxWidth: 400, padding: 28, borderRadius: 16, display: "flex", flexDirection: "column", gap: 18 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div>
+                    <h3 style={{ fontFamily: "var(--font-head)", fontSize: 18, fontWeight: 700, color: "var(--text)" }}>Prijava na turnir</h3>
+                    <p style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>{regModal.name}</p>
+                  </div>
+                  <button onClick={() => setRegModal(null)} style={{ background: "none", border: "none", color: "var(--text-dim)", fontSize: 18, cursor: "pointer" }}>✕</button>
+                </div>
+                {regError && <ErrorBox message={regError} />}
+                {captainTeams.length === 1 ? (
+                  <div style={{ padding: "12px 16px", borderRadius: 10, border: "1px solid var(--border)", background: "rgba(124,92,255,0.06)" }}>
+                    <p style={{ fontFamily: "var(--font-ui)", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 6 }}>Tim</p>
+                    <p style={{ fontFamily: "var(--font-head)", fontSize: 15, fontWeight: 700, color: "var(--text)" }}>
+                      {captainTeams[0].teamName} <span style={{ color: "var(--violet2)", fontSize: 12 }}>[{captainTeams[0].tag}]</span>
+                    </p>
+                  </div>
+                ) : (
+                  <div>
+                    <p style={{ fontFamily: "var(--font-ui)", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 8 }}>Odaberi tim</p>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {captainTeams.map(team => (
+                        <button key={team.teamId} onClick={() => setSelectedTeamId(team.teamId)}
+                          style={{ padding: "12px 16px", borderRadius: 10, border: `1px solid ${selectedTeamId === team.teamId ? "var(--violet)" : "var(--border)"}`, background: selectedTeamId === team.teamId ? "rgba(124,92,255,0.12)" : "rgba(255,255,255,0.03)", cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                          <span style={{ fontFamily: "var(--font-head)", fontSize: 14, fontWeight: 700, color: "var(--text)" }}>{team.teamName}</span>
+                          <span style={{ fontFamily: "var(--font-ui)", fontSize: 11, color: "var(--violet2)" }}>[{team.tag}]</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <div style={{ display: "flex", gap: 10 }}>
+                  <PgBtn variant="ghost" size="sm" onClick={() => setRegModal(null)}>Otkaži</PgBtn>
+                  <PgBtn variant="primary" size="sm" disabled={regSaving || !selectedTeamId} onClick={register}>
+                    {regSaving ? "Prijavljivanje..." : "Prijavi tim"}
+                  </PgBtn>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 }
@@ -590,8 +715,6 @@ function GameDetailModal({ game, tournamentCount, activeTournamentCount, onClose
           transition={{ type: "spring", stiffness: 320, damping: 28 }}
           onClick={(e) => e.stopPropagation()}
           style={{ width: "100%", maxWidth: 480, borderRadius: 20, overflow: "hidden", border: "1px solid var(--border-bright)", background: "var(--bg-card, #0d0b1a)" }}>
-
-          {/* Hero image */}
           <div style={{ position: "relative", height: 200, overflow: "hidden" }}>
             <img src={img} alt={game.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, transparent 40%, rgba(13,11,26,0.95) 100%)" }} />
@@ -606,8 +729,6 @@ function GameDetailModal({ game, tournamentCount, activeTournamentCount, onClose
               <h2 style={{ fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 900, color: "var(--text)", letterSpacing: "0.03em" }}>{game.name}</h2>
             </div>
           </div>
-
-          {/* Stats */}
           <div style={{ padding: "20px 22px 24px" }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
               {stats.map((s) => (

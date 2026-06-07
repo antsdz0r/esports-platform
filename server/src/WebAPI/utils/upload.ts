@@ -30,3 +30,21 @@ export const gameImageUpload = multer({
   fileFilter,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
 }).single("image");
+
+// ── Avatar upload ──────────────────────────────────────────────
+const AVATAR_DIR = path.join(process.cwd(), "uploads", "avatars");
+if (!fs.existsSync(AVATAR_DIR)) fs.mkdirSync(AVATAR_DIR, { recursive: true });
+
+const avatarStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, AVATAR_DIR),
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, `${Date.now()}-${Math.round(Math.random() * 1e6)}${ext}`);
+  },
+});
+
+export const avatarUpload = multer({
+  storage: avatarStorage,
+  fileFilter,
+  limits: { fileSize: 3 * 1024 * 1024 },
+}).single("avatar");

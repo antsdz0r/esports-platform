@@ -28,8 +28,89 @@ export class MatchService implements IMatchService {
 
   async getById(gameId: number): Promise<{ game: Game; players: MatchPlayer[] }> {
     const game = await this.gameRepo.findById(gameId);
-    const players = await this.matchPlayerRepo.getByGame(gameId);
+    let players = await this.matchPlayerRepo.getByGame(gameId);
+
+    // Auto-backfill: if match is completed but has no players recorded, generate them now
+    if (
+      game.status === GameStatus.COMPLETED &&
+      players.length === 0 &&
+      game.team1Id !== null &&
+      game.team2Id !== null &&
+      game.winnerTeamId !== null
+    ) {
+      players = await this.generateAndSaveStats(game);
+    }
+
     return { game, players };
+  }
+
+  private async generateAndSaveStats(game: Game): Promise<MatchPlayer[]> {
+    const { gameId, team1Id, team2Id, score, winnerTeamId } = game;
+    if (team1Id === null || team2Id === null || winnerTeamId === null) return [];
+
+    const [team1Members, team2Members] = await Promise.all([
+      this.teamMemberRepo.getMembersByTeam(team1Id),
+      this.teamMemberRepo.getMembersByTeam(team2Id),
+    ]);
+
+    // Add all players to MATCH_PLAYERS
+    for (const m of team1Members) {
+      const exists = await this.matchPlayerRepo.exists(gameId, m.playerId);
+      if (!exists) await this.matchPlayerRepo.addPlayer(new MatchPlayer(gameId, m.playerId, team1Id, null));
+    }
+    for (const m of team2Members) {
+      const exists = await this.matchPlayerRepo.exists(gameId, m.playerId);
+      if (!exists) await this.matchPlayerRepo.addPlayer(new MatchPlayer(gameId, m.playerId, team2Id, null));
+    }
+
+    // Generate stats
+    const totalKills = 35 + Math.floor(Math.random() * 16);
+
+    let winnerKillShare = 0.6;
+    const parts = score.split(":");
+    if (parts.length === 2) {
+      const a = parseInt(parts[0], 10);
+      const b = parseInt(parts[1], 10);
+      if (!isNaN(a) && !isNaN(b) && a + b > 0) {
+        const winnerScore = winnerTeamId === team1Id ? a : b;
+        const loserScore  = winnerTeamId === team1Id ? b : a;
+        winnerKillShare = 0.45 + 0.35 * (winnerScore / (winnerScore + loserScore + 1));
+      }
+    }
+
+    const winnerKills = Math.round(totalKills * winnerKillShare);
+    const loserKills  = totalKills - winnerKills;
+
+    const winnerMembers = winnerTeamId === team1Id ? team1Members : team2Members;
+    const loserMembers  = winnerTeamId === team1Id ? team2Members : team1Members;
+
+    const distribute = (total: number, count: number): number[] => {
+      if (count === 0) return [];
+      const weights = Array.from({ length: count }, () => Math.random() + 0.3);
+      const sum = weights.reduce((a, b) => a + b, 0);
+      const raw = weights.map(w => Math.round((w / sum) * total));
+      const diff = total - raw.reduce((a, b) => a + b, 0);
+      raw[0] += diff;
+      return raw;
+    };
+
+    const winnerKillDist  = distribute(winnerKills, winnerMembers.length);
+    const loserKillDist   = distribute(loserKills,  loserMembers.length);
+    const winnerDeathDist = distribute(loserKills,  winnerMembers.length);
+    const loserDeathDist  = distribute(winnerKills, loserMembers.length);
+
+    for (let i = 0; i < winnerMembers.length; i++) {
+      const k = winnerKillDist[i] ?? 0;
+      const d = winnerDeathDist[i] ?? 0;
+      await this.matchPlayerRepo.updatePerformance(gameId, winnerMembers[i].playerId, `K:${k} D:${d}`);
+    }
+    for (let i = 0; i < loserMembers.length; i++) {
+      const k = loserKillDist[i] ?? 0;
+      const d = loserDeathDist[i] ?? 0;
+      await this.matchPlayerRepo.updatePerformance(gameId, loserMembers[i].playerId, `K:${k} D:${d}`);
+    }
+
+    return this.matchPlayerRepo.getByGame(gameId);
   }
 
   async addPlayer(
@@ -38,22 +119,20 @@ export class MatchService implements IMatchService {
     teamId: number,
     captainId: number,
   ): Promise<{ ok: boolean; error?: string }> {
-    // kapiten mora biti u timu
     const members = await this.teamMemberRepo.getMembersByTeam(teamId);
     const isCaptain = members.some(
       (m) => m.playerId === captainId && m.role === TeamMemberRole.CAPTAIN,
     );
-    if (!isCaptain) return { ok: false, error: "Samo kapiten može dodati igrača u meč" };
+    if (!isCaptain) return { ok: false, error: "Samo kapiten moze dodati igraca u mec" };
 
-    // igrač mora biti član tima
     const isTeamMember = members.some((m) => m.playerId === playerId);
-    if (!isTeamMember) return { ok: false, error: "Igrač nije član ovog tima" };
+    if (!isTeamMember) return { ok: false, error: "Igrac nije clan ovog tima" };
 
     const alreadyIn = await this.matchPlayerRepo.exists(gameId, playerId);
-    if (alreadyIn) return { ok: false, error: "Igrač je već dodat u ovaj meč" };
+    if (alreadyIn) return { ok: false, error: "Igrac je vec dodat u ovaj mec" };
 
     const ok = await this.matchPlayerRepo.addPlayer(new MatchPlayer(gameId, playerId, teamId, null));
-    return ok ? { ok: true } : { ok: false, error: "Greška pri dodavanju igrača" };
+    return ok ? { ok: true } : { ok: false, error: "Greska pri dodavanju igraca" };
   }
 
   async updatePerformance(

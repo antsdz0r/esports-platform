@@ -48,6 +48,9 @@ interface TeamMemberInfo {
   joinedAt: string;
 }
 
+interface Team { teamId: number; teamName: string; tag: string; }
+interface MyReg { tournamentId: number; teamId: number; }
+
 const BASE = import.meta.env.VITE_API_URL;
 
 const FORMAT_LABEL: Record<string, string> = {
@@ -75,6 +78,18 @@ export default function TournamentDetailPage({ isAdmin = false }: { isAdmin?: bo
   // Registration status update
   const [regUpdating, setRegUpdating] = useState<number | null>(null);
 
+  // Player registration state
+  const [captainTeams, setCaptainTeams] = useState<Team[]>([]);
+  const [myRegs, setMyRegs] = useState<MyReg[]>([]);
+  const [regModal, setRegModal] = useState(false);
+  const [selectedTeamId, setSelectedTeamId] = useState<number | null>(null);
+  const [regSaving, setRegSaving] = useState(false);
+  const [cancellingReg, setCancellingReg] = useState(false);
+
+  // Watchlist state
+  const [isWatched, setIsWatched] = useState(false);
+  const [watchSaving, setWatchSaving] = useState(false);
+
   const load = async () => {
     if (!id) return;
     try {
@@ -94,7 +109,75 @@ export default function TournamentDetailPage({ isAdmin = false }: { isAdmin?: bo
     }
   };
 
-  useEffect(() => { void load(); }, [id, token]);
+  const loadRegData = async () => {
+    if (!token || isAdmin) return;
+    try {
+      const [teamsRes, regsRes, watchRes] = await Promise.all([
+        fetch(`${BASE}teams/captain`, { headers }),
+        fetch(`${BASE}tournaments/my-registrations`, { headers }),
+        fetch(`${BASE}tournaments/watchlist/my`, { headers }),
+      ]);
+      const td = await teamsRes.json();
+      const rd = await regsRes.json();
+      const wd = await watchRes.json();
+      setCaptainTeams(td.success ? (td.data as Team[]) : []);
+      setMyRegs(rd.success ? (rd.data as MyReg[]) : []);
+      const watched = wd.success ? (wd.data as { tournamentId: number }[]) : [];
+      setIsWatched(watched.some((w) => w.tournamentId === Number(id)));
+    } catch { /* non-fatal */ }
+  };
+
+  const toggleWatch = async () => {
+    if (!tournament) return;
+    setWatchSaving(true);
+    try {
+      const res = await fetch(`${BASE}tournaments/${tournament.tournamentId}/watch`, {
+        method: isWatched ? "DELETE" : "POST", headers,
+      });
+      if (res.ok) {
+        setIsWatched(!isWatched);
+        setSuccess(isWatched ? "Turnir uklonjen sa liste praćenja." : "Turnir dodat na listu praćenja ★");
+      } else {
+        const data = await res.json();
+        setError(data.message ?? "Greška pri praćenju");
+      }
+    } catch { setError("Greška pri praćenju"); }
+    finally { setWatchSaving(false); }
+  };
+
+  useEffect(() => { void load(); void loadRegData(); }, [id, token]);
+
+  const openRegModal = () => {
+    if (captainTeams.length === 0) { setError("Nisi kapiten nijednog tima."); return; }
+    setSelectedTeamId(captainTeams.length === 1 ? captainTeams[0].teamId : null);
+    setRegModal(true);
+    setError("");
+  };
+
+  const register = async () => {
+    if (!tournament || !selectedTeamId) return;
+    setRegSaving(true);
+    try {
+      const res = await fetch(`${BASE}tournaments/${tournament.tournamentId}/register`, {
+        method: "POST", headers, body: JSON.stringify({ teamId: selectedTeamId }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.message ?? "Neuspešna prijava"); }
+      else { setRegModal(false); setSuccess("Tim prijavljen!"); await load(); await loadRegData(); }
+    } catch { setError("Neuspešna prijava"); }
+    finally { setRegSaving(false); }
+  };
+
+  const cancelReg = async (myReg: MyReg) => {
+    if (!tournament) return;
+    setCancellingReg(true);
+    try {
+      await fetch(`${BASE}tournaments/${tournament.tournamentId}/register/${myReg.teamId}`, { method: "DELETE", headers });
+      setSuccess("Prijava otkazana.");
+      await load(); await loadRegData();
+    } catch { setError("Greška pri odjavi"); }
+    finally { setCancellingReg(false); }
+  };
 
   const updateStatus = async (newStatus: string) => {
     if (!tournament) return;
@@ -154,6 +237,9 @@ export default function TournamentDetailPage({ isAdmin = false }: { isAdmin?: bo
   const registrations = tournament.registrations ?? [];
   const rounds = matches.length > 0 ? [...new Set(matches.map(m => m.round))].sort((a, b) => a - b) : [];
   const hasMatches = matches.length > 0;
+  const myReg = myRegs.find(r => r.tournamentId === tournament.tournamentId);
+  const isRegistered = !!myReg;
+  const canRegister = !isAdmin && !!token && tournament.status === "open";
 
   return (
     <div>
@@ -163,6 +249,11 @@ export default function TournamentDetailPage({ isAdmin = false }: { isAdmin?: bo
         action={
           <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
             <PgBtn variant="ghost" size="sm" onClick={() => navigate(backPath)}>← Nazad</PgBtn>
+            {!isAdmin && !!token && (
+              <PgBtn variant={isWatched ? "cyan" : "ghost"} size="sm" disabled={watchSaving} onClick={toggleWatch}>
+                {watchSaving ? "..." : isWatched ? "★ Praćeno" : "☆ Prati"}
+              </PgBtn>
+            )}
             {isAdmin && tournament.status === "locked" && (
               <PgBtn variant="primary" size="sm" disabled={statusUpdating} onClick={() => updateStatus("ongoing")}>
                 {statusUpdating ? "..." : "▶ Pokreni turnir"}
@@ -172,6 +263,15 @@ export default function TournamentDetailPage({ isAdmin = false }: { isAdmin?: bo
               <PgBtn variant="cyan" size="sm" disabled={statusUpdating} onClick={() => updateStatus("completed")}>
                 {statusUpdating ? "..." : "✓ Završi turnir"}
               </PgBtn>
+            )}
+            {canRegister && isRegistered && myReg && (
+              <>
+                <span style={{ fontFamily: "var(--font-ui)", fontSize: 12, fontWeight: 700, color: "var(--green)", padding: "6px 12px", borderRadius: 8, border: "1px solid var(--green)", background: "rgba(0,240,160,0.07)" }}>✓ Prijavljen</span>
+                <PgBtn variant="ghost" size="sm" disabled={cancellingReg} onClick={() => cancelReg(myReg)}>{cancellingReg ? "..." : "Otkaži prijavu"}</PgBtn>
+              </>
+            )}
+            {canRegister && !isRegistered && (
+              <PgBtn variant="primary" size="sm" onClick={openRegModal}>Prijavi tim</PgBtn>
             )}
           </div>
         }
@@ -278,6 +378,57 @@ export default function TournamentDetailPage({ isAdmin = false }: { isAdmin?: bo
           )}
         </div>
       </div>
+
+      {/* Registration Modal */}
+      {createPortal(
+        <AnimatePresence>
+          {regModal && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.72)", backdropFilter: "blur(6px)", zIndex: 99999, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
+              onClick={e => { if (e.target === e.currentTarget) setRegModal(false); }}>
+              <motion.div initial={{ opacity: 0, y: 20, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 16, scale: 0.96 }}
+                className="pg-glass" style={{ width: "100%", maxWidth: 400, padding: 28, borderRadius: 16, display: "flex", flexDirection: "column", gap: 18 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div>
+                    <h3 style={{ fontFamily: "var(--font-head)", fontSize: 18, fontWeight: 700, color: "var(--text)" }}>Prijava na turnir</h3>
+                    <p style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>{tournament.name}</p>
+                  </div>
+                  <button onClick={() => setRegModal(false)} style={{ background: "none", border: "none", color: "var(--text-dim)", fontSize: 18, cursor: "pointer" }}>✕</button>
+                </div>
+                {error && <div style={{ fontSize: 12, color: "var(--pink)", padding: "8px 12px", borderRadius: 8, background: "rgba(255,45,126,0.1)", border: "1px solid rgba(255,45,126,0.3)" }}>{error}</div>}
+                {captainTeams.length === 1 ? (
+                  <div style={{ padding: "12px 16px", borderRadius: 10, border: "1px solid var(--border)", background: "rgba(124,92,255,0.06)" }}>
+                    <p style={{ fontFamily: "var(--font-ui)", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 6 }}>Tim</p>
+                    <p style={{ fontFamily: "var(--font-head)", fontSize: 15, fontWeight: 700, color: "var(--text)" }}>
+                      {captainTeams[0].teamName} <span style={{ color: "var(--violet2)", fontSize: 12 }}>[{captainTeams[0].tag}]</span>
+                    </p>
+                  </div>
+                ) : (
+                  <div>
+                    <p style={{ fontFamily: "var(--font-ui)", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 8 }}>Odaberi tim</p>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {captainTeams.map(team => (
+                        <button key={team.teamId} onClick={() => setSelectedTeamId(team.teamId)}
+                          style={{ padding: "12px 16px", borderRadius: 10, border: `1px solid ${selectedTeamId === team.teamId ? "var(--violet)" : "var(--border)"}`, background: selectedTeamId === team.teamId ? "rgba(124,92,255,0.12)" : "rgba(255,255,255,0.03)", cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                          <span style={{ fontFamily: "var(--font-head)", fontSize: 14, fontWeight: 700, color: "var(--text)" }}>{team.teamName}</span>
+                          <span style={{ fontFamily: "var(--font-ui)", fontSize: 11, color: "var(--violet2)" }}>[{team.tag}]</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <div style={{ display: "flex", gap: 10 }}>
+                  <PgBtn variant="ghost" size="sm" onClick={() => setRegModal(false)}>Otkaži</PgBtn>
+                  <PgBtn variant="primary" size="sm" disabled={regSaving || !selectedTeamId} onClick={register}>
+                    {regSaving ? "Prijavljivanje..." : "Prijavi tim"}
+                  </PgBtn>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
 
       {/* Team Members Modal */}
       {membersModal && (
@@ -664,6 +815,8 @@ function MemberRow({ member, onRemove }: { member: TeamMemberInfo; onRemove?: ()
 
 /* ─── Sub-components ─── */
 
+interface MatchPlayer { gameId: number; playerId: number; teamId: number; performance: string | null; }
+
 function MatchCard({ match, isAdmin, token, tournamentId, onRefresh }: {
   match: Match;
   isAdmin: boolean;
@@ -680,6 +833,56 @@ function MatchCard({ match, isAdmin, token, tournamentId, onRefresh }: {
 
   const [showResult, setShowResult] = useState(false);
   const [showSchedule, setShowSchedule] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const [players, setPlayers] = useState<MatchPlayer[] | null>(null);
+  const [playerNames, setPlayerNames] = useState<Record<number, string>>({});
+  const [statsEditing, setStatsEditing] = useState<Record<string, string>>({});
+  const [statsSaving, setStatsSaving] = useState<string | null>(null);
+
+  const loadPlayers = async () => {
+    if (players !== null) return;
+    try {
+      const res = await fetch(`${BASE}matches/${match.gameId}`, { headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      const matchPlayers = data.success ? (data.data.players ?? []) as MatchPlayer[] : [];
+      setPlayers(matchPlayers);
+
+      // Fetch gamerTags from both team rosters
+      const teamIds = [match.team1Id, match.team2Id].filter((id): id is number => id !== null);
+      const names: Record<number, string> = {};
+      await Promise.all(teamIds.map(async (teamId) => {
+        try {
+          const r = await fetch(`${BASE}teams/${teamId}/members`);
+          const d = await r.json();
+          if (d.success) {
+            (d.data as TeamMemberInfo[]).forEach((m) => { names[m.playerId] = m.gamerTag; });
+          }
+        } catch { /* skip */ }
+      }));
+      setPlayerNames(names);
+    } catch { setPlayers([]); }
+  };
+
+  const toggleStats = () => {
+    if (!expanded) void loadPlayers();
+    setExpanded(e => !e);
+  };
+
+  const saveStats = async (playerId: number) => {
+    const key = `${match.gameId}-${playerId}`;
+    const value = statsEditing[key] ?? players?.find(p => p.playerId === playerId)?.performance ?? "";
+    if (!value.trim()) return;
+    setStatsSaving(key);
+    try {
+      await fetch(`${BASE}matches/${match.gameId}/players/${playerId}`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ performance: value }),
+      });
+      setPlayers(prev => (prev ?? []).map(p => p.playerId === playerId ? { ...p, performance: value } : p));
+      setStatsEditing(e => { const c = { ...e }; delete c[key]; return c; });
+    } finally { setStatsSaving(null); }
+  };
 
   return (
     <>
@@ -713,9 +916,60 @@ function MatchCard({ match, isAdmin, token, tournamentId, onRefresh }: {
                   </button>
                 </>
               )}
+              <button onClick={toggleStats}
+                style={{ fontFamily: "var(--font-ui)", fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 5, border: "1px solid var(--border)", background: "transparent", color: "var(--text-muted)", cursor: "pointer", letterSpacing: "0.05em" }}>
+                {expanded ? "Sakrij ▴" : "Stats ▾"}
+              </button>
             </div>
           </div>
         </div>
+
+        <AnimatePresence>
+          {expanded && (
+            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+              style={{ overflow: "hidden", borderTop: "1px solid var(--border)" }}>
+              <div style={{ padding: "12px 14px" }}>
+                {players === null ? (
+                  <p style={{ fontFamily: "var(--font-ui)", fontSize: 11, color: "var(--text-dim)", textAlign: "center" }}>Učitavanje...</p>
+                ) : players.length === 0 ? (
+                  <p style={{ fontFamily: "var(--font-ui)", fontSize: 11, color: "var(--text-dim)", textAlign: "center" }}>Nema statova za ovaj meč.</p>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {players.map(p => {
+                      const key = `${match.gameId}-${p.playerId}`;
+                      const teamName = p.teamId === match.team1Id ? (match.team1Name ?? "Tim 1") : (match.team2Name ?? "Tim 2");
+                      const gamerTag = playerNames[p.playerId] ?? `#${p.playerId}`;
+                      return (
+                        <div key={p.playerId}>
+                          <p style={{ fontFamily: "var(--font-ui)", fontSize: 10, fontWeight: 700, color: "var(--text-muted)", marginBottom: 4 }}>{gamerTag} · {teamName}</p>
+                          {isAdmin && (statsEditing[key] !== undefined || !p.performance) ? (
+                            <div style={{ display: "flex", gap: 6 }}>
+                              <input value={statsEditing[key] ?? p.performance ?? ""} onChange={e => setStatsEditing(ed => ({ ...ed, [key]: e.target.value }))}
+                                placeholder="npr. K:8 D:3"
+                                style={{ flex: 1, fontSize: 11, fontFamily: "var(--font-ui)", background: "rgba(10,12,28,0.8)", border: "1px solid var(--border)", borderRadius: 6, padding: "5px 8px", color: "var(--text)", outline: "none" }} />
+                              <button onClick={() => saveStats(p.playerId)} disabled={statsSaving === key}
+                                style={{ fontSize: 10, fontWeight: 700, padding: "5px 10px", borderRadius: 6, border: "1px solid var(--green)", background: "rgba(0,240,160,0.08)", color: "var(--green)", cursor: "pointer" }}>
+                                {statsSaving === key ? "..." : "✓"}
+                              </button>
+                            </div>
+                          ) : isAdmin ? (
+                            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                              <p style={{ fontFamily: "var(--font-ui)", fontSize: 11, color: "var(--text)" }}>{p.performance}</p>
+                              <button onClick={() => setStatsEditing(e => ({ ...e, [key]: p.performance ?? "" }))}
+                                style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, border: "1px solid var(--border)", background: "transparent", color: "var(--text-muted)", cursor: "pointer" }}>✎</button>
+                            </div>
+                          ) : (
+                            <p style={{ fontFamily: "var(--font-ui)", fontSize: 11, color: "var(--text)" }}>{p.performance ?? "—"}</p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
 
       {showResult && (
@@ -778,7 +1032,6 @@ function EditResultModal({ match, token, onClose, onSaved }: {
 
         {error && <p style={{ fontSize: 12, color: "var(--pink)", marginBottom: 12 }}>{error}</p>}
 
-        {/* Score */}
         <p style={{ fontFamily: "var(--font-ui)", fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 8 }}>Rezultat</p>
         <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 8, marginBottom: 16 }}>
           <div>
@@ -794,7 +1047,6 @@ function EditResultModal({ match, token, onClose, onSaved }: {
           </div>
         </div>
 
-        {/* Status */}
         <p style={{ fontFamily: "var(--font-ui)", fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 8 }}>Status</p>
         <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
           {["scheduled", "in_progress", "completed"].map((s) => (
@@ -805,7 +1057,6 @@ function EditResultModal({ match, token, onClose, onSaved }: {
           ))}
         </div>
 
-        {/* Winner */}
         {(match.team1Id || match.team2Id) && (
           <>
             <p style={{ fontFamily: "var(--font-ui)", fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 8 }}>Pobednik</p>
@@ -835,7 +1086,6 @@ function SetScheduleModal({ match, token, onClose, onSaved }: {
   const BASE = import.meta.env.VITE_API_URL;
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Format existing scheduled time for datetime-local input (YYYY-MM-DDTHH:mm)
   const toInputValue = (iso: string | null) => {
     if (!iso) return "";
     const d = new Date(iso);

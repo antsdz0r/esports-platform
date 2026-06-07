@@ -6,4 +6,5 @@ export interface IUserService {
   getById(id: number): Promise<User>;
   deactivate(id: number): Promise<boolean>;
   updateRole(id: number, role: string): Promise<boolean>;
+  updateProfilePicture(id: number, url: string): Promise<boolean>;
 }

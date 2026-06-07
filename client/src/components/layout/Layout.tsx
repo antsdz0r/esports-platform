@@ -3,6 +3,8 @@ import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../../hooks/auth/useAuthHook";
 import { AnimatedBackground } from "../ui/AnimatedBackground";
+import { NotificationBell } from "../ui/NotificationBell";
+import { ProfileModal } from "../ui/ProfileModal";
 
 const userNav = [
   { to: "/dashboard",             label: "Dashboard",  icon: "⬡" },
@@ -24,6 +26,7 @@ export function Layout({ children }: { children: ReactNode }) {
   const location = useLocation();
   const isHomeDashboard = location.pathname === "/dashboard";
   const [collapsed, setCollapsed] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const nav = user?.role === "admin" ? adminNav : userNav;
   const W = collapsed ? 76 : 232;
 
@@ -124,11 +127,19 @@ export function Layout({ children }: { children: ReactNode }) {
             <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--green)", boxShadow: "0 0 8px var(--green)" }} className="pg-dot-pulse" />
             <span style={{ fontFamily: "var(--font-ui)", fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>System Online</span>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            {user?.role === "player" && <NotificationBell />}
             <span style={{ fontFamily: "var(--font-display)", fontSize: 13, color: "var(--text-soft)" }}>{user?.username}</span>
-            <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg, var(--violet), var(--cyan))", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 14px var(--glow-violet)" }}>
-              <span style={{ fontFamily: "var(--font-display)", fontSize: 12, fontWeight: 900, color: "#fff" }}>{user?.username?.[0]?.toUpperCase()}</span>
-            </div>
+            <button onClick={() => setProfileOpen(true)}
+              style={{ width: 36, height: 36, borderRadius: "50%", border: "2px solid var(--border-bright)", overflow: "hidden", cursor: "pointer", background: "linear-gradient(135deg, var(--violet), var(--cyan))", flexShrink: 0, padding: 0, transition: "border-color 0.2s, box-shadow 0.2s", boxShadow: "0 0 14px var(--glow-violet)" }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--violet)"; e.currentTarget.style.boxShadow = "0 0 20px rgba(124,92,255,0.5)"; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border-bright)"; e.currentTarget.style.boxShadow = "0 0 14px var(--glow-violet)"; }}>
+              {user?.profilePicture ? (
+                <img src={(user.profilePicture.startsWith("http") ? user.profilePicture : `${(import.meta.env.VITE_API_URL as string).replace(/\/api\/?$/, "")}${user.profilePicture}`)} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : (
+                <span style={{ fontFamily: "var(--font-display)", fontSize: 14, fontWeight: 900, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%" }}>{user?.username?.[0]?.toUpperCase()}</span>
+              )}
+            </button>
           </div>
         </div>
 
@@ -143,6 +154,7 @@ export function Layout({ children }: { children: ReactNode }) {
           {children}
         </div>
       </main>
+      <ProfileModal open={profileOpen} onClose={() => setProfileOpen(false)} />
     </div>
   );
 }

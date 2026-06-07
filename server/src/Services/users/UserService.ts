@@ -24,4 +24,11 @@ export class UserService implements IUserService {
     user.role = role as UserRole;
     return this.userRepo.update(user);
   }
+
+  async updateProfilePicture(id: number, url: string): Promise<boolean> {
+    const user = await this.userRepo.findById(id);
+    if (user.id === 0) return false;
+    user.profilePicture = url;
+    return this.userRepo.update(user);
+  }
 }

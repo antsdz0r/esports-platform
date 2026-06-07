@@ -4,6 +4,7 @@ import { TeamMemberWithUser } from "../../models/TeamMemberWithUser";
 import { TeamInvite } from "../../models/TeamInvites";
 export interface ITeamService {
   getMyTeams(userId: number): Promise<Team[]>;
+  getCaptainTeams(userId: number): Promise<Team[]>;
   getById(teamId: number): Promise<Team>;
   getTeamMembers(teamId: number): Promise<TeamMemberWithUser[]>;
   create(payload: {

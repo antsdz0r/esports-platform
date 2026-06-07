@@ -1,4 +1,3 @@
-
 import { TeamMemberRole } from "../../Domain/enums/TeamMemberRole";
 import { Team } from "../../Domain/models/Team";
 import { TeamMember } from "../../Domain/models/TeamMember";
@@ -9,15 +8,12 @@ import { ITeamService } from "../../Domain/services/teams/ITeamService";
 import { ITeamInviteRepository } from "../../Domain/repositories/team_invites/ITeamInvitesRepository";
 import { TeamInvite } from "../../Domain/models/TeamInvites";
 
-
-
 export class TeamService implements ITeamService {
   public constructor(
     private readonly teamRepo: ITeamRepository,
     private readonly teamMemberRepo: ITeamMemberRepository,
     private readonly teamInviteRepo: ITeamInviteRepository,
   ) {}
-
 
   private async isCaptain(userId: number, teamId: number): Promise<boolean> {
     const members = await this.teamMemberRepo.getMembersByTeam(teamId);
@@ -26,9 +22,14 @@ export class TeamService implements ITeamService {
 
   async getMyTeams(userId: number): Promise<Team[]> {
     const memberships = await this.teamMemberRepo.getTeamsByPlayer(userId);
-    const teams = await Promise.all(
-        memberships.map((m) => this.teamRepo.findById(m.TeamId))
-    );
+    const teams = await Promise.all(memberships.map((m) => this.teamRepo.findById(m.TeamId)));
+    return teams.filter((t) => t.teamId !== 0);
+  }
+
+  async getCaptainTeams(userId: number): Promise<Team[]> {
+    const memberships = await this.teamMemberRepo.getTeamsByPlayer(userId);
+    const captainMemberships = memberships.filter((m) => m.role === TeamMemberRole.CAPTAIN);
+    const teams = await Promise.all(captainMemberships.map((m) => this.teamRepo.findById(m.TeamId)));
     return teams.filter((t) => t.teamId !== 0);
   }
 
@@ -46,7 +47,7 @@ export class TeamService implements ITeamService {
     tag: string;
     logo: string;
     description?: string | null;
-    }): Promise<{ ok: boolean; team?: Team; error?: string }> {
+  }): Promise<{ ok: boolean; team?: Team; error?: string }> {
     const byName = await this.teamRepo.findByName(payload.teamName);
     if (byName.teamId !== 0) return { ok: false, error: "Tim sa tim imenom već postoji" };
 
@@ -64,7 +65,7 @@ export class TeamService implements ITeamService {
     if (!added) return { ok: false, error: "Greška pri dodavanju kapitena" };
 
     return { ok: true, team };
-}
+  }
 
   async update(
     userId: number,
@@ -104,7 +105,6 @@ export class TeamService implements ITeamService {
   }
 
   async removeMember(userId: number, teamId: number, targetUserId: number): Promise<boolean> {
-    // Captain can remove members; users can leave their own membership if not captain.
     if (userId === targetUserId) {
       const members = await this.teamMemberRepo.getMembersByTeam(teamId);
       const me = members.find((m) => m.playerId === userId);
@@ -112,50 +112,49 @@ export class TeamService implements ITeamService {
       if (me.role === TeamMemberRole.CAPTAIN) return false;
       return this.teamMemberRepo.removeMember(teamId, userId);
     }
-
     const captain = await this.isCaptain(userId, teamId);
     if (!captain) return false;
     return this.teamMemberRepo.removeMember(teamId, targetUserId);
   }
-  public async sendInvite(captainId: number, teamId: number, inviteeId: number): Promise<{ ok: boolean; error?: string }> {
-  const members = await this.teamMemberRepo.getMembersByTeam(teamId);
-  const isCaptain = members.some((m) => m.playerId === captainId && m.role === TeamMemberRole.CAPTAIN);
-  if (!isCaptain) return { ok: false, error: "Samo kapiten može slati pozivnice" };
 
-  const alreadyMember = members.some((m) => m.playerId === inviteeId);
-  if (alreadyMember) return { ok: false, error: "Igrač je već član tima" };
+  async sendInvite(captainId: number, teamId: number, inviteeId: number): Promise<{ ok: boolean; error?: string }> {
+    const members = await this.teamMemberRepo.getMembersByTeam(teamId);
+    const isCaptain = members.some((m) => m.playerId === captainId && m.role === TeamMemberRole.CAPTAIN);
+    if (!isCaptain) return { ok: false, error: "Samo kapiten može slati pozivnice" };
 
-  const alreadyInvited = await this.teamInviteRepo.existsPending(teamId, inviteeId);
-  if (alreadyInvited) return { ok: false, error: "Pozivnica već postoji" };
+    const alreadyMember = members.some((m) => m.playerId === inviteeId);
+    if (alreadyMember) return { ok: false, error: "Igrač je već član tima" };
 
-  const invite = await this.teamInviteRepo.create(teamId, captainId, inviteeId);
-  return invite ? { ok: true } : { ok: false, error: "Greška pri slanju pozivnice" };
-}
+    const alreadyInvited = await this.teamInviteRepo.existsPending(teamId, inviteeId);
+    if (alreadyInvited) return { ok: false, error: "Pozivnica već postoji" };
 
-public async respondInvite(userId: number, inviteId: number, accept: boolean): Promise<{ ok: boolean; error?: string }> {
-  const invite = await this.teamInviteRepo.findById(inviteId);
-  if (!invite) return { ok: false, error: "Pozivnica nije pronađena" };
-  if (invite.inviteeId !== userId) return { ok: false, error: "Nije vaša pozivnica" };
-
-  const status = accept ? "accepted" : "declined";
-  const ok = await this.teamInviteRepo.respond(inviteId, status);
-  if (!ok) return { ok: false, error: "Greška pri odgovoru na pozivnicu" };
-
-  if (accept) {
-    await this.teamMemberRepo.addMember(new TeamMember(invite.teamId, userId, TeamMemberRole.MEMBER, new Date()));
+    const invite = await this.teamInviteRepo.create(teamId, captainId, inviteeId);
+    return invite ? { ok: true } : { ok: false, error: "Greška pri slanju pozivnice" };
   }
 
-  return { ok: true };
-}
+  async respondInvite(userId: number, inviteId: number, accept: boolean): Promise<{ ok: boolean; error?: string }> {
+    const invite = await this.teamInviteRepo.findById(inviteId);
+    if (!invite) return { ok: false, error: "Pozivnica nije pronađena" };
+    if (invite.inviteeId !== userId) return { ok: false, error: "Nije vaša pozivnica" };
 
-public async getMyInvites(userId: number): Promise<TeamInvite[]> {
-  return this.teamInviteRepo.findPendingByInvitee(userId);
-}
+    const status = accept ? "accepted" : "declined";
+    const ok = await this.teamInviteRepo.respond(inviteId, status);
+    if (!ok) return { ok: false, error: "Greška pri odgovoru na pozivnicu" };
 
-public async getTeamPendingInvites(captainId: number, teamId: number): Promise<TeamInvite[]> {
-  const isCap = await this.isCaptain(captainId, teamId);
-  if (!isCap) return [];
-  return this.teamInviteRepo.findPendingByTeam(teamId);
-}
+    if (accept) {
+      await this.teamMemberRepo.addMember(new TeamMember(invite.teamId, userId, TeamMemberRole.MEMBER, new Date()));
+    }
 
+    return { ok: true };
+  }
+
+  async getMyInvites(userId: number): Promise<TeamInvite[]> {
+    return this.teamInviteRepo.findPendingByInvitee(userId);
+  }
+
+  async getTeamPendingInvites(captainId: number, teamId: number): Promise<TeamInvite[]> {
+    const isCap = await this.isCaptain(captainId, teamId);
+    if (!isCap) return [];
+    return this.teamInviteRepo.findPendingByTeam(teamId);
+  }
 }

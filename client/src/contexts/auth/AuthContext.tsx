@@ -33,7 +33,7 @@ const getInitialAuth = () => {
     if (claims) {
       return {
         token: saved,
-        user: { id: claims.id, username: claims.gamerTag, role: claims.role, } as AuthUser,
+        user: { id: claims.id, username: claims.gamerTag, role: claims.role, profilePicture: null } as AuthUser,
       };
     }
   }
@@ -55,8 +55,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (!claims || expired(t)) return;
 
     setToken(t);
-    setUser({ id: claims.id, username: claims.gamerTag, role: claims.role });
+    setUser({ id: claims.id, username: claims.gamerTag, role: claims.role, profilePicture: null });
     localStorage.setItem(KEY, t);
+    // Fetch profile picture asynchronously
+    fetch(`${import.meta.env.VITE_API_URL}users/me`, { headers: { Authorization: `Bearer ${t}` } })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success && data.data?.profilePicture) {
+          setUser(u => u ? { ...u, profilePicture: data.data.profilePicture } : u);
+        }
+      })
+      .catch(() => {});
+  };
+
+  const updateProfilePicture = (url: string) => {
+    setUser(u => u ? { ...u, profilePicture: url } : u);
   };
 
   const logout = () => {
@@ -66,7 +79,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated: !!user && !!token, isLoading}}>
+    <AuthContext.Provider value={{ user, token, login, logout, updateProfilePicture, isAuthenticated: !!user && !!token, isLoading}}>
       {children}
     </AuthContext.Provider>
   );

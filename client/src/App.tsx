@@ -41,6 +41,9 @@ export default function App() {
       <Route path="/admin/tournaments"    element={<ProtectedRoute requiredRole="admin"><TournamentsAdminPage /></ProtectedRoute>} />
       <Route path="/admin/tournaments/:id" element={<ProtectedRoute requiredRole="admin"><TournamentDetailPage isAdmin /></ProtectedRoute>} />
 
+      {/* Public — no login required */}
+      <Route path="/tournaments/:id" element={<TournamentDetailPage />} />
+
       <Route path="/"    element={<Navigate to="/login" replace />} />
       <Route path="/404" element={<NotFoundPage />} />
       <Route path="*"    element={<Navigate to="/404" replace />} />

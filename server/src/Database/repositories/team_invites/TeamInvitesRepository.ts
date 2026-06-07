@@ -11,7 +11,7 @@ export class TeamInviteRepository implements ITeamInviteRepository {
   ) {}
 
   private map(r: RowDataPacket): TeamInvite {
-    return new TeamInvite(r.id, r.team_id, r.inviter_id, r.invitee_id, r.status, new Date(r.created_at));
+    return new TeamInvite(r.id, r.team_id, r.inviter_id, r.invitee_id, r.status, new Date(r.created_at), r.team_name ?? null);
   }
 
   public async create(teamId: number, inviterId: number, inviteeId: number): Promise<TeamInvite | null> {
@@ -36,7 +36,10 @@ export class TeamInviteRepository implements ITeamInviteRepository {
     if (!res) return [];
     try {
       const [rows] = await res.conn.execute<RowDataPacket[]>(
-        `SELECT * FROM TEAM_INVITES WHERE invitee_id = ? AND status = 'pending'`,
+        `SELECT ti.*, t.team_name
+         FROM TEAM_INVITES ti
+         LEFT JOIN TEAMS t ON ti.team_id = t.team_id
+         WHERE ti.invitee_id = ? AND ti.status = 'pending'`,
         [inviteeId]
       );
       return rows.map((r) => this.map(r));

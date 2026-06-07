@@ -67,11 +67,12 @@ const userService   = new UserService(userRepo);
 const gameCatalogService = new GameCatalogService(gameCatalogRepo, tournamentRepo);
 const teamService = new TeamService(teamRepo, teamMemberRepo, teamInviteRepo);
 const tournamentService = new TournamentService(
-  tournamentRepo,               // ITournamentRepository (već postoji)
-  tournamentRegistrationRepo,   // ITournamentRegistrationRepository
-  teamMemberRepo,               // ITeamMemberRepository (već postoji)
-  watchlistRepo,                // IWatchlistRepository
-  gameRepo                      // IGameRepository
+  tournamentRepo,
+  tournamentRegistrationRepo,
+  teamMemberRepo,
+  watchlistRepo,
+  gameRepo,
+  matchPlayerRepo,
 );
 const matchService = new MatchService(gameRepo, matchPlayerRepo, teamMemberRepo);
 const auditLogService = new AuditLogService(auditLogRepo);
