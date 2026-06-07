@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../../hooks/auth/useAuthHook";
 import { PageHeader, Spinner, Empty, ErrorBox, SuccessBox, PgBtn } from "../../components/ui/UI";
@@ -48,9 +48,8 @@ export default function InvitesPage() {
   const [responding, setResponding] = useState<number | null>(null);
   const [filter, setFilter]     = useState<"all" | "pending" | "accepted" | "declined">("all");
 
-  const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
-
-  const loadInvites = async () => {
+  const loadInvites = useCallback(async () => {
+    const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
     setLoading(true);
     setError("");
     try {
@@ -98,11 +97,12 @@ export default function InvitesPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
 
-  useEffect(() => { void loadInvites(); }, [token]);
+  useEffect(() => { void loadInvites(); }, [loadInvites]);
 
   const respond = async (inviteId: number, accept: boolean) => {
+    const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
     setResponding(inviteId);
     setError("");
     setSuccess("");
