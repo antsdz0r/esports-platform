@@ -59,7 +59,7 @@ const FORMAT_LABEL: Record<string, string> = {
 export default function TournamentDetailPage({ isAdmin = false }: { isAdmin?: boolean }) {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
 
   const [tournament, setTournament] = useState<Tournament | null>(null);
@@ -285,6 +285,8 @@ export default function TournamentDetailPage({ isAdmin = false }: { isAdmin?: bo
           teamId={membersModal.teamId}
           teamName={membersModal.teamName}
           token={token ?? ""}
+          gameId={tournament.gameId}
+          currentUserId={user?.id}
           onClose={() => setMembersModal(null)}
         />
       )}
@@ -294,38 +296,198 @@ export default function TournamentDetailPage({ isAdmin = false }: { isAdmin?: bo
 
 /* ─── Team Members Modal ─── */
 
-function TeamMembersModal({ teamId, teamName, token, onClose }: {
+interface UserBasic { id: number; gamerTag: string; fullName: string; }
+
+function TeamMembersModal({ teamId, teamName, token, gameId, currentUserId, onClose }: {
   teamId: number;
   teamName: string;
   token: string;
+  gameId?: number;
+  currentUserId?: number;
   onClose: () => void;
 }) {
   const [members, setMembers] = useState<TeamMemberInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [maxPlayers, setMaxPlayers] = useState<number>(0);
+
+  // Invite state
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [allUsers, setAllUsers] = useState<UserBasic[]>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [search, setSearch] = useState("");
+  const [inviting, setInviting] = useState(false);
+  const [inviteError, setInviteError] = useState("");
+  const [inviteSuccess, setInviteSuccess] = useState("");
+  const [invitedIds, setInvitedIds] = useState<Set<number>>(new Set());
+  const [confirmMember, setConfirmMember] = useState<TeamMemberInfo | null>(null);
+  const [removing, setRemoving] = useState(false);
+
+  const authHeader = { Authorization: `Bearer ${token}` };
 
   useEffect(() => {
-    const fetchMembers = async () => {
+    const fetchData = async () => {
       try {
-        const res = await fetch(`${BASE}teams/${teamId}/members`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const data = await res.json();
-        if (data.success) setMembers(data.data as TeamMemberInfo[]);
+        const [membersRes, gameRes] = await Promise.all([
+          fetch(`${BASE}teams/${teamId}/members`, { headers: authHeader }),
+          gameId ? fetch(`${BASE}games/${gameId}`) : Promise.resolve(null),
+        ]);
+        const membersData = await membersRes.json();
+        if (membersData.success) setMembers(membersData.data as TeamMemberInfo[]);
         else setError("Neuspešno učitavanje članova");
+
+        if (gameRes) {
+          const gameData = await gameRes.json();
+          if (gameData.success && gameData.data?.maxPlayers) {
+            setMaxPlayers(gameData.data.maxPlayers as number);
+          }
+        }
       } catch {
         setError("Greška pri učitavanju");
       } finally {
         setLoading(false);
       }
     };
-    void fetchMembers();
-  }, [teamId, token]);
+    void fetchData();
+  }, [teamId, token, gameId]);
 
   const captain = members.find(m => m.role === "captain");
   const others = members.filter(m => m.role !== "captain");
+  const isCaptain = currentUserId !== undefined && captain?.playerId === currentUserId;
+
+  const confirmRemove = async () => {
+    if (!confirmMember) return;
+    setRemoving(true);
+    try {
+      await fetch(`${BASE}teams/${teamId}/members/${confirmMember.playerId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setMembers(prev => prev.filter(m => m.playerId !== confirmMember.playerId));
+      setConfirmMember(null);
+    } catch {
+      setError("Greška pri uklanjanju člana");
+    } finally {
+      setRemoving(false);
+    }
+  };
+  const isFull = maxPlayers > 0 && members.length >= maxPlayers;
+
+  const openInvite = async () => {
+    setInviteOpen(true);
+    setInviteError("");
+    setInviteSuccess("");
+    setUsersLoading(true);
+    try {
+      const requests: Promise<Response>[] = [
+        fetch(`${BASE}players`, { headers: authHeader }),
+        fetch(`${BASE}teams/${teamId}/invites/pending`, { headers: authHeader }),
+      ];
+      // Uvek re-fetch maxPlayers da bismo imali aktuelno stanje
+      if (gameId) requests.push(fetch(`${BASE}games/${gameId}`));
+      const [playersRes, pendingRes, gameRes] = await Promise.all(requests);
+      const playersData = await playersRes.json();
+      const pendingData = await pendingRes.json();
+
+      const memberIds = new Set(members.map(m => m.playerId));
+      const filtered = (playersData.data ?? []) as UserBasic[];
+      setAllUsers(filtered.filter((u: UserBasic) => !memberIds.has(u.id)));
+
+      if (pendingData.success && Array.isArray(pendingData.data)) {
+        const alreadyInvited = new Set<number>(
+          (pendingData.data as { inviteeId: number }[]).map(i => i.inviteeId)
+        );
+        setInvitedIds(alreadyInvited);
+      }
+
+      // Osveži maxPlayers
+      if (gameRes) {
+        const gameData = await gameRes.json() as { success: boolean; data?: { maxPlayers?: number } };
+        if (gameData.success && gameData.data?.maxPlayers) {
+          setMaxPlayers(gameData.data.maxPlayers);
+        }
+      }
+    } catch {
+      setInviteError("Greška pri učitavanju korisnika");
+    } finally {
+      setUsersLoading(false);
+    }
+  };
+
+  const sendInvite = async (inviteeId: number) => {
+    if (isFull) { setInviteError("Tim je popunjen, ne možeš pozvati više igrača."); return; }
+    setInviting(true);
+    setInviteError("");
+    setInviteSuccess("");
+    try {
+      const res = await fetch(`${BASE}teams/${teamId}/invite`, {
+        method: "POST",
+        headers: { ...authHeader, "Content-Type": "application/json" },
+        body: JSON.stringify({ inviteeId }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setInviteSuccess("Pozivnica poslata!");
+        setSearch("");
+        setInvitedIds(prev => new Set(prev).add(inviteeId));
+      } else {
+        // Ako pozivnica već postoji — označi kao pozvana umjesto greške
+        if ((data.message as string | undefined)?.toLowerCase().includes("već postoji") ||
+            (data.message as string | undefined)?.toLowerCase().includes("vec postoji")) {
+          setInvitedIds(prev => new Set(prev).add(inviteeId));
+        } else {
+          setInviteError(data.message ?? "Greška pri slanju pozivnice");
+        }
+      }
+    } catch {
+      setInviteError("Greška pri slanju pozivnice");
+    } finally {
+      setInviting(false);
+    }
+  };
+
+  const filteredUsers = allUsers.filter(u =>
+    u.gamerTag.toLowerCase().includes(search.toLowerCase()) ||
+    u.fullName?.toLowerCase().includes(search.toLowerCase())
+  ).slice(0, 6);
 
   return createPortal(
+    <>
+    {/* Confirm removal modal */}
+    <AnimatePresence>
+      {confirmMember && (
+        <motion.div
+          key="confirm-overlay"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", zIndex: 1100, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 12 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            transition={{ type: "spring", stiffness: 360, damping: 28 }}
+            onClick={(e) => e.stopPropagation()}
+            className="pg-glass"
+            style={{ width: "100%", maxWidth: 360, borderRadius: 16, padding: 28, border: "1px solid var(--border-bright)", textAlign: "center" }}>
+            <p style={{ fontSize: 28, marginBottom: 14 }}>⚠️</p>
+            <p style={{ fontFamily: "var(--font-head)", fontSize: 16, fontWeight: 700, color: "var(--text)", marginBottom: 8 }}>
+              Izbaci igrača
+            </p>
+            <p style={{ fontFamily: "var(--font-ui)", fontSize: 13, color: "var(--text-muted)", marginBottom: 24, lineHeight: 1.5 }}>
+              Da li želiš da izbacis <strong style={{ color: "var(--text)" }}>{confirmMember.gamerTag}</strong> iz tima <strong style={{ color: "var(--text)" }}>{teamName}</strong>?
+            </p>
+            <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+              <PgBtn variant="ghost" onClick={() => setConfirmMember(null)} disabled={removing}>Otkaži</PgBtn>
+              <PgBtn variant="danger" onClick={() => void confirmRemove()} disabled={removing}>
+                {removing ? "Uklanjanje..." : "Da, izbaci"}
+              </PgBtn>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+
     <AnimatePresence>
       <motion.div
         key="overlay"
@@ -346,7 +508,9 @@ function TeamMembersModal({ teamId, teamName, token, onClose }: {
           {/* Header */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 22 }}>
             <div>
-              <p style={{ fontFamily: "var(--font-ui)", fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 4 }}>Članovi tima</p>
+              <p style={{ fontFamily: "var(--font-ui)", fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 4 }}>
+                Članovi tima {maxPlayers > 0 && <span style={{ color: isFull ? "var(--pink)" : "var(--green)" }}>· {members.length}/{maxPlayers}</span>}
+              </p>
               <p style={{ fontFamily: "var(--font-head)", fontSize: 20, fontWeight: 800, color: "var(--text)" }}>{teamName}</p>
             </div>
             <button onClick={onClose} style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: 22, lineHeight: 1, padding: 4 }}>×</button>
@@ -361,17 +525,115 @@ function TeamMembersModal({ teamId, teamName, token, onClose }: {
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {captain && <MemberRow member={captain} />}
-              {others.map(m => <MemberRow key={m.playerId} member={m} />)}
+              {others.map(m => (
+                <MemberRow
+                  key={m.playerId}
+                  member={m}
+                  onRemove={isCaptain ? () => setConfirmMember(m) : undefined}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Invite section — only for captain */}
+          {!loading && isCaptain && (
+            <div style={{ marginTop: 20, borderTop: "1px solid var(--border)", paddingTop: 16 }}>
+              {!inviteOpen ? (
+                <button
+                  disabled={isFull}
+                  onClick={openInvite}
+                  style={{
+                    width: "100%", padding: "10px 0", borderRadius: 10, cursor: isFull ? "not-allowed" : "pointer",
+                    fontFamily: "var(--font-ui)", fontSize: 12, fontWeight: 700, letterSpacing: "0.08em",
+                    border: `1px solid ${isFull ? "var(--border)" : "var(--violet)"}`,
+                    background: isFull ? "rgba(255,255,255,0.02)" : "rgba(124,92,255,0.10)",
+                    color: isFull ? "var(--text-dim)" : "var(--violet2)",
+                    opacity: isFull ? 0.5 : 1,
+                    transition: "all 0.2s",
+                  }}
+                  title={isFull ? "Tim je popunjen" : "Pošalji pozivnicu igraču"}
+                >
+                  {isFull ? "🔒 Tim je popunjen" : "✉ Pošalji pozivnicu"}
+                </button>
+              ) : (
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                    <p style={{ fontFamily: "var(--font-ui)", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--violet2)" }}>Pozovi igrača</p>
+                    <button onClick={() => { setInviteOpen(false); setSearch(""); setInviteError(""); setInviteSuccess(""); }}
+                      style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: 16 }}>×</button>
+                  </div>
+
+                  {inviteSuccess && <SuccessBox message={inviteSuccess} />}
+                  {inviteError && <ErrorBox message={inviteError} />}
+
+                  <input
+                    className="pg-input"
+                    placeholder="Traži po gamertagu..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    style={{ width: "100%", marginBottom: 10, boxSizing: "border-box" }}
+                    autoFocus
+                  />
+
+                  {isFull && (
+                    <div style={{ padding: "8px 12px", borderRadius: 8, background: "rgba(255,45,126,0.08)", border: "1px solid rgba(255,45,126,0.28)", marginBottom: 8 }}>
+                      <p style={{ fontFamily: "var(--font-ui)", fontSize: 11, fontWeight: 700, color: "var(--pink)", textAlign: "center" }}>🔒 Tim je popunjen ({members.length}/{maxPlayers})</p>
+                    </div>
+                  )}
+                  {usersLoading ? (
+                    <div style={{ display: "flex", justifyContent: "center", padding: "12px 0" }}><Spinner size={24} /></div>
+                  ) : filteredUsers.length === 0 ? (
+                    <p style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", padding: "8px 0" }}>
+                      {search ? "Nema rezultata." : "Nema dostupnih igrača."}
+                    </p>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      {filteredUsers.map(u => (
+                        <div key={u.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 8, background: "rgba(255,255,255,0.03)", border: "1px solid var(--border)" }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ fontFamily: "var(--font-head)", fontSize: 13, fontWeight: 700, color: "var(--text)" }}>{u.gamerTag}</p>
+                            {u.fullName && <p style={{ fontFamily: "var(--font-ui)", fontSize: 11, color: "var(--text-muted)" }}>{u.fullName}</p>}
+                          </div>
+                          {invitedIds.has(u.id) ? (
+                            <span style={{
+                              fontFamily: "var(--font-ui)", fontSize: 10, fontWeight: 700, letterSpacing: "0.06em",
+                              padding: "4px 12px", borderRadius: 7,
+                              border: "1px solid var(--border)", background: "rgba(255,255,255,0.04)", color: "var(--text-dim)",
+                            }}>
+                              Pozvan
+                            </span>
+                          ) : (
+                            <button
+                              disabled={inviting || isFull}
+                              onClick={() => void sendInvite(u.id)}
+                              style={{
+                                fontFamily: "var(--font-ui)", fontSize: 10, fontWeight: 700, letterSpacing: "0.06em",
+                                padding: "4px 12px", borderRadius: 7, cursor: (inviting || isFull) ? "not-allowed" : "pointer",
+                                border: `1px solid ${isFull ? "var(--border)" : "var(--cyan)"}`,
+                                background: isFull ? "rgba(255,255,255,0.03)" : "rgba(0,229,255,0.10)",
+                                color: isFull ? "var(--text-dim)" : "var(--cyan)",
+                                opacity: (inviting || isFull) ? 0.5 : 1, transition: "opacity 0.2s",
+                              }}>
+                              Pozovi
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </motion.div>
       </motion.div>
-    </AnimatePresence>,
+    </AnimatePresence>
+    </>,
     document.body
   );
 }
 
-function MemberRow({ member }: { member: TeamMemberInfo }) {
+function MemberRow({ member, onRemove }: { member: TeamMemberInfo; onRemove?: () => void }) {
   const isCaptain = member.role === "captain";
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderRadius: 10, background: isCaptain ? "rgba(124,92,255,0.08)" : "rgba(255,255,255,0.03)", border: `1px solid ${isCaptain ? "rgba(124,92,255,0.25)" : "var(--border)"}` }}>
@@ -385,6 +647,17 @@ function MemberRow({ member }: { member: TeamMemberInfo }) {
       <span style={{ fontFamily: "var(--font-ui)", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: isCaptain ? "var(--violet)" : "var(--text-dim)", background: isCaptain ? "rgba(124,92,255,0.12)" : "rgba(255,255,255,0.06)", padding: "2px 8px", borderRadius: 6 }}>
         {isCaptain ? "kapiten" : "član"}
       </span>
+      {onRemove && (
+        <button
+          onClick={onRemove}
+          title="Izbaci iz tima"
+          style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-dim)", fontSize: 16, lineHeight: 1, padding: "2px 4px", borderRadius: 4, transition: "color 0.2s" }}
+          onMouseEnter={e => (e.currentTarget.style.color = "var(--pink)")}
+          onMouseLeave={e => (e.currentTarget.style.color = "var(--text-dim)")}
+        >
+          ×
+        </button>
+      )}
     </div>
   );
 }

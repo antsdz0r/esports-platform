@@ -6,4 +6,5 @@ export interface ITeamInviteRepository {
   findById(id: number): Promise<TeamInvite | null>;
   respond(id: number, status: "accepted" | "declined"): Promise<boolean>;
   existsPending(teamId: number, inviteeId: number): Promise<boolean>;
+  findPendingByTeam(teamId: number): Promise<TeamInvite[]>;
 }

@@ -12,6 +12,8 @@ export class UserController {
     this.router.get("/users/:id",      authenticate, authorize(UserRole.ADMIN), this.getById.bind(this));
     this.router.patch("/users/:id/deactivate", authenticate, authorize(UserRole.ADMIN), this.deactivate.bind(this));
     this.router.put("/users/:id/role", authenticate, authorize(UserRole.ADMIN), this.changeRole.bind(this));
+    // Dostupno svim autentikovanim korisnicima — vraća samo javna polja (id, gamerTag, fullName)
+    this.router.get("/players",        authenticate, this.getPlayers.bind(this));
   }
 
   private async getAll(req: Request, res: Response): Promise<void> {
@@ -60,6 +62,18 @@ export class UserController {
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 }
+
+  private async getPlayers(_req: Request, res: Response): Promise<void> {
+    try {
+      const users = await this.userService.getAll();
+      const safe = users
+        .filter(u => u.isActive)
+        .map(u => ({ id: u.id, gamerTag: u.gamerTag, fullName: u.fullName }));
+      res.status(200).json({ success: true, data: safe });
+    } catch {
+      res.status(500).json({ success: false, message: "Internal server error" });
+    }
+  }
 
   public getRouter(): Router { return this.router; }
 }

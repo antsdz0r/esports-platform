@@ -22,14 +22,15 @@ game_id INT AUTO_INCREMENT PRIMARY KEY,
 name VARCHAR(100) NOT NULL,
 tag VARCHAR(255) NOT NULL,
 genre VARCHAR(50) NOT NULL,
-max_players INT NOT NULL
+max_players INT NOT NULL,
+image_url VARCHAR(500) NULL
 );
 
 CREATE TABLE TEAMS(
     team_id INT AUTO_INCREMENT PRIMARY KEY,
     team_name VARCHAR(100) NOT NULL,
     tag VARCHAR(10) NOT NULL UNIQUE,
-    logo VARCHAR(255) NOT NULL,
+    logo VARCHAR(1000) NOT NULL DEFAULT '',
     description TEXT
 );
 
@@ -42,6 +43,7 @@ CREATE TABLE TOURNAMENTS(
     registration_deadline DATETIME NOT NULL,
     prize_pool DECIMAL(10, 2) DEFAULT 0.00,
     status ENUM('open', 'locked', 'ongoing', 'completed') DEFAULT 'open',
+    image_url VARCHAR(512) NULL,
     FOREIGN KEY (game_id) REFERENCES GAME_CATALOG(game_id) ON DELETE CASCADE
 );
 
@@ -54,6 +56,7 @@ CREATE TABLE GAMES(
     score VARCHAR(10) DEFAULT '0:0',
     status ENUM('scheduled', 'ongoing', 'completed') DEFAULT 'scheduled',
     winner_team_id INT NULL,
+    scheduled_time DATETIME NULL,
     FOREIGN KEY (tournament_id) REFERENCES TOURNAMENTS(tournamentid) ON DELETE CASCADE,
     FOREIGN KEY (team1_id) REFERENCES TEAMS(team_id),
     FOREIGN KEY (team2_id) REFERENCES TEAMS(team_id),

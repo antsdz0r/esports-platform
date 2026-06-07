@@ -21,6 +21,7 @@ export class TeamController {
     this.router.post("/teams/:id/invite", authenticate, this.sendInvite.bind(this));
     this.router.post("/teams/:id/invite/respond", authenticate, this.respondInvite.bind(this));
     this.router.get("/teams/invites/my", authenticate, this.getMyInvites.bind(this));
+    this.router.get("/teams/:id/invites/pending", authenticate, this.getTeamPendingInvites.bind(this));
   }
 
   private async getMyTeams(req: Request, res: Response): Promise<void> {
@@ -180,6 +181,17 @@ private async respondInvite(req: Request, res: Response): Promise<void> {
     result.ok
       ? res.json({ success: true, message: accept ? "Pozivnica prihvaćena" : "Pozivnica odbijena" })
       : res.status(400).json({ success: false, message: result.error });
+  } catch {
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+}
+
+private async getTeamPendingInvites(req: Request, res: Response): Promise<void> {
+  try {
+    const teamId = parseInt(req.params.id as string, 10);
+    if (isNaN(teamId)) { res.status(400).json({ success: false, message: "Invalid teamId" }); return; }
+    const invites = await this.teamService.getTeamPendingInvites(req.user!.id, teamId);
+    res.json({ success: true, data: invites });
   } catch {
     res.status(500).json({ success: false, message: "Internal server error" });
   }

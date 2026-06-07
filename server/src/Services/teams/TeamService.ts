@@ -152,6 +152,10 @@ public async getMyInvites(userId: number): Promise<TeamInvite[]> {
   return this.teamInviteRepo.findPendingByInvitee(userId);
 }
 
-
+public async getTeamPendingInvites(captainId: number, teamId: number): Promise<TeamInvite[]> {
+  const isCap = await this.isCaptain(captainId, teamId);
+  if (!isCap) return [];
+  return this.teamInviteRepo.findPendingByTeam(teamId);
+}
 
 }

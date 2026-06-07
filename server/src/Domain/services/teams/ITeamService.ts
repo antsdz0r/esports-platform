@@ -24,4 +24,5 @@ export interface ITeamService {
   sendInvite(captainId: number, teamId: number, inviteeId: number): Promise<{ ok: boolean; error?: string }>;
   respondInvite(userId: number, inviteId: number, accept: boolean): Promise<{ ok: boolean; error?: string }>;
   getMyInvites(userId: number): Promise<TeamInvite[]>;
+  getTeamPendingInvites(captainId: number, teamId: number): Promise<TeamInvite[]>;
 }

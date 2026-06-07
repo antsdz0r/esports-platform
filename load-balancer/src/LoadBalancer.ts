@@ -119,6 +119,23 @@ export class LoadBalancer {
 
   public proxy(req: IncomingMessage, res: ServerResponse): void {
     const clientIp = req.socket.remoteAddress ?? "0.0.0.0";
+
+    // CORS headers — reflect origin for all requests
+    const origin = req.headers.origin as string | undefined;
+    if (origin) {
+      res.setHeader("Access-Control-Allow-Origin", origin);
+      res.setHeader("Access-Control-Allow-Methods", "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS");
+      res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization");
+      res.setHeader("Vary", "Origin");
+    }
+
+    // Handle OPTIONS preflight directly — no need to proxy
+    if (req.method === "OPTIONS") {
+      res.writeHead(204);
+      res.end();
+      return;
+    }
+
     const target = this.pick(clientIp);
 
     if (!target) {

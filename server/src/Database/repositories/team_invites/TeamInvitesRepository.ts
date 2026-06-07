@@ -82,6 +82,23 @@ export class TeamInviteRepository implements ITeamInviteRepository {
     }
   }
 
+  public async findPendingByTeam(teamId: number): Promise<TeamInvite[]> {
+    const res = await this.db.getReadConnection();
+    if (!res) return [];
+    try {
+      const [rows] = await res.conn.execute<RowDataPacket[]>(
+        `SELECT * FROM TEAM_INVITES WHERE team_id = ? AND status = 'pending'`,
+        [teamId]
+      );
+      return rows.map((r) => this.map(r));
+    } catch {
+      this.logger.error("TeamInviteRepository", "findPendingByTeam failed");
+      return [];
+    } finally {
+      res.conn.release();
+    }
+  }
+
   public async existsPending(teamId: number, inviteeId: number): Promise<boolean> {
     const res = await this.db.getReadConnection();
     if (!res) return false;
