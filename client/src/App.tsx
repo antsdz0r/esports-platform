@@ -1,6 +1,9 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { MotionConfig } from "framer-motion";
 import { ProtectedRoute } from "./components/protected_route/ProtectedRoute";
+import { GuestLayout } from "./components/layout/GuestLayout";
+import GuestTournamentsPage from "./pages/guest/GuestTournamentsPage";
+import GuestGamesPage from "./pages/guest/GuestGamesPage";
 
 import LoginPage    from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
@@ -47,6 +50,12 @@ export default function App() {
 
       {/* Public */}
       <Route path="/tournaments/:id" element={<TournamentDetailPage />} />
+
+      {/* Guest routes */}
+      <Route path="/guest" element={<Navigate to="/guest/tournaments" replace />} />
+      <Route path="/guest/tournaments" element={<GuestLayout><GuestTournamentsPage /></GuestLayout>} />
+      <Route path="/guest/tournaments/:id" element={<GuestLayout><TournamentDetailPage /></GuestLayout>} />
+      <Route path="/guest/games" element={<GuestLayout><GuestGamesPage /></GuestLayout>} />
 
       <Route path="/"    element={<Navigate to="/login" replace />} />
       <Route path="/404" element={<NotFoundPage />} />

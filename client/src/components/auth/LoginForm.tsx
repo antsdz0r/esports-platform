@@ -1,10 +1,12 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/auth/useAuthHook";
 import type { IAuthAPIService } from "../../api_services/auth/IAuthAPIService";
 import { PgBtn } from "../ui/UI";
 
 export function LoginForm({ authApi }: { authApi: IAuthAPIService }) {
   const { login } = useAuth();
+  const navigate = useNavigate();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -60,6 +62,26 @@ export function LoginForm({ authApi }: { authApi: IAuthAPIService }) {
         Nemaš nalog?{" "}
         <a href="/register" style={{ color: "var(--violet2)", fontWeight: 600 }}>Registruj se</a>
       </p>
+
+      <div style={{ marginTop: 16, borderTop: "1px solid var(--border)", paddingTop: 16 }}>
+        <button
+          type="button"
+          onClick={() => navigate("/guest/tournaments")}
+          style={{
+            width: "100%", padding: "10px 0", borderRadius: 10, cursor: "pointer",
+            fontFamily: "var(--font-ui)", fontSize: 12, fontWeight: 700, letterSpacing: "0.08em",
+            border: "1px solid rgba(255,196,68,0.35)", background: "rgba(255,196,68,0.07)", color: "var(--gold)",
+            transition: "all 0.2s",
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,196,68,0.13)"; }}
+          onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,196,68,0.07)"; }}
+        >
+          👁 Nastavi kao gost
+        </button>
+        <p style={{ textAlign: "center", fontSize: 11, color: "var(--text-dim)", marginTop: 8, lineHeight: 1.4 }}>
+          Pregled turnira i kataloga igara — bez registracije
+        </p>
+      </div>
     </div>
   );
 }
