@@ -55,7 +55,14 @@ export class UserController {
   private async getAll(_req: Request, res: Response): Promise<void> {
     try {
       const users = await this.userService.getAll();
-      res.status(200).json({ success: true, data: users });
+      const safe = users.map(u => ({
+        id: u.id,
+        username: u.gamerTag,
+        email: u.email,
+        role: u.role,
+        isActive: u.isActive,
+      }));
+      res.status(200).json({ success: true, data: safe });
     } catch {
       res.status(500).json({ success: false, message: "Internal server error" });
     }

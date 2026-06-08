@@ -1,11 +1,33 @@
 import { IHealthService, NodeStatus, ApiNodeStatus } from "../../Domain/services/health/IHealthService";
 import { DbManager } from "../../Database/connection/DbConnectionPool";
 
-const API_INSTANCES = [
-  { name: "api-1", url: process.env.API_INSTANCE_1_URL ?? `http://localhost:${process.env.PORT ?? 4000}` },
-  { name: "api-2", url: process.env.API_INSTANCE_2_URL ?? null },
-  { name: "api-3", url: process.env.API_INSTANCE_3_URL ?? null },
-].filter((i) => i.url !== null) as { name: string; url: string }[];
+// Default portovi odgovaraju instancama iza load balancera (load-balancer/.env).
+const DEFAULT_API_PORTS = ["4000", "4001", "4002"];
+
+function buildApiInstances(): { name: string; url: string }[] {
+  const instances: { name: string; url: string }[] = [];
+
+  // Otkrij sve API_n_HOST / API_n_PORT instance definisane u env-u
+  // (ista konvencija koju koristi load balancer).
+  for (let i = 1; ; i++) {
+    const host = process.env[`API_${i}_HOST`];
+    const port = process.env[`API_${i}_PORT`] ?? DEFAULT_API_PORTS[i - 1];
+    if (!host && !port) break;
+    instances.push({ name: `api-${i}`, url: `http://${host ?? "localhost"}:${port}` });
+    if (i >= 50) break; // safety
+  }
+
+  // Fallback: ako env ne definiše nijednu instancu, koristi default portove.
+  if (instances.length === 0) {
+    DEFAULT_API_PORTS.forEach((port, idx) => {
+      instances.push({ name: `api-${idx + 1}`, url: `http://localhost:${port}` });
+    });
+  }
+
+  return instances;
+}
+
+const API_INSTANCES = buildApiInstances();
 
 export class HealthService implements IHealthService {
   public constructor(private readonly db: DbManager) {}

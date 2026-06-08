@@ -9,6 +9,7 @@ import {
   PgBtn, FormField, StatusBadge, Table, TableHead,
 } from "../../components/ui/UI";
 import { fadeUp, staggerContainer } from "../../components/ui/motion";
+import { useConfirm } from "../../components/ui/ConfirmDialog";
 
 interface Game { gameId: number; name: string; }
 interface Tournament {
@@ -63,6 +64,7 @@ const selectStyle: React.CSSProperties = {
 export default function TournamentsAdminPage() {
   const { token } = useAuth();
   const navigate = useNavigate();
+  const confirm = useConfirm();
   const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
 
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
@@ -168,7 +170,7 @@ export default function TournamentsAdminPage() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("Obrisati ovaj turnir? Ovo briše i sve prijave i mečeve!")) return;
+    if (!(await confirm({ variant: "danger", title: "Obriši turnir", message: "Ovo trajno briše turnir, sve prijave i mečeve. Nastaviti?", confirmText: "Da, obriši" }))) return;
     setDeletingId(id);
     try {
       const res = await fetch(`${BASE}tournaments/${id}`, { method: "DELETE", headers });
@@ -184,7 +186,7 @@ export default function TournamentsAdminPage() {
   };
 
   const handleGenerateBracket = async (id: number) => {
-    if (!confirm("Generisati bracket? Prijave se zaključavaju.")) return;
+    if (!(await confirm({ variant: "cyan", title: "Generiši bracket", message: "Bracket će biti generisan i prijave se zaključavaju. Nastaviti?", confirmText: "Generiši" }))) return;
     try {
       const res = await fetch(`${BASE}tournaments/${id}/generate-bracket`, { method: "POST", headers });
       const data = await res.json();

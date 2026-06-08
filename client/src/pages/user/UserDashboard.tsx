@@ -36,6 +36,18 @@ const HERO_SLIDES = [
   { img: IMG.hero3, tags: ["Join", "Team", "Dominate"], title: "Pridruži se zajednici", desc: "Pozovi igrače, formiraj ekipu i kreni u sledeći meč." },
 ];
 
+
+const overwatch_img = "https://i.pinimg.com/736x/f6/b7/db/f6b7db628dc0e11cb1ba13a9509b2f2a.jpg";
+const nba_img = "https://i.pinimg.com/736x/4e/69/01/4e6901cc2b7330b309128fc8552f8fbb.jpg";
+const fortnite = "https://i.pinimg.com/1200x/50/65/54/50655437ff81ed9c54b5515a67d730f6.jpg";
+
+// HARDKODOVANE igre koje treba dodati na sajt — zameni `img`, `name` i `info` kasnije.
+const UPCOMING_GAMES = [
+  { name: "Overwatch", info: "HERO SHOOTER - 5 igrača", img: overwatch_img },
+  { name: "NBA 2K26", info: "BASKETBALL - 1-2 igrača", img: nba_img },
+  { name: "Fortnite", info: "BATTLE ROYALE - 1-4 igrača", img: fortnite },
+];
+
 interface GameCatalog {
   gameId: number;
   name: string;
@@ -113,7 +125,7 @@ function SectionTitle({ eyebrow, title, action }: { eyebrow: string; title: stri
     <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 22, gap: 16, flexWrap: "wrap" }}>
       <div>
         <p className="pg-eyebrow" style={{ marginBottom: 8 }}>{eyebrow}</p>
-        <h2 style={{ fontFamily: "var(--font-display)", fontSize: "clamp(22px,3vw,28px)", fontWeight: 900, letterSpacing: "0.04em" }}>{title}</h2>
+        <h2 className="pg-glitch" data-text={title} style={{ fontFamily: "var(--font-display)", fontSize: "clamp(22px,3vw,28px)", fontWeight: 900, letterSpacing: "0.04em", color: "var(--text)" }}>{title}</h2>
       </div>
       {action}
     </div>
@@ -138,9 +150,36 @@ function ChampionCard({ champion: c }: { champion: Champion }) {
     : null;
   const initials = c.winnerTeamName ? c.winnerTeamName.slice(0, 2).toUpperCase() : "?";
 
+  // Konfete koje izleću iz rama kartice. Postavljene uz ivice, lete napolje (dx/dy).
+  const cfColors = ["var(--gold)", "var(--pink)", "var(--cyan)", "var(--violet2)", "var(--green)", "#ffd84d"];
+  const confetti = [
+    // gornja ivica — lete naviše
+    { top: "0%",  left: "12%", dx: -28, dy: -70, spin: 540,  dur: 1.15, delay: 0.00 },
+    { top: "0%",  left: "30%", dx: 14,  dy: -88, spin: -480, dur: 1.30, delay: 0.18 },
+    { top: "0%",  left: "50%", dx: -8,  dy: -96, spin: 620,  dur: 1.05, delay: 0.34 },
+    { top: "0%",  left: "68%", dx: 22,  dy: -82, spin: -560, dur: 1.25, delay: 0.10 },
+    { top: "0%",  left: "86%", dx: 34,  dy: -66, spin: 500,  dur: 1.20, delay: 0.42 },
+    // leva ivica — lete ulevo
+    { top: "30%", left: "0%",  dx: -78, dy: -18, spin: -520, dur: 1.28, delay: 0.26 },
+    { top: "60%", left: "0%",  dx: -84, dy: 20,  spin: 600,  dur: 1.12, delay: 0.06 },
+    // desna ivica — lete udesno
+    { top: "32%", left: "100%", dx: 80, dy: -16, spin: 540,  dur: 1.22, delay: 0.38 },
+    { top: "62%", left: "100%", dx: 86, dy: 24,  spin: -600, dur: 1.08, delay: 0.14 },
+    // donja ivica — lete naniže
+    { top: "100%", left: "18%", dx: -22, dy: 74, spin: 580,  dur: 1.18, delay: 0.30 },
+    { top: "100%", left: "40%", dx: 10,  dy: 88, spin: -500, dur: 1.32, delay: 0.02 },
+    { top: "100%", left: "60%", dx: -14, dy: 80, spin: 640,  dur: 1.10, delay: 0.46 },
+    { top: "100%", left: "82%", dx: 26,  dy: 70, spin: -540, dur: 1.24, delay: 0.20 },
+  ];
+
   return (
-    <motion.div variants={fadeUp}>
-      <div style={{ position: "relative", borderRadius: 18, overflow: "hidden", background: "linear-gradient(135deg, rgba(20,14,40,0.95) 0%, rgba(10,8,20,0.98) 100%)", border: "1px solid rgba(255,200,0,0.25)", boxShadow: "0 0 40px rgba(255,200,0,0.08), inset 0 1px 0 rgba(255,200,0,0.12)" }}>
+    <motion.div variants={fadeUp} className="pg-champion" whileHover={{ y: -8, scale: 1.04 }} transition={{ type: "spring", stiffness: 320, damping: 22 }}>
+      <div className="pg-champion__confetti" aria-hidden="true">
+        {confetti.map((c, i) => (
+          <span key={i} className="cf" style={{ top: c.top, left: c.left, background: cfColors[i % cfColors.length], "--dx": `${c.dx}px`, "--dy": `${c.dy}px`, "--spin": `${c.spin}deg`, "--dur": `${c.dur}s`, animationDelay: `${c.delay}s` } as React.CSSProperties} />
+        ))}
+      </div>
+      <div className="pg-champion__inner" style={{ position: "relative", borderRadius: 18, overflow: "hidden", background: "linear-gradient(135deg, rgba(20,14,40,0.95) 0%, rgba(10,8,20,0.98) 100%)", border: "1px solid rgba(255,200,0,0.25)", boxShadow: "0 0 40px rgba(255,200,0,0.08), inset 0 1px 0 rgba(255,200,0,0.12)", transition: "border-color 0.3s, box-shadow 0.3s" }}>
         <div style={{ height: 3, background: "linear-gradient(90deg, transparent, var(--gold), transparent)", opacity: 0.8 }} />
         <div style={{ position: "absolute", top: -30, right: -30, width: 160, height: 160, borderRadius: "50%", background: "radial-gradient(circle, rgba(255,200,0,0.12), transparent 70%)", pointerEvents: "none" }} />
         <div style={{ padding: "20px 22px 22px" }}>
@@ -390,7 +429,6 @@ export default function UserDashboard() {
   });
 
   const trending = data.tournaments.filter((t) => t.status === "ongoing" || t.status === "open").slice(0, 4);
-  const recentGames = [...data.games].slice(-4).reverse();
   const hasChampions = data.champions.length > 0;
 
   if (loading) return <Spinner />;
@@ -406,7 +444,7 @@ export default function UserDashboard() {
         <motion.div className="pg-hero__content" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.15 }}>
           <div className="pg-hero__tags">{current.tags.map((tag) => <span key={tag} className="pg-hero__tag">{tag}</span>)}</div>
           <p className="pg-eyebrow" style={{ marginBottom: 14, color: "var(--violet2)" }}>Welcome back, {user?.username}</p>
-          <h1 style={{ fontFamily: "var(--font-display)", fontSize: "clamp(32px,5vw,52px)", fontWeight: 900, lineHeight: 1.05, marginBottom: 16, textShadow: "0 0 40px rgba(124,92,255,0.35)" }}>{current.title}</h1>
+          <h1 className="pg-glitch" data-text={current.title} style={{ fontFamily: "var(--font-display)", fontSize: "clamp(32px,5vw,52px)", fontWeight: 900, lineHeight: 1.05, marginBottom: 16, textShadow: "0 0 40px rgba(124,92,255,0.35)", color: "var(--text)" }}>{current.title}</h1>
           <p style={{ fontSize: 16, color: "var(--text-soft)", lineHeight: 1.65, marginBottom: 28, maxWidth: 480 }}>{current.desc}</p>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
             <PgBtn variant="primary" onClick={() => navigate("/dashboard/tournaments")}>Istraži turnire</PgBtn>
@@ -591,18 +629,17 @@ export default function UserDashboard() {
           </motion.section>
         )}
 
-        {recentGames.length > 0 && (
-          <motion.section initial="hidden" whileInView="show" viewport={viewOpts} variants={fadeInView} style={{ marginBottom: 44 }}>
-            <SectionTitle eyebrow="Katalog" title="Igre u bazi" />
-            <div className="pg-scroll-row">
-              {recentGames.map((g) => (
-                <div key={g.gameId} onClick={() => setSelectedGame(g)} style={{ cursor: "pointer" }}>
-                  <GameCard img={gameImg(g.genre, g.imageUrl)} title={g.name} desc={`${g.genre} · do ${g.maxPlayers} igrača · tag [${g.tag}]`} size="lg" />
-                </div>
-              ))}
-            </div>
-          </motion.section>
-        )}
+        <motion.section initial="hidden" whileInView="show" viewport={viewOpts} variants={fadeInView} style={{ marginBottom: 44 }}>
+          <SectionTitle eyebrow="Uskoro" title="Igre koje dolaze" />
+          {/* HARDKODOVANE placeholder igre — izmeni UPCOMING_GAMES (slike i tekst) na vrhu fajla. */}
+          <div className="pg-scroll-row">
+            {UPCOMING_GAMES.map((g, i) => (
+              <div key={i}>
+                <GameCard img={g.img} title={g.name} desc={g.info} size="lg" />
+              </div>
+            ))}
+          </div>
+        </motion.section>
 
         <motion.section initial="hidden" whileInView="show" viewport={viewOpts} variants={fadeInView}>
           <SectionTitle eyebrow="Brzo" title="Tvoja komandna tabla" />

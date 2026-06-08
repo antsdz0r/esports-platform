@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { useAuth } from "../../hooks/auth/useAuthHook";
 import { PageHeader, Spinner, Empty, ErrorBox, SuccessBox, StatusBadge, PgBtn } from "../../components/ui/UI";
 import { fadeUp, staggerContainer } from "../../components/ui/motion";
+import { useConfirm } from "../../components/ui/ConfirmDialog";
 
 interface Tournament {
   tournamentId: number;
@@ -64,6 +65,7 @@ export default function TournamentDetailPage({ isAdmin = false }: { isAdmin?: bo
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { token, user } = useAuth();
+  const confirm = useConfirm();
   const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
 
   const [tournament, setTournament] = useState<Tournament | null>(null);
@@ -208,6 +210,23 @@ export default function TournamentDetailPage({ isAdmin = false }: { isAdmin?: bo
     }
   };
 
+  const generateBracket = async () => {
+    if (!tournament) return;
+    if (!(await confirm({ variant: "cyan", title: "Generiši bracket", message: "Bracket će biti generisan i prijave se zaključavaju. Nastaviti?", confirmText: "Generiši" }))) return;
+    setStatusUpdating(true);
+    try {
+      const res = await fetch(`${BASE}tournaments/${tournament.tournamentId}/generate-bracket`, { method: "POST", headers });
+      const data = await res.json();
+      if (!res.ok) { setError(data.message ?? "Bracket generisanje neuspešno"); return; }
+      setSuccess("Bracket generisan!");
+      await load();
+    } catch {
+      setError("Greška pri generisanju bracketa");
+    } finally {
+      setStatusUpdating(false);
+    }
+  };
+
   const advanceRound = async () => {
     if (!tournament) return;
     setStatusUpdating(true);
@@ -279,6 +298,11 @@ export default function TournamentDetailPage({ isAdmin = false }: { isAdmin?: bo
             {!isAdmin && !!token && (
               <PgBtn variant={isWatched ? "cyan" : "ghost"} size="sm" disabled={watchSaving} onClick={toggleWatch}>
                 {watchSaving ? "..." : isWatched ? "★ Praćeno" : "☆ Prati"}
+              </PgBtn>
+            )}
+            {isAdmin && tournament.status === "open" && (
+              <PgBtn variant="cyan" size="sm" disabled={statusUpdating} onClick={generateBracket}>
+                {statusUpdating ? "..." : "⚙ Generiši bracket"}
               </PgBtn>
             )}
             {isAdmin && hasMatches && (tournament.status === "locked" || tournament.status === "ongoing") && (

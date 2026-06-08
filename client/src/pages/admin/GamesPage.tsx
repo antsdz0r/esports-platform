@@ -8,6 +8,7 @@ import {
   PgBtn, FormField, Table, TableHead,
 } from "../../components/ui/UI";
 import { fadeUp, staggerContainer } from "../../components/ui/motion";
+import { useConfirm } from "../../components/ui/ConfirmDialog";
 
 interface Game {
   gameId: number;
@@ -38,6 +39,7 @@ const inputStyle: React.CSSProperties = {
 
 export default function GamesPage() {
   const { token } = useAuth();
+  const confirm = useConfirm();
   const authHeaders = { Authorization: `Bearer ${token}` };
 
   const [games, setGames] = useState<Game[]>([]);
@@ -140,7 +142,7 @@ export default function GamesPage() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("Obrisati ovu igru?")) return;
+    if (!(await confirm({ variant: "danger", title: "Obriši igru", message: "Da li želiš da obrišeš ovu igru?", confirmText: "Da, obriši" }))) return;
     setDeletingId(id);
     try {
       const res = await fetch(`${BASE}games/${id}`, { method: "DELETE", headers: authHeaders });

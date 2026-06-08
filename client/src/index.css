@@ -389,6 +389,41 @@ body::after {
   z-index: 1;
 }
 
+/* ─── Champion card hover + lightning ─── */
+.pg-champion {
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.35s cubic-bezier(0.16,1,0.3,1);
+}
+.pg-champion { z-index: 1; }
+.pg-champion:hover { z-index: 3; }
+.pg-champion:hover > .pg-champion__inner {
+  border-color: rgba(255,200,0,0.6) !important;
+  box-shadow: 0 22px 55px rgba(0,0,0,0.6), 0 0 50px rgba(255,200,0,0.4) !important;
+}
+/* Konfete — overlay je VAN inner-a (bez overflow:hidden) pa mogu da izlete iz rama */
+.pg-champion__confetti {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 6;
+}
+.pg-champion:hover .pg-champion__confetti { opacity: 1; }
+.pg-champion__confetti .cf {
+  position: absolute;
+  width: 8px;
+  height: 12px;
+  border-radius: 2px;
+  will-change: transform, opacity;
+  animation: confetti-burst var(--dur, 1.2s) ease-out infinite;
+}
+@keyframes confetti-burst {
+  0%   { opacity: 0; transform: translate(0, 0) rotate(0deg) scale(0.5); }
+  12%  { opacity: 1; transform: translate(calc(var(--dx) * 0.18), calc(var(--dy) * 0.18)) rotate(60deg) scale(1); }
+  100% { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(var(--spin)) scale(0.85); }
+}
+
 .pg-marquee {
   display: flex;
   gap: 20px;
