@@ -466,7 +466,7 @@ export default function UserDashboard() {
             <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 320, overflowY: "auto", paddingRight: 2 }}>
               {data.upcoming.length > 0 ? data.upcoming.map((m) => (
                 <div key={m.gameId} style={{ borderRadius: 8, background: "rgba(124,92,255,0.06)", border: "1px solid var(--border)", overflow: "hidden" }}>
-                  <div style={{ padding: "4px 10px", borderBottom: "1px solid var(--border)", background: "rgba(0,0,0,0.2)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div style={{ padding: "4px 10px", borderBottom: "1px solid var(--border)", background: "rgba(124,92,255,0.08)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <span style={{ fontFamily: "var(--font-ui)", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--cyan)", opacity: 0.8 }}>{m.tournamentName} · R{m.round}</span>
                     {m.scheduledTime && (
                       <span style={{ fontFamily: "var(--font-ui)", fontSize: 10, color: "var(--gold)", fontWeight: 600 }}>

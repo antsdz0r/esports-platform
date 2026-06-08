@@ -1,4 +1,5 @@
 import { GameStatus } from "../enums/GameStatus";
+import { BracketType } from "../enums/BracketType";
 
 export class MatchWithTeams {
   constructor(
@@ -13,5 +14,6 @@ export class MatchWithTeams {
     public status: GameStatus | string = GameStatus.SCHEDULED,
     public winnerTeamId: number | null = null,
     public scheduledTime: Date | null = null,
+    public bracket: BracketType | string = BracketType.UPPER,
   ) {}
 }

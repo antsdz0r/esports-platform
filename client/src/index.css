@@ -323,6 +323,23 @@ body::after {
   width: 48px;
 }
 
+/* ===== HERO — usklađivanje sa svetlom temom ===== */
+:root[data-theme="light"] .pg-hero__overlay {
+  background:
+    linear-gradient(to top, var(--bg-deep) 0%, rgba(238,240,248,0) 30%),
+    linear-gradient(105deg, rgba(238,240,248,0.97) 0%, rgba(238,240,248,0.86) 36%, rgba(238,240,248,0.42) 68%, rgba(238,240,248,0.12) 100%);
+}
+:root[data-theme="light"] .pg-hero__slide {
+  filter: saturate(1.04) brightness(1.02);
+}
+:root[data-theme="light"] .pg-hero__dot {
+  background: rgba(20, 23, 46, 0.2);
+}
+:root[data-theme="light"] .pg-hero__tag {
+  border-color: rgba(0, 147, 168, 0.4);
+  background: rgba(0, 147, 168, 0.1);
+}
+
 .pg-scroll-row {
   display: flex;
   gap: 18px;

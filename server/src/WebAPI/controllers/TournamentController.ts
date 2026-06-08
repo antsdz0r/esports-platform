@@ -36,6 +36,7 @@ export class TournamentController {
     this.router.delete("/tournaments/:id", authenticate, authorize(UserRole.ADMIN), this.deleteTournament.bind(this));
     this.router.patch("/tournaments/:id/registrations/:teamId", authenticate, authorize(UserRole.ADMIN), this.updateRegistrationStatus.bind(this));
     this.router.post("/tournaments/:id/generate-bracket", authenticate, authorize(UserRole.ADMIN), this.generateBracket.bind(this));
+    this.router.post("/tournaments/:id/advance-round", authenticate, authorize(UserRole.ADMIN), this.advanceRound.bind(this));
     this.router.patch("/tournaments/games/:gameId/result", authenticate, authorize(UserRole.ADMIN), this.recordMatchResult.bind(this));
 
     this.router.post("/tournaments/:id/register", authenticate, this.registerTeam.bind(this));
@@ -180,6 +181,19 @@ export class TournamentController {
       const result = await this.tournamentService.lockAndGenerateBracket(tournamentId);
       if (result.ok) await this.auditLogService.log(req.user?.id ?? null, "GENERATE_BRACKET", "tournament", tournamentId, `Generisan raspored za turnir #${tournamentId}`, req.socket.remoteAddress ?? null);
       result.ok ? res.json({ message: "Bracket uspešno generisan" }) : res.status(400).json({ message: result.error });
+    } catch {
+      res.status(500).json({ success: false, message: "Internal server error" });
+    }
+  }
+
+  private async advanceRound(req: Request, res: Response): Promise<void> {
+    try {
+      const tournamentId = Number(req.params.id);
+      const result = await this.tournamentService.advanceBracket(tournamentId);
+      if (result.ok) await this.auditLogService.log(req.user?.id ?? null, "ADVANCE_ROUND", "tournament", tournamentId, `Napredovanje bracketa turnira #${tournamentId} (+${result.advanced ?? 0})`, req.socket.remoteAddress ?? null);
+      result.ok
+        ? res.json({ message: `Bracket ažuriran — ${result.advanced ?? 0} napredovanja` })
+        : res.status(400).json({ message: result.error });
     } catch {
       res.status(500).json({ success: false, message: "Internal server error" });
     }

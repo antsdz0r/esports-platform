@@ -17,6 +17,7 @@ interface Tournament {
   registrationDeadline: string;
   gameName?: string;
   registeredCount?: number;
+  imageUrl?: string | null;
 }
 
 interface Team {
@@ -28,6 +29,13 @@ interface Team {
 interface MyReg { tournamentId: number; teamId: number; }
 
 const BASE = import.meta.env.VITE_API_URL;
+const STATIC_BASE = (import.meta.env.VITE_API_URL as string).replace(/\/api\/?$/, "");
+
+function resolveImg(url?: string | null): string | null {
+  if (!url) return null;
+  return url.startsWith("http") ? url : STATIC_BASE + url;
+}
+
 const FORMAT_LABEL: Record<string, string> = {
   single_elim: "Single Elim",
   double_elim: "Double Elim",
@@ -149,6 +157,7 @@ export default function TournamentsPage() {
             const myReg = myRegs.find(r => r.tournamentId === t.tournamentId);
             const isRegistered = !!myReg;
             const isCancelling = cancellingId === t.tournamentId;
+            const img = resolveImg(t.imageUrl);
             return (
               <motion.div key={t.tournamentId} variants={fadeUp}>
                 <TiltCard glow={glow} style={{ overflow: "hidden", cursor: "pointer" }}
@@ -156,7 +165,9 @@ export default function TournamentsPage() {
                   <div style={{ height: 110, position: "relative", overflow: "hidden",
                     background: `linear-gradient(135deg, ${glow}28, rgba(13,16,35,0.4)), radial-gradient(circle at 70% 30%, ${glow}33, transparent 60%)`,
                     borderBottom: "1px solid var(--border)" }}>
-                    <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px)", backgroundSize: "26px 26px" }} />
+                    {img && <img src={img} alt={t.name} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />}
+                    {img && <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(5,6,15,0.45) 0%, rgba(5,6,15,0.05) 40%, rgba(5,6,15,0.35) 100%)" }} />}
+                    {!img && <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px)", backgroundSize: "26px 26px" }} />}
                     <div style={{ position: "absolute", top: 12, left: 14, right: 14, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                       {t.gameName && <span style={{ fontFamily: "var(--font-ui)", fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#fff", background: "rgba(0,0,0,0.35)", padding: "4px 10px", borderRadius: 6, backdropFilter: "blur(6px)" }}>{t.gameName}</span>}
                       <StatusBadge status={t.status} />

@@ -27,4 +27,5 @@ export interface ITournamentService {
   unwatchTournament(userId: number, tournamentId: number): Promise<boolean>;
 
   lockAndGenerateBracket(tournamentId: number): Promise<{ ok: boolean; error?: string }>;
+  advanceBracket(tournamentId: number): Promise<{ ok: boolean; error?: string; advanced?: number }>;
 }

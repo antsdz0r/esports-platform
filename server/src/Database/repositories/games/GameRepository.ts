@@ -3,6 +3,7 @@ import { IGameRepository } from "../../../Domain/repositories/games/IGameReposit
 import { Game } from "../../../Domain/models/Game";
 import { MatchWithTeams } from "../../../Domain/models/MatchWithTeams";
 import { GameStatus } from "../../../Domain/enums/GameStatus";
+import { BracketType } from "../../../Domain/enums/BracketType";
 import { DbManager } from "../../connection/DbConnectionPool";
 import { ILoggerService } from "../../../Domain/services/logger/ILoggerService";
 
@@ -23,6 +24,11 @@ export class GameRepository implements IGameRepository {
       r.status as GameStatus,
       r.winner_team_id,
       r.scheduled_time ? new Date(r.scheduled_time) : null,
+      (r.bracket ?? BracketType.UPPER) as BracketType,
+      r.winner_to_match ?? null,
+      r.winner_to_slot ?? null,
+      r.loser_to_match ?? null,
+      r.loser_to_slot ?? null,
     );
   }
 
@@ -34,15 +40,16 @@ export class GameRepository implements IGameRepository {
       const [result] = await res.conn.execute<ResultSetHeader>(
         `
         INSERT INTO GAMES
-          (tournament_id, team1_id, team2_id, round, score, status, winner_team_id)
+          (tournament_id, team1_id, team2_id, round, bracket, score, status, winner_team_id)
         VALUES
-          (?, ?, ?, ?, ?, ?, ?)
+          (?, ?, ?, ?, ?, ?, ?, ?)
         `,
         [
           game.tournamentId,
           game.team1Id,
           game.team2Id,
           game.round,
+          game.bracket,
           game.score,
           game.status,
           game.winnerTeamId,
@@ -59,7 +66,9 @@ export class GameRepository implements IGameRepository {
         game.round,
         game.score,
         game.status,
-        game.winnerTeamId
+        game.winnerTeamId,
+        game.scheduledTime,
+        game.bracket,
       );
     } catch {
       this.logger.error("GameRepository", "create failed");
@@ -82,6 +91,28 @@ export class GameRepository implements IGameRepository {
       return rows.length > 0 ? this.map(rows[0]) : new Game();
     } catch {
       this.logger.error("GameRepository", "findById failed");
+      return new Game();
+    } finally {
+      res.conn.release();
+    }
+  }
+
+  // Cita iz mastera (write connection) da bi se izbeglo zastarelo stanje sa replika
+  // u read-modify-write tokovima — npr. kada se na osnovu winner/loser linkova
+  // gradi napredovanje kroz bracket.
+  async findByIdMaster(gameId: number): Promise<Game> {
+    const res = await this.db.getWriteConnection();
+    if (!res) return new Game();
+
+    try {
+      const [rows] = await res.conn.execute<RowDataPacket[]>(
+        `SELECT * FROM GAMES WHERE game_id = ?`,
+        [gameId]
+      );
+
+      return rows.length > 0 ? this.map(rows[0]) : new Game();
+    } catch {
+      this.logger.error("GameRepository", "findByIdMaster failed");
       return new Game();
     } finally {
       res.conn.release();
@@ -119,6 +150,7 @@ export class GameRepository implements IGameRepository {
       r.status,
       r.winner_team_id,
       r.scheduled_time ? new Date(r.scheduled_time) : null,
+      (r.bracket ?? BracketType.UPPER) as BracketType,
     );
   }
 
@@ -345,6 +377,51 @@ export class GameRepository implements IGameRepository {
     }
   }
 
+  async setMatchLinks(
+    gameId: number,
+    winnerToMatch: number | null,
+    winnerToSlot: number | null,
+    loserToMatch: number | null,
+    loserToSlot: number | null,
+  ): Promise<boolean> {
+    const res = await this.db.getWriteConnection();
+    if (!res) return false;
+
+    try {
+      const [result] = await res.conn.execute<ResultSetHeader>(
+        `UPDATE GAMES
+         SET winner_to_match = ?, winner_to_slot = ?, loser_to_match = ?, loser_to_slot = ?
+         WHERE game_id = ?`,
+        [winnerToMatch, winnerToSlot, loserToMatch, loserToSlot, gameId]
+      );
+      return result.affectedRows > 0;
+    } catch {
+      this.logger.error("GameRepository", "setMatchLinks failed");
+      return false;
+    } finally {
+      res.conn.release();
+    }
+  }
+
+  async placeTeamInMatch(gameId: number, slot: number, teamId: number): Promise<boolean> {
+    const res = await this.db.getWriteConnection();
+    if (!res) return false;
+
+    try {
+      const column = slot === 1 ? "team1_id" : "team2_id";
+      const [result] = await res.conn.execute<ResultSetHeader>(
+        `UPDATE GAMES SET ${column} = ? WHERE game_id = ?`,
+        [teamId, gameId]
+      );
+      return result.affectedRows > 0;
+    } catch {
+      this.logger.error("GameRepository", "placeTeamInMatch failed");
+      return false;
+    } finally {
+      res.conn.release();
+    }
+  }
+
   async delete(gameId: number): Promise<boolean> {
     const res = await this.db.getWriteConnection();
     if (!res) return false;
@@ -382,6 +459,7 @@ export class GameRepository implements IGameRepository {
       res.conn.release();
     }
   }
+
   async createMatch(
     tournamentId: number,
     team1Id: number | null,

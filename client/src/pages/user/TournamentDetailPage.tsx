@@ -38,6 +38,7 @@ interface Match {
   status: string;
   winnerTeamId: number | null;
   scheduledTime: string | null;
+  bracket?: string;
 }
 
 interface TeamMemberInfo {
@@ -207,6 +208,22 @@ export default function TournamentDetailPage({ isAdmin = false }: { isAdmin?: bo
     }
   };
 
+  const advanceRound = async () => {
+    if (!tournament) return;
+    setStatusUpdating(true);
+    try {
+      const res = await fetch(`${BASE}tournaments/${tournament.tournamentId}/advance-round`, { method: "POST", headers });
+      const data = await res.json();
+      if (!res.ok) { setError(data.message ?? "Napredovanje nije uspelo"); return; }
+      setSuccess(data.message ?? "Bracket ažuriran");
+      await load();
+    } catch {
+      setError("Napredovanje nije uspelo");
+    } finally {
+      setStatusUpdating(false);
+    }
+  };
+
   const updateRegistration = async (teamId: number, newStatus: "confirmed" | "disqualified") => {
     if (!id) return;
     setRegUpdating(teamId);
@@ -235,7 +252,17 @@ export default function TournamentDetailPage({ isAdmin = false }: { isAdmin?: bo
 
   const backPath = isAdmin ? "/admin/tournaments" : "/dashboard/tournaments";
   const registrations = tournament.registrations ?? [];
-  const rounds = matches.length > 0 ? [...new Set(matches.map(m => m.round))].sort((a, b) => a - b) : [];
+  const upperMatches = matches.filter(m => (m.bracket ?? "upper") === "upper");
+  const lowerMatches = matches.filter(m => m.bracket === "lower");
+  const grandMatches = matches.filter(m => m.bracket === "grand");
+  const isDoubleElim = lowerMatches.length > 0 || grandMatches.length > 0;
+  const bracketSections = isDoubleElim
+    ? [
+        { key: "upper", label: "Upper Bracket", items: upperMatches },
+        { key: "lower", label: "Lower Bracket", items: lowerMatches },
+        { key: "grand", label: "Grand Finale", items: grandMatches },
+      ].filter(s => s.items.length > 0)
+    : [{ key: "single", label: "", items: matches }];
   const hasMatches = matches.length > 0;
   const myReg = myRegs.find(r => r.tournamentId === tournament.tournamentId);
   const isRegistered = !!myReg;
@@ -252,6 +279,11 @@ export default function TournamentDetailPage({ isAdmin = false }: { isAdmin?: bo
             {!isAdmin && !!token && (
               <PgBtn variant={isWatched ? "cyan" : "ghost"} size="sm" disabled={watchSaving} onClick={toggleWatch}>
                 {watchSaving ? "..." : isWatched ? "★ Praćeno" : "☆ Prati"}
+              </PgBtn>
+            )}
+            {isAdmin && hasMatches && (tournament.status === "locked" || tournament.status === "ongoing") && (
+              <PgBtn variant="primary" size="sm" disabled={statusUpdating} onClick={advanceRound}>
+                {statusUpdating ? "..." : "⟳ Sledeća runda"}
               </PgBtn>
             )}
             {isAdmin && tournament.status === "locked" && (
@@ -347,22 +379,41 @@ export default function TournamentDetailPage({ isAdmin = false }: { isAdmin?: bo
         <div>
           <SectionTitle label="Bracket" count={matches.length} />
           {hasMatches ? (
-            <div style={{ overflowX: "auto", paddingBottom: 12 }}>
-              <div style={{ display: "flex", gap: 20, alignItems: "flex-start", minWidth: "max-content" }}>
-                {rounds.map(round => {
-                  const roundMatches = matches.filter(m => m.round === round).sort((a, b) => a.gameId - b.gameId);
-                  return (
-                    <div key={round} style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 220 }}>
-                      <p style={{ fontFamily: "var(--font-ui)", fontSize: 10, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: "var(--text-muted)", textAlign: "center", marginBottom: 4 }}>
-                        {roundLabel(round, rounds.length)}
+            <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
+              {bracketSections.map(section => {
+                const sectionRounds = [...new Set(section.items.map(m => m.round))].sort((a, b) => a - b);
+                return (
+                  <div key={section.key}>
+                    {section.label && (
+                      <p style={{ fontFamily: "var(--font-display)", fontSize: 13, fontWeight: 900, letterSpacing: "0.12em", textTransform: "uppercase", color: section.key === "grand" ? "var(--gold)" : section.key === "lower" ? "var(--pink)" : "var(--violet2)", marginBottom: 14 }}>
+                        {section.label}
                       </p>
-                      {roundMatches.map(match => (
-                        <MatchCard key={match.gameId} match={match} isAdmin={isAdmin} token={token ?? ""} tournamentId={id ?? ""} onRefresh={load} />
-                      ))}
+                    )}
+                    <div style={{ overflowX: "auto", paddingBottom: 12 }}>
+                      <div style={{ display: "flex", gap: 20, alignItems: "flex-start", minWidth: "max-content" }}>
+                        {sectionRounds.map(round => {
+                          const roundMatches = section.items.filter(m => m.round === round).sort((a, b) => a.gameId - b.gameId);
+                          const label = section.key === "single"
+                            ? roundLabel(round, sectionRounds.length)
+                            : section.key === "grand"
+                              ? "Finale"
+                              : `Runda ${round}`;
+                          return (
+                            <div key={round} style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 220 }}>
+                              <p style={{ fontFamily: "var(--font-ui)", fontSize: 10, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: "var(--text-muted)", textAlign: "center", marginBottom: 4 }}>
+                                {label}
+                              </p>
+                              {roundMatches.map(match => (
+                                <MatchCard key={match.gameId} match={match} isAdmin={isAdmin} token={token ?? ""} tournamentId={id ?? ""} onRefresh={load} />
+                              ))}
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
-                  );
-                })}
-              </div>
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "60px 20px" }}>

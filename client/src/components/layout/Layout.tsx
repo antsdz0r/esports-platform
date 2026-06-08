@@ -128,8 +128,12 @@ export function Layout({ children }: { children: ReactNode }) {
         {/* User */}
         <div style={{ borderTop: "1px solid var(--border)", padding: "14px 16px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: collapsed ? 0 : 10, justifyContent: collapsed ? "center" : "flex-start" }}>
-            <div style={{ width: 34, height: 34, borderRadius: "50%", background: "linear-gradient(135deg, rgba(124,92,255,0.25), rgba(0,229,255,0.15))", border: "1px solid var(--border-bright)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <span style={{ fontFamily: "var(--font-display)", fontSize: 13, fontWeight: 900, color: "var(--violet2)" }}>{user?.username?.[0]?.toUpperCase()}</span>
+            <div style={{ width: 34, height: 34, borderRadius: "50%", background: "linear-gradient(135deg, rgba(124,92,255,0.25), rgba(0,229,255,0.15))", border: "1px solid var(--border-bright)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
+              {user?.profilePicture ? (
+                <img src={(user.profilePicture.startsWith("http") ? user.profilePicture : `${(import.meta.env.VITE_API_URL as string).replace(/\/api\/?$/, "")}${user.profilePicture}`)} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : (
+                <span style={{ fontFamily: "var(--font-display)", fontSize: 13, fontWeight: 900, color: "var(--violet2)" }}>{user?.username?.[0]?.toUpperCase()}</span>
+              )}
             </div>
             {!collapsed && (
               <div style={{ minWidth: 0 }}>
