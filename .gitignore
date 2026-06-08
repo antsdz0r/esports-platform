@@ -1,0 +1,6 @@
+node_modules/
+dist/
+build/
+.vs/
+package-lock.json
+.env
