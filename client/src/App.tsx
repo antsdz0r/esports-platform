@@ -4,6 +4,7 @@ import { ProtectedRoute } from "./components/protected_route/ProtectedRoute";
 import { GuestLayout } from "./components/layout/GuestLayout";
 import GuestTournamentsPage from "./pages/guest/GuestTournamentsPage";
 import GuestGamesPage from "./pages/guest/GuestGamesPage";
+import ProPage from "./pages/pro/ProPage";
 
 import LoginPage    from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
@@ -38,6 +39,7 @@ export default function App() {
       <Route path="/dashboard/tournaments/:id" element={<ProtectedRoute requiredRole="player"><TournamentDetailPage /></ProtectedRoute>} />
       <Route path="/dashboard/invites" element={<ProtectedRoute requiredRole="player"><InvitesPage /></ProtectedRoute>} />
       <Route path="/dashboard/watchlist" element={<ProtectedRoute requiredRole="player"><WatchlistPage /></ProtectedRoute>} />
+      <Route path="/dashboard/pro" element={<ProtectedRoute requiredRole="player"><ProPage /></ProtectedRoute>} />
 
       {/* Admin routes */}
       <Route path="/admin"                element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />
@@ -47,9 +49,11 @@ export default function App() {
       <Route path="/admin/audit"          element={<ProtectedRoute requiredRole="admin"><AuditLogPage /></ProtectedRoute>} />
       <Route path="/admin/health"         element={<ProtectedRoute requiredRole="admin"><HealthPage /></ProtectedRoute>} />
       <Route path="/admin/tournaments/:id" element={<ProtectedRoute requiredRole="admin"><TournamentDetailPage isAdmin /></ProtectedRoute>} />
+      <Route path="/admin/pro" element={<ProtectedRoute requiredRole="admin"><ProPage /></ProtectedRoute>} />
 
       {/* Public */}
       <Route path="/tournaments/:id" element={<TournamentDetailPage />} />
+      <Route path="/pro" element={<GuestLayout><ProPage /></GuestLayout>} />
 
       {/* Guest routes */}
       <Route path="/guest" element={<Navigate to="/guest/tournaments" replace />} />

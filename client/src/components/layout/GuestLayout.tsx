@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { AnimatedBackground } from "../ui/AnimatedBackground";
 
 const guestNav = [
+  { to: "/pro",               label: "Pro mečevi",    icon: "📺" },
   { to: "/guest/tournaments", label: "Turniri",     icon: "◈" },
   { to: "/guest/games",       label: "Katalog igara", icon: "🎮" },
 ];

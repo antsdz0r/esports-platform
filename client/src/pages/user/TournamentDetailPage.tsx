@@ -6,6 +6,8 @@ import { useAuth } from "../../hooks/auth/useAuthHook";
 import { PageHeader, Spinner, Empty, ErrorBox, SuccessBox, StatusBadge, PgBtn } from "../../components/ui/UI";
 import { fadeUp, staggerContainer } from "../../components/ui/motion";
 import { useConfirm } from "../../components/ui/ConfirmDialog";
+import StreamPlayer from "../../components/stream/StreamPlayer";
+import StreamAdminModal from "../../components/stream/StreamAdminModal";
 
 interface Tournament {
   tournamentId: number;
@@ -909,6 +911,8 @@ function MatchCard({ match, isAdmin, token, onRefresh }: {
   const [showResult, setShowResult] = useState(false);
   const [showSchedule, setShowSchedule] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [showStream, setShowStream] = useState(false);
+  const [showStreamAdmin, setShowStreamAdmin] = useState(false);
   const [players, setPlayers] = useState<MatchPlayer[] | null>(null);
   const [playerNames, setPlayerNames] = useState<Record<number, string>>({});
   const [statsEditing, setStatsEditing] = useState<Record<string, string>>({});
@@ -991,6 +995,16 @@ function MatchCard({ match, isAdmin, token, onRefresh }: {
                   </button>
                 </>
               )}
+              <button onClick={() => setShowStream(v => !v)}
+                style={{ fontFamily: "var(--font-ui)", fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 5, border: "1px solid var(--violet)", background: "rgba(124,92,255,0.10)", color: "var(--violet2)", cursor: "pointer", letterSpacing: "0.05em" }}>
+                {showStream ? "Zatvori ▴" : "📺 Gledaj"}
+              </button>
+              {isAdmin && (
+                <button onClick={() => setShowStreamAdmin(true)}
+                  style={{ fontFamily: "var(--font-ui)", fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 5, border: "1px solid var(--gold)", background: "rgba(255,200,0,0.08)", color: "var(--gold)", cursor: "pointer", letterSpacing: "0.05em" }}>
+                  📺 Streamovi
+                </button>
+              )}
               <button onClick={toggleStats}
                 style={{ fontFamily: "var(--font-ui)", fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 5, border: "1px solid var(--border)", background: "transparent", color: "var(--text-muted)", cursor: "pointer", letterSpacing: "0.05em" }}>
                 {expanded ? "Sakrij ▴" : "Stats ▾"}
@@ -1045,8 +1059,22 @@ function MatchCard({ match, isAdmin, token, onRefresh }: {
             </motion.div>
           )}
         </AnimatePresence>
+
+        <AnimatePresence>
+          {showStream && (
+            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+              style={{ overflow: "hidden", borderTop: "1px solid var(--border)" }}>
+              <div style={{ padding: "12px 14px" }}>
+                <StreamPlayer gameId={match.gameId} />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
 
+      {showStreamAdmin && (
+        <StreamAdminModal gameId={match.gameId} onClose={() => setShowStreamAdmin(false)} />
+      )}
       {showResult && (
         <EditResultModal
           match={match}

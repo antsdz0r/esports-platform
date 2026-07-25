@@ -10,14 +10,16 @@ const userNav = [
   { to: "/dashboard",             label: "Dashboard",  icon: "⬡" },
   { to: "/dashboard/teams",       label: "Timovi",     icon: "◎" },
   { to: "/dashboard/tournaments", label: "Turniri",    icon: "◈" },
+  { to: "/dashboard/pro",         label: "Pro mečevi", icon: "📺" },
   { to: "/dashboard/invites",     label: "Pozivnice",  icon: "✉" },
   { to: "/dashboard/watchlist",   label: "Watchlist",  icon: "★" },
 ];
 const adminNav = [
-  { to: "/admin",        label: "Dashboard", icon: "⬡" },
-  { to: "/admin/users",  label: "Korisnici", icon: "◎" },
-  { to: "/admin/audit",  label: "Audit Log", icon: "◈" },
-  { to: "/admin/health", label: "Health",    icon: "♥" },
+  { to: "/admin",        label: "Dashboard",  icon: "⬡" },
+  { to: "/admin/users",  label: "Korisnici",  icon: "◎" },
+  { to: "/admin/pro",    label: "Pro mečevi", icon: "📺" },
+  { to: "/admin/audit",  label: "Audit Log",  icon: "◈" },
+  { to: "/admin/health", label: "Health",     icon: "♥" },
 ];
 
 const pgRnd = (i: number, k: number): number => {
