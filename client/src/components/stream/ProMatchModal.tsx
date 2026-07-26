@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import StreamEmbed, { type EmbedStream } from "./StreamEmbed";
+import ProStreamAdminModal from "./ProStreamAdminModal";
 import { PLATFORM_LABELS } from "../../helpers/streamEmbed";
 import type { ProMatch, ProMatchStatus } from "../../models/pro/ProTypes";
 
@@ -40,7 +42,14 @@ function TeamSide({ name, logo, score, won, align }: { name: string | null; logo
   );
 }
 
-export default function ProMatchModal({ match, gameLabel, onClose }: { match: ProMatch; gameLabel: string; onClose: () => void }) {
+export default function ProMatchModal({ match, gameLabel, onClose, isAdmin = false, onStreamsChanged }: {
+  match: ProMatch;
+  gameLabel: string;
+  onClose: () => void;
+  isAdmin?: boolean;
+  onStreamsChanged?: () => void;
+}) {
+  const [adminOpen, setAdminOpen] = useState(false);
   const st = STATUS_META[match.status];
   const won1 = match.status === "finished" && match.team1Score > match.team2Score;
   const won2 = match.status === "finished" && match.team2Score > match.team1Score;
@@ -72,7 +81,13 @@ export default function ProMatchModal({ match, gameLabel, onClose }: { match: Pr
               {match.leagueName ?? match.serieName ?? ""}{match.tournamentName ? ` · ${match.tournamentName}` : ""}
             </span>
             {when && <span style={{ fontFamily: "var(--font-ui)", fontSize: 11, color: "var(--text-dim)" }}>{when}</span>}
-            <button onClick={onClose} style={{ marginLeft: "auto", background: "none", border: "none", color: "var(--text-dim)", fontSize: 20, cursor: "pointer", lineHeight: 1 }}>✕</button>
+            {isAdmin && (
+              <button onClick={() => setAdminOpen(true)}
+                style={{ marginLeft: "auto", fontFamily: "var(--font-ui)", fontSize: 11, fontWeight: 700, padding: "4px 10px", borderRadius: 6, cursor: "pointer", background: "rgba(124,92,255,0.12)", border: "1px solid rgba(124,92,255,0.4)", color: "var(--violet2)" }}>
+                🎙 Kasteri
+              </button>
+            )}
+            <button onClick={onClose} style={{ marginLeft: isAdmin ? 0 : "auto", background: "none", border: "none", color: "var(--text-dim)", fontSize: 20, cursor: "pointer", lineHeight: 1 }}>✕</button>
           </div>
 
           {/* Teams */}
@@ -83,9 +98,25 @@ export default function ProMatchModal({ match, gameLabel, onClose }: { match: Pr
           </div>
 
           {/* Player + source switcher */}
-          <StreamEmbed streams={toEmbeds(match)} />
+          <StreamEmbed
+            streams={toEmbeds(match)}
+            emptyTitle={match.status === "finished" ? "Meč je završen" : match.status === "upcoming" ? "Meč još nije počeo" : undefined}
+            emptySub={
+              match.status === "finished" ? "Snimak meča nije dostupan preko izvora."
+              : match.status === "upcoming" ? "Stream se pojavljuje kada meč krene uživo."
+              : undefined
+            }
+          />
         </motion.div>
       </motion.div>
+
+      {adminOpen && (
+        <ProStreamAdminModal
+          matchId={match.id}
+          onClose={() => setAdminOpen(false)}
+          onChanged={() => onStreamsChanged?.()}
+        />
+      )}
     </AnimatePresence>,
     document.body
   );

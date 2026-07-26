@@ -36,6 +36,7 @@ import { MatchStreamService } from "./Services/streams/MatchStreamService";
 import { PandaScoreClient } from "./Services/pro/PandaScoreClient";
 import { ProSyncService } from "./Services/pro/ProSyncService";
 import { ProMatchService } from "./Services/pro/ProMatchService";
+import { ProStreamAdminService } from "./Services/pro/ProStreamAdminService";
 
 import { AuthController }   from "./WebAPI/controllers/AuthController";
 import { UserController }   from "./WebAPI/controllers/UserController";
@@ -93,6 +94,7 @@ const matchStreamService = new MatchStreamService(matchStreamRepo, gameRepo);
 const pandaScoreClient = new PandaScoreClient(logger, process.env.PANDASCORE_TOKEN ?? "");
 export const proSyncService = new ProSyncService(pandaScoreClient, proMatchRepo, proStreamRepo, logger);
 const proMatchService = new ProMatchService(proMatchRepo, proStreamRepo);
+const proStreamAdminService = new ProStreamAdminService(proStreamRepo, proMatchRepo);
 
 // Express rute
 const app = express();
@@ -110,6 +112,6 @@ app.use("/api", new HealthCheckController(healthService).getRouter());
 app.use("/api", new MatchController(matchService).getRouter());
 app.use("/api", new AuditLogController(auditLogService).getRouter());
 app.use("/api", new StreamController(matchStreamService, auditLogService).getRouter());
-app.use("/api", new ProController(proMatchService, proSyncService, auditLogService).getRouter());
+app.use("/api", new ProController(proMatchService, proSyncService, proStreamAdminService, auditLogService).getRouter());
 
 export default app;

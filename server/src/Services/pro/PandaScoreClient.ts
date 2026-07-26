@@ -51,14 +51,15 @@ export class PandaScoreClient {
     return this.token.length > 0;
   }
 
-  async getMatches(kind: "running" | "upcoming", perPage = 50): Promise<PsMatch[]> {
+  async getMatches(kind: "running" | "upcoming" | "past", perPage = 50): Promise<PsMatch[]> {
     if (!this.token) {
       this.logger.warn("PandaScore", "PANDASCORE_TOKEN nije postavljen");
       return [];
     }
     const params = new URLSearchParams();
     params.set("per_page", String(Math.min(100, Math.max(1, perPage))));
-    params.set("sort", "begin_at");
+    // Za zavrsene hocemo najskorije prvo (-begin_at), za live/upcoming rastuce.
+    params.set("sort", kind === "past" ? "-begin_at" : "begin_at");
     const url = `${this.base}/matches/${kind}?${params.toString()}`;
     try {
       const r = await fetch(url, {

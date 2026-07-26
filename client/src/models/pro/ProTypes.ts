@@ -7,6 +7,18 @@ export interface ProStream {
   isOfficial: boolean;
 }
 
+// Admin prikaz streamova jednog meca — sadrzi id (za brisanje) i source
+// ('pandascore' = automatski, 'local' = rucno dodat, jedini koji se brise).
+export interface ProStreamAdmin {
+  id: number;
+  proMatchId: number;
+  platform: "twitch" | "youtube" | "kick";
+  channel: string;
+  language: string;
+  isOfficial: boolean;
+  source: string;
+}
+
 export interface ProMatch {
   id: number;
   gameSlug: string;

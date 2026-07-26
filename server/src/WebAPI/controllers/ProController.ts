@@ -2,9 +2,12 @@ import { Request, Response, Router } from "express";
 import { UserRole } from "../../Domain/enums/UserRole";
 import { IProMatchService } from "../../Domain/services/pro/IProMatchService";
 import { IProSyncService } from "../../Domain/services/pro/IProSyncService";
+import { IProStreamAdminService } from "../../Domain/services/pro/IProStreamAdminService";
 import { IAuditLogService } from "../../Domain/services/audit_logs/IAuditLogService";
 import { authenticate } from "../../Middlewares/authentification/AuthMiddleware";
 import { authorize } from "../../Middlewares/authorization/AuthorizeMiddleware";
+import { validateProStream } from "../validators/pro/validateProStream";
+import { StreamPlatform } from "../../Domain/enums/StreamPlatform";
 
 export class ProController {
   private readonly router = Router();
@@ -12,10 +15,14 @@ export class ProController {
   public constructor(
     private readonly proMatchService: IProMatchService,
     private readonly proSyncService: IProSyncService,
+    private readonly proStreamAdminService: IProStreamAdminService,
     private readonly auditLogService: IAuditLogService,
   ) {
     this.router.get("/pro/matches", this.getFeed.bind(this));
     this.router.post("/pro/sync", authenticate, authorize(UserRole.ADMIN), this.sync.bind(this));
+    this.router.get("/pro/matches/:id/streams", authenticate, authorize(UserRole.ADMIN), this.listStreams.bind(this));
+    this.router.post("/pro/matches/:id/streams", authenticate, authorize(UserRole.ADMIN), this.addStream.bind(this));
+    this.router.delete("/pro/streams/:streamId", authenticate, authorize(UserRole.ADMIN), this.removeStream.bind(this));
   }
 
   private async getFeed(req: Request, res: Response): Promise<void> {
@@ -45,6 +52,50 @@ export class ProController {
         req.socket.remoteAddress ?? null
       );
       res.status(200).json({ success: true, data: { synced: result.synced } });
+    } catch {
+      res.status(500).json({ success: false, message: "Internal server error" });
+    }
+  }
+
+  private async listStreams(req: Request, res: Response): Promise<void> {
+    try {
+      const matchId = parseInt(req.params.id as string, 10);
+      if (isNaN(matchId)) { res.status(400).json({ success: false, message: "Invalid id" }); return; }
+      const streams = await this.proStreamAdminService.listForMatch(matchId);
+      res.status(200).json({ success: true, data: streams });
+    } catch {
+      res.status(500).json({ success: false, message: "Internal server error" });
+    }
+  }
+
+  private async addStream(req: Request, res: Response): Promise<void> {
+    try {
+      const matchId = parseInt(req.params.id as string, 10);
+      if (isNaN(matchId)) { res.status(400).json({ success: false, message: "Invalid id" }); return; }
+
+      const { platform, channel, language } = req.body;
+      const validation = validateProStream(platform, channel, language);
+      if (!validation.valid) { res.status(400).json({ success: false, message: validation.message }); return; }
+
+      const created = await this.proStreamAdminService.addLocal(
+        matchId, platform as StreamPlatform, (channel as string).trim(), (language as string).trim()
+      );
+      if (!created.ok) { res.status(400).json({ success: false, message: created.error ?? "Dodavanje neuspešno" }); return; }
+
+      await this.auditLogService.log(req.user?.id ?? null, "CREATE_PRO_STREAM", "pro_stream", created.stream?.id ?? null, `Dodat kaster za pro meč #${matchId}`, req.socket.remoteAddress ?? null);
+      res.status(201).json({ success: true, data: created.stream });
+    } catch {
+      res.status(500).json({ success: false, message: "Internal server error" });
+    }
+  }
+
+  private async removeStream(req: Request, res: Response): Promise<void> {
+    try {
+      const streamId = parseInt(req.params.streamId as string, 10);
+      if (isNaN(streamId)) { res.status(400).json({ success: false, message: "Invalid streamId" }); return; }
+      const ok = await this.proStreamAdminService.removeLocal(streamId);
+      if (ok) await this.auditLogService.log(req.user?.id ?? null, "DELETE_PRO_STREAM", "pro_stream", streamId, `Obrisan pro stream #${streamId}`, req.socket.remoteAddress ?? null);
+      res.status(ok ? 200 : 404).json({ success: ok, message: ok ? "Stream obrisan" : "Stream nije nađen ili nije lokalni" });
     } catch {
       res.status(500).json({ success: false, message: "Internal server error" });
     }

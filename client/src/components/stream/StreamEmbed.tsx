@@ -11,7 +11,12 @@ export interface EmbedStream {
 
 // Prezentaciona komponenta: prima listu streamova i renderuje plejer sa
 // izborom izvora. Koriste je i korisnicki mečevi (StreamPlayer) i pro mečevi.
-export default function StreamEmbed({ streams }: { streams: EmbedStream[] }) {
+// emptyTitle/emptySub omogucavaju status-svestan tekst kad nema streamova.
+export default function StreamEmbed({ streams, emptyTitle, emptySub }: {
+  streams: EmbedStream[];
+  emptyTitle?: string;
+  emptySub?: string;
+}) {
   const [selected, setSelected] = useState(0);
 
   if (streams.length === 0) {
@@ -22,8 +27,8 @@ export default function StreamEmbed({ streams }: { streams: EmbedStream[] }) {
         background: "rgba(255,255,255,0.03)", color: "var(--text-muted)",
         fontFamily: "var(--font-ui)", fontSize: 13, gap: 6,
       }}>
-        <span style={{ fontFamily: "var(--font-head)", fontSize: 15, fontWeight: 800, color: "var(--text)" }}>Nema dostupnih streamova</span>
-        <span>Stream se pojavljuje kada meč krene uživo.</span>
+        <span style={{ fontFamily: "var(--font-head)", fontSize: 15, fontWeight: 800, color: "var(--text)" }}>{emptyTitle ?? "Nema dostupnih streamova"}</span>
+        <span>{emptySub ?? "Stream se pojavljuje kada meč krene uživo."}</span>
       </div>
     );
   }

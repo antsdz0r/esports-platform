@@ -83,9 +83,14 @@ export default function ProPage() {
   };
 
   // Tiho osvežavanje (bez spinnera) — hvata nove rezultate iz baze.
+  // Ako je modal otvoren, osvezi i njegov mec (npr. nakon dodavanja kastera).
   const refresh = async () => {
     const res = await proApi.getMatches(60);
-    if (res.success && res.data) setMatches(res.data);
+    if (res.success && res.data) {
+      const fresh = res.data;
+      setMatches(fresh);
+      setActive((cur) => (cur ? fresh.find((m) => m.id === cur.id) ?? cur : cur));
+    }
   };
 
   useEffect(() => { void load(); }, []);
@@ -230,7 +235,13 @@ export default function ProPage() {
       )}
 
       {active && (
-        <ProMatchModal match={active} gameLabel={gameLabel(active.gameSlug)} onClose={() => setActive(null)} />
+        <ProMatchModal
+          match={active}
+          gameLabel={gameLabel(active.gameSlug)}
+          onClose={() => setActive(null)}
+          isAdmin={isAdmin}
+          onStreamsChanged={() => void refresh()}
+        />
       )}
     </div>
   );

@@ -83,14 +83,35 @@ export class ProMatchRepository implements IProMatchRepository {
       const [rows] = await res.conn.query<RowDataPacket[]>(
         `SELECT * FROM PRO_MATCHES
          WHERE status IN ('live', 'upcoming')
-            OR (status = 'finished' AND scheduled_at >= (NOW() - INTERVAL 1 DAY))
-         ORDER BY (status = 'live') DESC, scheduled_at ASC
+            OR (status = 'finished' AND scheduled_at >= (NOW() - INTERVAL 2 DAY))
+         ORDER BY
+           (status = 'live') DESC,                                     -- 1) uzivo na vrhu
+           (status = 'finished') ASC,                                  -- 2) pa predstojece, pa zavrseni
+           CASE WHEN status = 'finished' THEN scheduled_at END DESC,   -- zavrseni: najnoviji prvi
+           scheduled_at ASC                                            -- live/upcoming: najskoriji prvi
          LIMIT ${safeLimit}`
       );
       return rows.map((r) => this.map(r));
     } catch {
       this.logger.error("ProMatchRepository", "findFeed failed");
       return [];
+    } finally {
+      res.conn.release();
+    }
+  }
+
+  async exists(id: number): Promise<boolean> {
+    const res = await this.db.getReadConnection();
+    if (!res) return false;
+    try {
+      const [rows] = await res.conn.query<RowDataPacket[]>(
+        "SELECT 1 FROM PRO_MATCHES WHERE id = ? LIMIT 1",
+        [id]
+      );
+      return rows.length > 0;
+    } catch {
+      this.logger.error("ProMatchRepository", "exists failed");
+      return false;
     } finally {
       res.conn.release();
     }

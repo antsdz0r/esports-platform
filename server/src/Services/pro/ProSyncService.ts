@@ -83,12 +83,13 @@ export class ProSyncService implements IProSyncService {
       return { ok: false, synced: 0, error: "PANDASCORE_TOKEN nije postavljen na serveru" };
     }
 
-    const [running, upcoming] = await Promise.all([
+    const [running, upcoming, past] = await Promise.all([
       this.client.getMatches("running", 50),
       this.client.getMatches("upcoming", 50),
+      this.client.getMatches("past", 50),
     ]);
 
-    let raw = [...running, ...upcoming];
+    let raw = [...running, ...upcoming, ...past];
     if (gameSlug) raw = raw.filter((m) => m.videogame?.slug === gameSlug);
 
     if (raw.length === 0) {
