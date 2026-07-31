@@ -217,9 +217,13 @@ CREATE TABLE PRO_MATCHES (
   best_of         INT NULL,
   status          ENUM('upcoming','live','finished','canceled') NOT NULL DEFAULT 'upcoming',
   scheduled_at    DATETIME NULL,
+  tournament_external_id VARCHAR(60) NULL,
+  round           INT NULL,
+  position        INT NULL,
   synced_at       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_pro_matches_status (status),
-  INDEX idx_pro_matches_scheduled (scheduled_at)
+  INDEX idx_pro_matches_scheduled (scheduled_at),
+  INDEX idx_pro_matches_tournament (tournament_external_id)
 );
 
 CREATE TABLE PRO_STREAMS (
@@ -232,6 +236,66 @@ CREATE TABLE PRO_STREAMS (
   source       VARCHAR(20)  NOT NULL DEFAULT 'pandascore',
   created_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (pro_match_id) REFERENCES PRO_MATCHES(id) ON DELETE CASCADE
+);
+
+CREATE TABLE PRO_LEAGUES (
+  id          INT AUTO_INCREMENT PRIMARY KEY,
+  external_id VARCHAR(60)  NOT NULL UNIQUE,
+  game_slug   VARCHAR(40)  NOT NULL,
+  name        VARCHAR(150) NOT NULL,
+  slug        VARCHAR(150) NULL,
+  image_url   VARCHAR(500) NULL,
+  synced_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_pro_leagues_game (game_slug)
+);
+
+CREATE TABLE PRO_SERIES (
+  id                 INT AUTO_INCREMENT PRIMARY KEY,
+  external_id        VARCHAR(60)  NOT NULL UNIQUE,
+  league_external_id VARCHAR(60)  NULL,
+  game_slug          VARCHAR(40)  NOT NULL,
+  full_name          VARCHAR(200) NOT NULL,
+  name               VARCHAR(150) NULL,
+  year               INT NULL,
+  begin_at           DATETIME NULL,
+  end_at             DATETIME NULL,
+  synced_at          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_pro_series_league (league_external_id),
+  INDEX idx_pro_series_game (game_slug)
+);
+
+CREATE TABLE PRO_TOURNAMENTS (
+  id                 INT AUTO_INCREMENT PRIMARY KEY,
+  external_id        VARCHAR(60)  NOT NULL UNIQUE,
+  serie_external_id  VARCHAR(60)  NULL,
+  league_external_id VARCHAR(60)  NULL,
+  game_slug          VARCHAR(40)  NOT NULL,
+  name               VARCHAR(150) NOT NULL,
+  slug               VARCHAR(200) NULL,
+  tier               VARCHAR(10)  NULL,
+  has_bracket        TINYINT(1)   NOT NULL DEFAULT 0,
+  prizepool          VARCHAR(100) NULL,
+  status             ENUM('upcoming','running','finished') NOT NULL DEFAULT 'upcoming',
+  begin_at           DATETIME NULL,
+  end_at             DATETIME NULL,
+  synced_at          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_pro_tour_serie (serie_external_id),
+  INDEX idx_pro_tour_league (league_external_id),
+  INDEX idx_pro_tour_game (game_slug),
+  INDEX idx_pro_tour_status (status)
+);
+
+CREATE TABLE PRO_STANDINGS (
+  id                     INT AUTO_INCREMENT PRIMARY KEY,
+  tournament_external_id VARCHAR(60)  NOT NULL,
+  rank_pos               INT NULL,
+  team_name              VARCHAR(120) NULL,
+  team_logo              VARCHAR(500) NULL,
+  wins                   INT NOT NULL DEFAULT 0,
+  losses                 INT NOT NULL DEFAULT 0,
+  ties                   INT NOT NULL DEFAULT 0,
+  synced_at              DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_pro_standings_tour (tournament_external_id)
 );
 
 SQL

@@ -29,6 +29,9 @@ export class ProMatchRepository implements IProMatchRepository {
       r.best_of ?? null,
       r.status as ProMatchStatus,
       r.scheduled_at ? new Date(r.scheduled_at) : null,
+      r.tournament_external_id ?? null,
+      r.round ?? null,
+      r.position ?? null,
     );
   }
 
@@ -40,8 +43,8 @@ export class ProMatchRepository implements IProMatchRepository {
         `INSERT INTO PRO_MATCHES
            (external_id, game_slug, league_name, serie_name, tournament_name, stage,
             team1_name, team1_logo, team2_name, team2_logo, team1_score, team2_score,
-            best_of, status, scheduled_at, synced_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+            best_of, status, scheduled_at, tournament_external_id, round, position, synced_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
          ON DUPLICATE KEY UPDATE
            id = LAST_INSERT_ID(id),
            game_slug = VALUES(game_slug),
@@ -58,18 +61,41 @@ export class ProMatchRepository implements IProMatchRepository {
            best_of = VALUES(best_of),
            status = VALUES(status),
            scheduled_at = VALUES(scheduled_at),
+           tournament_external_id = COALESCE(VALUES(tournament_external_id), tournament_external_id),
+           round = COALESCE(VALUES(round), round),
+           position = COALESCE(VALUES(position), position),
            synced_at = NOW()`,
         [
           match.externalId, match.gameSlug, match.leagueName, match.serieName,
           match.tournamentName, match.stage, match.team1Name, match.team1Logo,
           match.team2Name, match.team2Logo, match.team1Score, match.team2Score,
           match.bestOf, match.status, match.scheduledAt,
+          match.tournamentExternalId, match.round, match.position,
         ]
       );
       return result.insertId;
     } catch {
       this.logger.error("ProMatchRepository", "upsert failed");
       return 0;
+    } finally {
+      res.conn.release();
+    }
+  }
+
+  async findByTournament(tournamentExternalId: string): Promise<ProMatch[]> {
+    const res = await this.db.getReadConnection();
+    if (!res) return [];
+    try {
+      const [rows] = await res.conn.execute<RowDataPacket[]>(
+        `SELECT * FROM PRO_MATCHES
+          WHERE tournament_external_id = ?
+          ORDER BY (round IS NULL), round ASC, (position IS NULL), position ASC, scheduled_at ASC`,
+        [tournamentExternalId]
+      );
+      return rows.map((r) => this.map(r));
+    } catch {
+      this.logger.error("ProMatchRepository", "findByTournament failed");
+      return [];
     } finally {
       res.conn.release();
     }

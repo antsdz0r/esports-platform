@@ -19,4 +19,7 @@ export interface IProMatchRepository {
   // Fallback pomirenje: vrlo stare zaglavljene 'live'/'upcoming' koje nismo mogli da
   // razresimo -> 'finished'. Vraca broj ispravljenih redova.
   markStalePastMatchesAsFinished(olderThanHours: number): Promise<number>;
+
+  // Svi mecevi jednog turnira (za bracket/listu), sortirani po rundi/poziciji/vremenu.
+  findByTournament(tournamentExternalId: string): Promise<ProMatch[]>;
 }

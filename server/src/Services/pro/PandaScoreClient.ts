@@ -37,6 +37,54 @@ export interface PsMatch {
   opponents?: PsOpponent[] | null;
   results?: PsResult[] | null;
   streams_list?: PsStream[] | null;
+  tournament_id?: number | null;
+  serie_id?: number | null;
+  league_id?: number | null;
+  winner_id?: number | null;
+  position?: number | null;
+  previous_matches?: { match_id?: number | null; type?: string | null }[] | null;
+}
+
+// Struktura turnira (League -> Serie -> Tournament) i standings.
+export interface PsLeague {
+  id: number;
+  name?: string | null;
+  slug?: string | null;
+  image_url?: string | null;
+  videogame?: { slug?: string | null } | null;
+}
+export interface PsSerie {
+  id: number;
+  full_name?: string | null;
+  name?: string | null;
+  year?: number | null;
+  begin_at?: string | null;
+  end_at?: string | null;
+  league_id?: number | null;
+  videogame?: { slug?: string | null } | null;
+}
+export interface PsTournament {
+  id: number;
+  name?: string | null;
+  slug?: string | null;
+  tier?: string | null;
+  has_bracket?: boolean | null;
+  prizepool?: string | null;
+  begin_at?: string | null;
+  end_at?: string | null;
+  serie_id?: number | null;
+  league_id?: number | null;
+  videogame?: { slug?: string | null } | null;
+  league?: { id?: number | null; name?: string | null; slug?: string | null; image_url?: string | null } | null;
+  serie?: { id?: number | null; full_name?: string | null; name?: string | null; year?: number | null } | null;
+}
+export interface PsStandingRow {
+  rank?: number | null;
+  last_position?: number | null;
+  wins?: number | null;
+  losses?: number | null;
+  ties?: number | null;
+  team?: { id?: number | null; name?: string | null; acronym?: string | null; image_url?: string | null } | null;
 }
 
 export class PandaScoreClient {
@@ -94,6 +142,74 @@ export class PandaScoreClient {
       return data && typeof data === "object" && !Array.isArray(data) ? (data as PsMatch) : null;
     } catch {
       this.logger.error("PandaScore", `fetch /matches/${externalId} failed`);
+      return null;
+    }
+  }
+
+  // Genericki GET koji vraca niz (za strukturu/brackets/standings).
+  private async getArray<T>(path: string): Promise<T[]> {
+    if (!this.token) {
+      this.logger.warn("PandaScore", "PANDASCORE_TOKEN nije postavljen");
+      return [];
+    }
+    try {
+      const r = await fetch(`${this.base}${path}`, {
+        headers: { Authorization: `Bearer ${this.token}`, Accept: "application/json" },
+      });
+      if (!r.ok) {
+        this.logger.warn("PandaScore", `HTTP ${r.status} za ${path}`);
+        return [];
+      }
+      const data: unknown = await r.json();
+      return Array.isArray(data) ? (data as T[]) : [];
+    } catch {
+      this.logger.error("PandaScore", `fetch ${path} failed`);
+      return [];
+    }
+  }
+
+  getLeaguesByGame(gameSlug: string): Promise<PsLeague[]> {
+    return this.getArray<PsLeague>(`/videogames/${encodeURIComponent(gameSlug)}/leagues?per_page=100`);
+  }
+
+  getSeriesByLeague(leagueId: string): Promise<PsSerie[]> {
+    return this.getArray<PsSerie>(`/leagues/${encodeURIComponent(leagueId)}/series?per_page=100&sort=-year`);
+  }
+
+  getTournamentsBySerie(serieId: string): Promise<PsTournament[]> {
+    return this.getArray<PsTournament>(`/series/${encodeURIComponent(serieId)}/tournaments?per_page=100`);
+  }
+
+  getTournaments(kind: "running" | "upcoming" | "past"): Promise<PsTournament[]> {
+    return this.getArray<PsTournament>(`/tournaments/${kind}?per_page=100`);
+  }
+
+  getTournamentMatches(tournamentId: string): Promise<PsMatch[]> {
+    return this.getArray<PsMatch>(`/tournaments/${encodeURIComponent(tournamentId)}/matches?per_page=100&sort=begin_at`);
+  }
+
+  getTournamentBrackets(tournamentId: string): Promise<PsMatch[]> {
+    return this.getArray<PsMatch>(`/tournaments/${encodeURIComponent(tournamentId)}/brackets?per_page=100`);
+  }
+
+  getTournamentStandings(tournamentId: string): Promise<PsStandingRow[]> {
+    return this.getArray<PsStandingRow>(`/tournaments/${encodeURIComponent(tournamentId)}/standings`);
+  }
+
+  async getTournamentById(tournamentId: string): Promise<PsTournament | null> {
+    if (!this.token) return null;
+    try {
+      const r = await fetch(`${this.base}/tournaments/${encodeURIComponent(tournamentId)}`, {
+        headers: { Authorization: `Bearer ${this.token}`, Accept: "application/json" },
+      });
+      if (!r.ok) {
+        this.logger.warn("PandaScore", `HTTP ${r.status} za /tournaments/${tournamentId}`);
+        return null;
+      }
+      const data: unknown = await r.json();
+      return data && typeof data === "object" && !Array.isArray(data) ? (data as PsTournament) : null;
+    } catch {
+      this.logger.error("PandaScore", `fetch /tournaments/${tournamentId} failed`);
       return null;
     }
   }

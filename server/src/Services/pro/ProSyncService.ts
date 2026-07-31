@@ -57,6 +57,7 @@ export class ProSyncService implements IProSyncService {
       m.number_of_games ?? null,
       this.mapStatus(m.status),
       scheduled ? new Date(scheduled) : null,
+      m.tournament_id != null ? String(m.tournament_id) : null,
     );
   }
 

@@ -5,7 +5,8 @@ import { AnimatedBackground } from "../ui/AnimatedBackground";
 
 const guestNav = [
   { to: "/pro",               label: "Pro mečevi",    icon: "📺" },
-  { to: "/guest/tournaments", label: "Turniri",     icon: "◈" },
+  { to: "/pro/turniri",       label: "Turniri",       icon: "◈" },
+  { to: "/guest/tournaments", label: "Zajednica",     icon: "◆" },
   { to: "/guest/games",       label: "Katalog igara", icon: "🎮" },
 ];
 

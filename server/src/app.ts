@@ -20,6 +20,10 @@ import { AuditLogRepository } from "./Database/repositories/audit_logs/AuditLogR
 import { MatchStreamRepository } from "./Database/repositories/streams/MatchStreamRepository";
 import { ProMatchRepository } from "./Database/repositories/pro/ProMatchRepository";
 import { ProStreamRepository } from "./Database/repositories/pro/ProStreamRepository";
+import { ProLeagueRepository } from "./Database/repositories/pro/ProLeagueRepository";
+import { ProSerieRepository } from "./Database/repositories/pro/ProSerieRepository";
+import { ProTournamentRepository } from "./Database/repositories/pro/ProTournamentRepository";
+import { ProStandingRepository } from "./Database/repositories/pro/ProStandingRepository";
 
 
 
@@ -37,6 +41,8 @@ import { PandaScoreClient } from "./Services/pro/PandaScoreClient";
 import { ProSyncService } from "./Services/pro/ProSyncService";
 import { ProMatchService } from "./Services/pro/ProMatchService";
 import { ProStreamAdminService } from "./Services/pro/ProStreamAdminService";
+import { ProStructureSyncService } from "./Services/pro/ProStructureSyncService";
+import { ProTournamentService } from "./Services/pro/ProTournamentService";
 
 import { AuthController }   from "./WebAPI/controllers/AuthController";
 import { UserController }   from "./WebAPI/controllers/UserController";
@@ -48,6 +54,7 @@ import { MatchController } from "./WebAPI/controllers/MatchController";
 import { AuditLogController } from "./WebAPI/controllers/AuditLogController";
 import { StreamController } from "./WebAPI/controllers/StreamController";
 import { ProController } from "./WebAPI/controllers/ProController";
+import { ProTournamentController } from "./WebAPI/controllers/ProTournamentController";
 
 
 
@@ -73,6 +80,10 @@ const auditLogRepo = new AuditLogRepository(db, logger);
 const matchStreamRepo = new MatchStreamRepository(db, logger);
 const proMatchRepo = new ProMatchRepository(db, logger);
 const proStreamRepo = new ProStreamRepository(db, logger);
+const proLeagueRepo = new ProLeagueRepository(db, logger);
+const proSerieRepo = new ProSerieRepository(db, logger);
+const proTournamentRepo = new ProTournamentRepository(db, logger);
+const proStandingRepo = new ProStandingRepository(db, logger);
 
 // Services
 const authService   = new AuthService(userRepo);
@@ -95,6 +106,8 @@ const pandaScoreClient = new PandaScoreClient(logger, process.env.PANDASCORE_TOK
 export const proSyncService = new ProSyncService(pandaScoreClient, proMatchRepo, proStreamRepo, logger);
 const proMatchService = new ProMatchService(proMatchRepo, proStreamRepo);
 const proStreamAdminService = new ProStreamAdminService(proStreamRepo, proMatchRepo);
+export const proStructureSyncService = new ProStructureSyncService(pandaScoreClient, proLeagueRepo, proSerieRepo, proTournamentRepo, logger);
+const proTournamentService = new ProTournamentService(pandaScoreClient, proLeagueRepo, proSerieRepo, proTournamentRepo, proStandingRepo, proMatchRepo);
 
 // Express rute
 const app = express();
@@ -113,5 +126,6 @@ app.use("/api", new MatchController(matchService).getRouter());
 app.use("/api", new AuditLogController(auditLogService).getRouter());
 app.use("/api", new StreamController(matchStreamService, auditLogService).getRouter());
 app.use("/api", new ProController(proMatchService, proSyncService, proStreamAdminService, auditLogService).getRouter());
+app.use("/api", new ProTournamentController(proTournamentService, proStructureSyncService, auditLogService).getRouter());
 
 export default app;

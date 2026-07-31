@@ -5,6 +5,7 @@ import { GuestLayout } from "./components/layout/GuestLayout";
 import GuestTournamentsPage from "./pages/guest/GuestTournamentsPage";
 import GuestGamesPage from "./pages/guest/GuestGamesPage";
 import ProPage from "./pages/pro/ProPage";
+import ProTournamentsPage from "./pages/pro/ProTournamentsPage";
 
 import LoginPage    from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
@@ -40,6 +41,7 @@ export default function App() {
       <Route path="/dashboard/invites" element={<ProtectedRoute requiredRole="player"><InvitesPage /></ProtectedRoute>} />
       <Route path="/dashboard/watchlist" element={<ProtectedRoute requiredRole="player"><WatchlistPage /></ProtectedRoute>} />
       <Route path="/dashboard/pro" element={<ProtectedRoute requiredRole="player"><ProPage /></ProtectedRoute>} />
+      <Route path="/dashboard/pro-turniri" element={<ProtectedRoute requiredRole="player"><ProTournamentsPage /></ProtectedRoute>} />
 
       {/* Admin routes */}
       <Route path="/admin"                element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />
@@ -50,10 +52,12 @@ export default function App() {
       <Route path="/admin/health"         element={<ProtectedRoute requiredRole="admin"><HealthPage /></ProtectedRoute>} />
       <Route path="/admin/tournaments/:id" element={<ProtectedRoute requiredRole="admin"><TournamentDetailPage isAdmin /></ProtectedRoute>} />
       <Route path="/admin/pro" element={<ProtectedRoute requiredRole="admin"><ProPage /></ProtectedRoute>} />
+      <Route path="/admin/pro-turniri" element={<ProtectedRoute requiredRole="admin"><ProTournamentsPage /></ProtectedRoute>} />
 
       {/* Public */}
       <Route path="/tournaments/:id" element={<TournamentDetailPage />} />
       <Route path="/pro" element={<GuestLayout><ProPage /></GuestLayout>} />
+      <Route path="/pro/turniri" element={<GuestLayout><ProTournamentsPage /></GuestLayout>} />
 
       {/* Guest routes */}
       <Route path="/guest" element={<Navigate to="/guest/tournaments" replace />} />

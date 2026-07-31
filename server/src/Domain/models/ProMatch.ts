@@ -18,5 +18,8 @@ export class ProMatch {
         public bestOf: number | null = null,
         public status: ProMatchStatus = ProMatchStatus.UPCOMING,
         public scheduledAt: Date | null = null,
+        public tournamentExternalId: string | null = null,
+        public round: number | null = null,
+        public position: number | null = null,
     ) {}
 }

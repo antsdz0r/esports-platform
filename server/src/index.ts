@@ -1,5 +1,5 @@
 import "dotenv/config";
-import app, { db, logger, proSyncService } from "./app";
+import app, { db, logger, proSyncService, proStructureSyncService } from "./app";
 
 const PORT = parseInt(process.env.PORT ?? "4000", 10);
 
@@ -7,6 +7,8 @@ const PORT = parseInt(process.env.PORT ?? "4000", 10);
 const LIVE_INTERVAL_MS = parseInt(process.env.PRO_SYNC_LIVE_INTERVAL_MS ?? "900000", 10);
 // Koliko cesto se povlace NOVI (nadolazeci) mecevi (default 24h).
 const UPCOMING_INTERVAL_MS = parseInt(process.env.PRO_SYNC_UPCOMING_INTERVAL_MS ?? "86400000", 10);
+// Koliko cesto se sinhronizuje STRUKTURA turnira (lige/serije/turniri) (default 24h).
+const STRUCTURE_INTERVAL_MS = parseInt(process.env.PRO_STRUCTURE_INTERVAL_MS ?? "86400000", 10);
 
 // Periodicno povlaci pro meceve/rezultate sa izvora da baza (a time i /pro) bude sveza.
 function startProAutoSync(): void {
@@ -33,9 +35,18 @@ function startProAutoSync(): void {
     void proSyncService.syncKinds(["upcoming"]).then(warnIfFail("upcoming"));
   }, UPCOMING_INTERVAL_MS);
 
+  // 4) Struktura turnira (lige/serije/turniri) — na startu + jednom dnevno.
+  const structWarn = (r: { ok: boolean; error?: string }): void => {
+    if (!r.ok) logger.warn("ProStructure", r.error ?? "structure sync nije uspeo");
+  };
+  void proStructureSyncService.syncStructure().then(structWarn);
+  setInterval(() => {
+    void proStructureSyncService.syncStructure().then(structWarn);
+  }, STRUCTURE_INTERVAL_MS);
+
   logger.info(
     "ProSync",
-    `Auto-sync: startup=pun, live+zavrseni=${Math.round(LIVE_INTERVAL_MS / 60000)}min, novi=${Math.round(UPCOMING_INTERVAL_MS / 3600000)}h`
+    `Auto-sync: startup=pun, live+zavrseni=${Math.round(LIVE_INTERVAL_MS / 60000)}min, novi=${Math.round(UPCOMING_INTERVAL_MS / 3600000)}h, struktura=${Math.round(STRUCTURE_INTERVAL_MS / 3600000)}h`
   );
 }
 
