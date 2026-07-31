@@ -94,8 +94,17 @@ audit log na svakoj mutaciji (`AUDIT_LOGS`).
   - `Services/pro/ProMatchService.ts` — čitanje feed-a sa streamovima (DTO).
   - Repo: `ProMatchRepository` (upsert + findFeed), `ProStreamRepository` (replaceForMatch + findByMatchIds).
   - `controllers/ProController.ts` — `GET /api/pro/matches` (javno), `POST /api/pro/sync` (admin, audit log).
-- **Auto-sync na serveru**: `src/index.ts` → `startProAutoSync()` (odmah + svaka 2 min ako je token postavljen).
-  Interval: env `PRO_SYNC_INTERVAL_MS` (default 120000). `proSyncService` je exportovan iz `app.ts`.
+- **Auto-sync na serveru**: `src/index.ts` → `startProAutoSync()` (ako je token postavljen):
+  pun sync na svakom startu/restartu; zatim `syncKinds(["running","past"])` na `PRO_SYNC_LIVE_INTERVAL_MS`
+  (default 900000 = 15 min) za live+završene, i `syncKinds(["upcoming"])` na `PRO_SYNC_UPCOMING_INTERVAL_MS`
+  (default 86400000 = 24h) za nove. `IProSyncService` ima `sync()` (pun) i `syncKinds(kinds, gameSlug?)`.
+  `proSyncService` je exportovan iz `app.ts`.
+  - **Pomirenje rezultata/statusa**: kad sync uključuje `"running"`, `ProMatchRepository.findMatchesNeedingResolve(40)`
+    vraća (a) zaglavljene `'live'`/`'upcoming'` (vreme prošlo >6h, `synced_at` >2 min) i (b) skoro-završene u feed
+    prozoru čiji je `synced_at` stariji od 2h (možda parcijalan skor). Za svaki se poziva `PandaScoreClient.getMatchById`
+    i upsertuje PRAVI (finalni) status+skor. Što ostane nerazrešeno a starije je od 48h → `markStalePastMatchesAsFinished(48)`
+    (fallback → `'finished'`). `per_page` za feed je 100. Tako i ručni „⟳ Sinhronizuj" popravlja finalne skorove;
+    genuino live mečevi su zaštićeni jer ih upsert osveži pre pomirenja, a oni stariji od 3 dana ispadaju iz feed-a.
 - Frontend:
   - `helpers/streamEmbed.ts` — `buildEmbedUrl(platform, channel)` + `PLATFORM_LABELS` (deljeno).
   - `components/stream/StreamEmbed.tsx` — prezentacioni plejer + izbor izvora (koriste ga i StreamPlayer i pro).
@@ -120,7 +129,7 @@ a feed je završene ograničavao na poslednja 24h.
 - `Services/pro/ProSyncService.ts` — `sync()` u `Promise.all` dodaje i `getMatches("past", 50)`;
   spaja `running + upcoming + past`. Upsert po `external_id` ostaje idempotentan (bez duplikata).
 - `Database/repositories/pro/ProMatchRepository.ts` → `findFeed()`:
-  - prozor završenih proširen na **2 dana** (`scheduled_at >= NOW() - INTERVAL 2 DAY`),
+  - prozor završenih u feed-u je **3 dana** (`scheduled_at >= NOW() - INTERVAL 3 DAY`),
   - **grupisano sortiranje**: UŽIVO → PREDSTOJEĆE (najskoriji prvi) → ZAVRŠENO (najnoviji prvi).
 - Frontend nije morao da se menja za sam prikaz — `ProPage` je već imao filter „Završeno" i `STATUS_META.finished`.
 
@@ -185,7 +194,8 @@ DB_SLAVE1_PORT=3307
 DB_SLAVE2_HOST=localhost
 DB_SLAVE2_PORT=3308
 PANDASCORE_TOKEN=<token sa app.pandascore.co, besplatan tier>
-PRO_SYNC_INTERVAL_MS=120000
+PRO_SYNC_LIVE_INTERVAL_MS=900000
+PRO_SYNC_UPCOMING_INTERVAL_MS=86400000
 ```
 `client/.env`:
 ```

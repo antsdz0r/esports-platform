@@ -76,7 +76,7 @@ export default function ProPage() {
 
   const load = async () => {
     setLoading(true);
-    const res = await proApi.getMatches(60);
+    const res = await proApi.getMatches(200);
     if (res.success && res.data) setMatches(res.data);
     else setError(res.message ?? "Greška pri učitavanju");
     setLoading(false);
@@ -85,7 +85,7 @@ export default function ProPage() {
   // Tiho osvežavanje (bez spinnera) — hvata nove rezultate iz baze.
   // Ako je modal otvoren, osvezi i njegov mec (npr. nakon dodavanja kastera).
   const refresh = async () => {
-    const res = await proApi.getMatches(60);
+    const res = await proApi.getMatches(200);
     if (res.success && res.data) {
       const fresh = res.data;
       setMatches(fresh);
@@ -182,7 +182,7 @@ export default function ProPage() {
             const st = STATUS_META[m.status];
             const won1 = m.status === "finished" && m.team1Score > m.team2Score;
             const won2 = m.status === "finished" && m.team2Score > m.team1Score;
-            const when = m.scheduledAt ? new Date(m.scheduledAt).toLocaleString("sr", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : null;
+            const when = m.scheduledAt ? new Date(m.scheduledAt).toLocaleString("sr-RS", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : null;
             return (
               <motion.div key={m.id} variants={fadeUp}
                 whileHover={{ scale: 1.02, y: -3, boxShadow: "0 14px 40px rgba(0,212,255,0.22)" }}
@@ -199,13 +199,26 @@ export default function ProPage() {
                   <span style={{ fontFamily: "var(--font-ui)", fontSize: 11, fontWeight: 700, color: "var(--cyan)", padding: "2px 8px", borderRadius: 6, background: "rgba(0,212,255,0.10)", border: "1px solid rgba(0,212,255,0.30)" }}>
                     {gameLabel(m.gameSlug)}
                   </span>
-                  {when && <span style={{ marginLeft: "auto", fontFamily: "var(--font-ui)", fontSize: 10, color: "var(--text-dim)" }}>{when}</span>}
                 </div>
 
                 {/* League */}
-                <div style={{ fontFamily: "var(--font-ui)", fontSize: 11, color: "var(--text-muted)", textAlign: "center", marginBottom: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <div style={{ fontFamily: "var(--font-ui)", fontSize: 11, color: "var(--text-muted)", textAlign: "center", marginBottom: 8, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {m.leagueName ?? m.serieName ?? ""}{m.tournamentName ? ` · ${m.tournamentName}` : ""}
                 </div>
+
+                {/* Datum i vreme */}
+                {when && (
+                  <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
+                    <span style={{
+                      display: "inline-flex", alignItems: "center", gap: 6,
+                      fontFamily: "var(--font-ui)", fontSize: 12.5, fontWeight: 700, letterSpacing: "0.02em",
+                      color: "var(--cyan)", background: "rgba(0,212,255,0.09)",
+                      border: "1px solid rgba(0,212,255,0.28)", padding: "4px 11px", borderRadius: 8,
+                    }}>
+                      <span style={{ fontSize: 13 }}>🕐</span>{when}
+                    </span>
+                  </div>
+                )}
 
                 {/* Teams: A  score  B */}
                 <div style={{ display: "flex", alignItems: "flex-start", gap: 10, flex: 1 }}>

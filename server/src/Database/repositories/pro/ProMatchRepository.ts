@@ -83,7 +83,7 @@ export class ProMatchRepository implements IProMatchRepository {
       const [rows] = await res.conn.query<RowDataPacket[]>(
         `SELECT * FROM PRO_MATCHES
          WHERE status IN ('live', 'upcoming')
-            OR (status = 'finished' AND scheduled_at >= (NOW() - INTERVAL 2 DAY))
+            OR (status = 'finished' AND scheduled_at >= (NOW() - INTERVAL 3 DAY))
          ORDER BY
            (status = 'live') DESC,                                     -- 1) uzivo na vrhu
            (status = 'finished') ASC,                                  -- 2) pa predstojece, pa zavrseni
@@ -112,6 +112,62 @@ export class ProMatchRepository implements IProMatchRepository {
     } catch {
       this.logger.error("ProMatchRepository", "exists failed");
       return false;
+    } finally {
+      res.conn.release();
+    }
+  }
+
+  async findMatchesNeedingResolve(limit: number): Promise<ProMatch[]> {
+    const safeLimit = Math.min(100, Math.max(1, Math.floor(limit)));
+    const res = await this.db.getReadConnection();
+    if (!res) return [];
+    try {
+      const [rows] = await res.conn.query<RowDataPacket[]>(
+        `SELECT * FROM PRO_MATCHES
+          WHERE (
+                  status IN ('live', 'upcoming')
+                  AND scheduled_at IS NOT NULL
+                  AND scheduled_at < (NOW() - INTERVAL 6 HOUR)
+                  AND synced_at   < (NOW() - INTERVAL 2 MINUTE)
+                )
+             OR (
+                  status = 'finished'
+                  AND scheduled_at >= (NOW() - INTERVAL 3 DAY)
+                  AND synced_at   < (NOW() - INTERVAL 2 HOUR)
+                )
+          ORDER BY scheduled_at DESC
+          LIMIT ${safeLimit}`
+      );
+      return rows.map((r) => this.map(r));
+    } catch {
+      this.logger.error("ProMatchRepository", "findMatchesNeedingResolve failed");
+      return [];
+    } finally {
+      res.conn.release();
+    }
+  }
+
+  async markStalePastMatchesAsFinished(olderThanHours: number): Promise<number> {
+    const hours = Math.max(1, Math.floor(olderThanHours));
+    const res = await this.db.getWriteConnection();
+    if (!res) return 0;
+    try {
+      // Mecevi zaglavljeni na 'live' ILI 'upcoming' cije je vreme davno proslo,
+      // a izvor ih vise ne vraca (nisu osvezeni u ovom sync-u) -> 'finished'.
+      // synced_at guard: mecevi osvezeni malopre (u running/upcoming feed-u ovog
+      // sync-a) se NE diraju, pa se genuino live/predstojeci ne prekidaju.
+      const [result] = await res.conn.query<ResultSetHeader>(
+        `UPDATE PRO_MATCHES
+            SET status = 'finished'
+          WHERE status IN ('live', 'upcoming')
+            AND scheduled_at IS NOT NULL
+            AND scheduled_at < (NOW() - INTERVAL ${hours} HOUR)
+            AND synced_at   < (NOW() - INTERVAL 2 MINUTE)`
+      );
+      return result.affectedRows;
+    } catch {
+      this.logger.error("ProMatchRepository", "markStalePastMatchesAsFinished failed");
+      return 0;
     } finally {
       res.conn.release();
     }

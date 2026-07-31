@@ -1,4 +1,4 @@
-import { IProSyncService } from "../../Domain/services/pro/IProSyncService";
+import { IProSyncService, ProSyncKind } from "../../Domain/services/pro/IProSyncService";
 import { IProMatchRepository } from "../../Domain/repositories/pro/IProMatchRepository";
 import { IProStreamRepository } from "../../Domain/repositories/pro/IProStreamRepository";
 import { ILoggerService } from "../../Domain/services/logger/ILoggerService";
@@ -79,17 +79,17 @@ export class ProSyncService implements IProSyncService {
   }
 
   async sync(gameSlug?: string): Promise<{ ok: boolean; synced: number; error?: string }> {
+    return this.syncKinds(["running", "upcoming", "past"], gameSlug);
+  }
+
+  async syncKinds(kinds: ProSyncKind[], gameSlug?: string): Promise<{ ok: boolean; synced: number; error?: string }> {
     if (!this.client.hasToken()) {
       return { ok: false, synced: 0, error: "PANDASCORE_TOKEN nije postavljen na serveru" };
     }
+    if (kinds.length === 0) return { ok: true, synced: 0 };
 
-    const [running, upcoming, past] = await Promise.all([
-      this.client.getMatches("running", 50),
-      this.client.getMatches("upcoming", 50),
-      this.client.getMatches("past", 50),
-    ]);
-
-    let raw = [...running, ...upcoming, ...past];
+    const batches = await Promise.all(kinds.map((k) => this.client.getMatches(k, 100)));
+    let raw = batches.flat();
     if (gameSlug) raw = raw.filter((m) => m.videogame?.slug === gameSlug);
 
     if (raw.length === 0) {
@@ -106,7 +106,30 @@ export class ProSyncService implements IProSyncService {
       synced++;
     }
 
-    this.logger.info("ProSync", `Sinhronizovano ${synced} pro meceva${gameSlug ? ` (${gameSlug})` : ""}`);
+    // Pomirenje: povuci PRAVI (finalni) rezultat mecevima koji su zaglavljeni na
+    // live/upcoming ili skoro-zavrseni sa mozda parcijalnim skorom. Sto ostane
+    // nerazreseno a vrlo je staro (>48h) -> fallback 'finished'.
+    if (kinds.includes("running")) {
+      const toResolve = await this.matchRepo.findMatchesNeedingResolve(40);
+      let resolved = 0;
+      for (const sm of toResolve) {
+        const fresh = await this.client.getMatchById(sm.externalId);
+        if (!fresh) continue;
+        const model = this.toModel(fresh);
+        if (!model) continue;
+        const id = await this.matchRepo.upsert(model);
+        if (id !== 0) {
+          await this.streamRepo.replaceForMatch(id, SOURCE, this.toStreams(id, fresh));
+          resolved++;
+        }
+      }
+      const finished = await this.matchRepo.markStalePastMatchesAsFinished(48);
+      if (resolved > 0 || finished > 0) {
+        this.logger.info("ProSync", `Pomireno: ${resolved} sa pravim rezultatom, ${finished} staro -> finished`);
+      }
+    }
+
+    this.logger.info("ProSync", `Sinhronizovano ${synced} pro meceva [${kinds.join(",")}]${gameSlug ? ` (${gameSlug})` : ""}`);
     return { ok: true, synced };
   }
 }

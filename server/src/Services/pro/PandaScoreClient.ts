@@ -76,4 +76,25 @@ export class PandaScoreClient {
       return [];
     }
   }
+
+  // Pojedinacni mec po id-u — koristi se u pomirenju da povuce PRAVI (finalni)
+  // rezultat/status meca koji je ispao iz feed-a.
+  async getMatchById(externalId: string): Promise<PsMatch | null> {
+    if (!this.token) return null;
+    const url = `${this.base}/matches/${encodeURIComponent(externalId)}`;
+    try {
+      const r = await fetch(url, {
+        headers: { Authorization: `Bearer ${this.token}`, Accept: "application/json" },
+      });
+      if (!r.ok) {
+        this.logger.warn("PandaScore", `HTTP ${r.status} za /matches/${externalId}`);
+        return null;
+      }
+      const data: unknown = await r.json();
+      return data && typeof data === "object" && !Array.isArray(data) ? (data as PsMatch) : null;
+    } catch {
+      this.logger.error("PandaScore", `fetch /matches/${externalId} failed`);
+      return null;
+    }
+  }
 }
