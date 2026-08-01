@@ -6,6 +6,10 @@ import { useAuth } from "../../hooks/auth/useAuthHook";
 import { PageHeader, StatusBadge, Spinner, Empty, ErrorBox, PgBtn, TiltCard } from "../../components/ui/UI";
 import { fadeUp, staggerContainer } from "../../components/ui/motion";
 import { parseData } from "../../helpers/api";
+import TournamentCard from "../../components/pro/TournamentCard";
+import ProTournamentDetailModal from "../../components/pro/ProTournamentDetailModal";
+import { proTournamentApi } from "../../api_services/pro/ProTournamentAPIService";
+import type { ProTournamentListDto } from "../../models/pro/ProTournamentTypes";
 
 interface Tournament {
   tournamentId: number;
@@ -43,6 +47,12 @@ const FORMAT_LABEL: Record<string, string> = {
 };
 const GLOWS = ["var(--violet)", "var(--cyan)", "var(--pink)", "var(--green)"];
 
+const PRO_GAME_LABELS: Record<string, string> = {
+  "league-of-legends": "LoL", "cs-go": "CS2", "csgo": "CS2", "cs-2": "CS2", "cs2": "CS2",
+  "dota-2": "Dota 2", "valorant": "Valorant", "rainbow-6-siege": "R6", "overwatch": "Overwatch",
+};
+const proGameLabel = (slug: string): string => PRO_GAME_LABELS[slug] ?? slug.replace(/-/g, " ");
+
 export default function TournamentsPage() {
   const { token } = useAuth();
   const navigate = useNavigate();
@@ -59,6 +69,11 @@ export default function TournamentsPage() {
   const [selectedTeamId, setSelectedTeamId] = useState<number | null>(null);
   const [regSaving, setRegSaving] = useState(false);
   const [cancellingId, setCancellingId] = useState<number | null>(null);
+
+  // Omiljeni pro turniri (favoriti)
+  const [favs, setFavs] = useState<ProTournamentListDto[]>([]);
+  const [favDetailId, setFavDetailId] = useState<string | null>(null);
+  const [favToast, setFavToast] = useState("");
 
   const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
 
@@ -83,6 +98,18 @@ export default function TournamentsPage() {
   };
 
   useEffect(() => { void loadAll(); }, [token]);
+
+  useEffect(() => {
+    if (!token) { setFavs([]); return; }
+    void proTournamentApi.listFavorites().then((r) => { if (r.success && r.data) setFavs(r.data); });
+  }, [token]);
+
+  const removeFavorite = async (t: ProTournamentListDto) => {
+    setFavs((prev) => prev.filter((x) => x.externalId !== t.externalId));
+    const res = await proTournamentApi.removeFavorite(t.externalId);
+    setFavToast(res.success ? "Uklonjeno iz omiljenih" : (res.message ?? "Greška"));
+    window.setTimeout(() => setFavToast(""), 2200);
+  };
 
   const openRegModal = (t: Tournament) => {
     if (captainTeams.length === 0) { setError("Nisi kapiten nijednog tima. Kreiraj tim ili postani kapiten."); return; }
@@ -131,6 +158,22 @@ export default function TournamentsPage() {
     <div>
       <PageHeader eyebrow="Takmičenja" title="Turniri" />
       {error && <ErrorBox message={error} />}
+
+      {favs.length > 0 && (
+        <div style={{ marginBottom: 32 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 11, marginBottom: 16 }}>
+            <span style={{ width: 4, height: 22, borderRadius: 2, background: "linear-gradient(180deg, var(--gold), var(--pink))", boxShadow: "0 0 12px rgba(255,196,68,0.5)" }} />
+            <span style={{ fontFamily: "var(--font-head)", fontSize: 20, fontWeight: 800, color: "var(--text)" }}>★ Omiljeni pro turniri</span>
+          </div>
+          <motion.div variants={staggerContainer(0.05)} initial="hidden" animate="show"
+            style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 14 }}>
+            {favs.map((t) => (
+              <TournamentCard key={t.externalId} t={t} onOpen={() => setFavDetailId(t.externalId)}
+                isFavorite={true} onToggleFavorite={(ft, next) => { if (!next) void removeFavorite(ft); }} />
+            ))}
+          </motion.div>
+        </div>
+      )}
 
       <div style={{ display: "flex", gap: 12, marginBottom: 24, flexWrap: "wrap" }}>
         <select style={selectStyle} value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
@@ -268,6 +311,22 @@ export default function TournamentsPage() {
         </AnimatePresence>,
         document.body
       )}
+
+      {favDetailId && (
+        <ProTournamentDetailModal
+          externalId={favDetailId}
+          gameLabel={proGameLabel(favs.find((f) => f.externalId === favDetailId)?.gameSlug ?? "")}
+          onClose={() => setFavDetailId(null)}
+        />
+      )}
+
+      {favToast && createPortal(
+        <div style={{ position: "fixed", bottom: 28, left: "50%", transform: "translateX(-50%)", zIndex: 100001,
+          background: "rgba(10,14,30,0.96)", border: "1px solid var(--cyan)", color: "#eafcff",
+          padding: "11px 20px", borderRadius: 11, fontFamily: "var(--font-ui)", fontSize: 13, fontWeight: 700,
+          display: "flex", alignItems: "center", gap: 9, boxShadow: "0 10px 34px rgba(0,0,0,0.5), 0 0 18px rgba(0,212,255,0.32)" }}>
+          <span style={{ color: "#fff", fontSize: 15 }}>★</span> {favToast}
+        </div>, document.body)}
     </div>
   );
 }

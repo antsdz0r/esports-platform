@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Spinner } from "../ui/UI";
+import ProBracket from "./ProBracket";
 import { proTournamentApi } from "../../api_services/pro/ProTournamentAPIService";
 import type { ProTournamentDetailDto, ProTournamentMatchDto } from "../../models/pro/ProTournamentTypes";
 
@@ -9,32 +10,10 @@ const STATUS_COLOR: Record<string, string> = {
   live: "var(--pink)", upcoming: "var(--cyan)", finished: "var(--green)", canceled: "var(--text-dim)",
 };
 
-type Tab = "bracket" | "groups" | "matches";
+// Jedinstven stil reda-kartice za Schedule/Results/Groups — fiksna visina da su svi identicni.
+const ROW_STYLE: CSSProperties = { borderRadius: 10, padding: "0 16px", height: 54, boxSizing: "border-box", display: "flex", alignItems: "center", gap: 12 };
 
-function MatchBox({ m }: { m: ProTournamentMatchDto }) {
-  const won1 = m.status === "finished" && m.team1Score > m.team2Score;
-  const won2 = m.status === "finished" && m.team2Score > m.team1Score;
-  const live = m.status === "live";
-  return (
-    <div className="pg-glass" style={{ borderRadius: 8, padding: "8px 10px", width: 190, border: `1px solid ${live ? "var(--pink)" : "var(--border)"}` }}>
-      <Row name={m.team1Name} logo={m.team1Logo} score={m.team1Score} won={won1} />
-      <div style={{ height: 1, background: "var(--border)", margin: "5px 0", opacity: 0.5 }} />
-      <Row name={m.team2Name} logo={m.team2Logo} score={m.team2Score} won={won2} />
-      {live && <div style={{ fontFamily: "var(--font-ui)", fontSize: 9, color: "var(--pink)", marginTop: 4 }}>● uživo</div>}
-    </div>
-  );
-}
-
-function Row({ name, logo, score, won }: { name: string | null; logo: string | null; score: number; won: boolean }) {
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-      {logo ? <img src={logo} alt="" style={{ width: 18, height: 18, objectFit: "contain", flexShrink: 0 }} />
-            : <span style={{ width: 18, height: 18, flexShrink: 0, display: "inline-block", background: "rgba(255,255,255,0.06)", borderRadius: 4 }} />}
-      <span style={{ flex: 1, fontFamily: "var(--font-head)", fontSize: 12, fontWeight: won ? 800 : 600, color: won ? "var(--text)" : "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name ?? "TBD"}</span>
-      <span style={{ fontFamily: "var(--font-display)", fontSize: 14, fontWeight: 900, color: won ? "var(--green)" : "var(--text-dim)" }}>{score}</span>
-    </div>
-  );
-}
+type Tab = "bracket" | "groups" | "schedule" | "results";
 
 export default function ProTournamentDetailModal({ externalId, gameLabel, onClose }: { externalId: string; gameLabel: string; onClose: () => void }) {
   const [detail, setDetail] = useState<ProTournamentDetailDto | null>(null);
@@ -67,89 +46,94 @@ export default function ProTournamentDetailModal({ externalId, gameLabel, onClos
         style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.74)", backdropFilter: "blur(6px)", zIndex: 100000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
         <motion.div initial={{ opacity: 0, y: 18, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 14, scale: 0.96 }}
           transition={{ type: "spring", stiffness: 320, damping: 28 }} onClick={(e) => e.stopPropagation()}
-          className="pg-glass" style={{ width: "100%", maxWidth: 920, borderRadius: 18, padding: 22, maxHeight: "92vh", overflowY: "auto", border: "1px solid var(--border-bright)" }}>
+          className="pg-glass" style={{ width: "100%", maxWidth: 920, borderRadius: 18, padding: 22, height: "min(82vh, 760px)", display: "flex", flexDirection: "column", overflow: "hidden", border: "1px solid var(--border-bright)" }}>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, flexWrap: "wrap", flexShrink: 0 }}>
             <span style={{ fontFamily: "var(--font-ui)", fontSize: 11, fontWeight: 700, color: "var(--cyan)", padding: "2px 8px", borderRadius: 6, background: "rgba(0,212,255,0.10)", border: "1px solid rgba(0,212,255,0.30)" }}>{gameLabel}</span>
             <span style={{ fontFamily: "var(--font-head)", fontSize: 18, fontWeight: 800, color: "var(--text)" }}>{detail?.name ?? "Turnir"}</span>
             <button onClick={onClose} style={{ marginLeft: "auto", background: "none", border: "none", color: "var(--text-dim)", fontSize: 20, cursor: "pointer", lineHeight: 1 }}>✕</button>
           </div>
 
-          <div style={{ display: "flex", gap: 6, marginBottom: 16, borderBottom: "1px solid var(--border)" }}>
-            {([["bracket", "Bracket"], ["groups", "Grupe"], ["matches", "Svi mečevi"]] as [Tab, string][]).map(([key, label]) => (
-              <button key={key} onClick={() => setTab(key)}
-                style={{ fontFamily: "var(--font-ui)", fontSize: 13, fontWeight: 700, padding: "8px 14px", cursor: "pointer", background: "none", border: "none",
-                  color: tab === key ? "var(--cyan)" : "var(--text-muted)", borderBottom: tab === key ? "2px solid var(--cyan)" : "2px solid transparent" }}>
-                {label}
-              </button>
-            ))}
-          </div>
-
           {loading ? <Spinner /> : !detail ? (
             <p style={{ color: "var(--text-muted)", fontFamily: "var(--font-ui)", fontSize: 13, textAlign: "center", padding: 20 }}>Nema podataka za ovaj turnir.</p>
-          ) : (
-            <>
-              {tab === "bracket" && (
-                rounds.length > 0 ? (
-                  <div style={{ overflowX: "auto", paddingBottom: 8 }}>
-                    <div style={{ display: "flex", gap: 18, alignItems: "flex-start", minWidth: "max-content" }}>
-                      {rounds.map((r) => (
-                        <div key={r} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                          <p style={{ fontFamily: "var(--font-ui)", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)", textAlign: "center" }}>Runda {r}</p>
-                          {detail.matches.filter((m) => m.round === r).map((m) => <MatchBox key={m.externalId} m={m} />)}
+          ) : (() => {
+            const at = (m: ProTournamentMatchDto) => (m.scheduledAt ? new Date(m.scheduledAt).getTime() : 0);
+            // Schedule: uzivo + predstojeci, od najskorijeg ka najdaljem (uzivo na vrh).
+            const schedule = detail.matches
+              .filter((m) => m.status === "live" || m.status === "upcoming")
+              .sort((a, b) => (a.status === "live" ? 0 : 1) - (b.status === "live" ? 0 : 1) || at(a) - at(b));
+            // Results: zavrseni/otkazani, najnoviji prvi.
+            const results = detail.matches
+              .filter((m) => m.status === "finished" || m.status === "canceled")
+              .sort((a, b) => at(b) - at(a));
+
+            const tabDefs: [Tab, string][] = [];
+            if (detail.hasBracket) tabDefs.push(["bracket", "Bracket"]);
+            tabDefs.push(["schedule", "Schedule"], ["results", "Results"]);
+            if (detail.standings.length > 0) tabDefs.push(["groups", "Groups"]);
+            const activeTab: Tab = tabDefs.some(([k]) => k === tab) ? tab : tabDefs[0][0];
+            return (
+              <>
+                <div style={{ display: "flex", gap: 6, marginBottom: 16, borderBottom: "1px solid var(--border)", flexShrink: 0 }}>
+                  {tabDefs.map(([key, label]) => (
+                    <button key={key} onClick={() => setTab(key)}
+                      style={{ fontFamily: "var(--font-ui)", fontSize: 13, fontWeight: 700, padding: "8px 14px", cursor: "pointer", background: "none", border: "none",
+                        color: activeTab === key ? "var(--cyan)" : "var(--text-muted)", borderBottom: activeTab === key ? "2px solid var(--cyan)" : "2px solid transparent" }}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+
+                <div style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
+                {activeTab === "bracket" && (
+                  rounds.length > 0 ? <ProBracket matches={detail.matches} /> : <MatchList matches={detail.matches} />
+                )}
+
+                {activeTab === "groups" && (
+                  hasStandings ? (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "0 16px", fontFamily: "var(--font-ui)", fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", color: "var(--text-muted)" }}>
+                        <span style={{ width: 24, flexShrink: 0 }}>#</span>
+                        <span style={{ flex: 1 }}>Tim</span>
+                        <span style={{ width: 40, textAlign: "center", flexShrink: 0 }}>P</span>
+                        <span style={{ width: 40, textAlign: "center", flexShrink: 0 }}>I</span>
+                        <span style={{ width: 40, textAlign: "center", flexShrink: 0 }}>N</span>
+                      </div>
+                      {detail.standings.map((s, i) => (
+                        <div key={i} className="pg-glass" style={ROW_STYLE}>
+                          <span style={{ width: 24, flexShrink: 0, fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 900, color: "var(--text-dim)" }}>{s.rank ?? i + 1}</span>
+                          <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 8 }}>
+                            <TeamIcon logo={s.teamLogo} />
+                            <span style={{ fontFamily: "var(--font-head)", fontSize: 13, fontWeight: 700, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.teamName ?? "—"}</span>
+                          </div>
+                          <span style={{ width: 40, textAlign: "center", flexShrink: 0, fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 900, color: "var(--green)" }}>{s.wins}</span>
+                          <span style={{ width: 40, textAlign: "center", flexShrink: 0, fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 900, color: "var(--pink)" }}>{s.losses}</span>
+                          <span style={{ width: 40, textAlign: "center", flexShrink: 0, fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 900, color: "var(--text-muted)" }}>{s.ties}</span>
                         </div>
                       ))}
                     </div>
-                  </div>
-                ) : (
-                  <div>
-                    <p style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--text-muted)", marginBottom: 12 }}>
-                      Bracket struktura nije dostupna za ovaj turnir — prikaz po mečevima:
-                    </p>
-                    <MatchList matches={detail.matches} />
-                  </div>
-                )
-              )}
+                  ) : (
+                    <p style={{ fontFamily: "var(--font-ui)", fontSize: 13, color: "var(--text-muted)", textAlign: "center", padding: 20 }}>Nema tabele/grupa za ovaj turnir.</p>
+                  )
+                )}
 
-              {tab === "groups" && (
-                hasStandings ? (
-                  <div style={{ overflowX: "auto" }}>
-                    <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "var(--font-ui)", fontSize: 13 }}>
-                      <thead>
-                        <tr style={{ color: "var(--text-muted)", textAlign: "left" }}>
-                          <th style={{ padding: "6px 8px" }}>#</th><th style={{ padding: "6px 8px" }}>Tim</th>
-                          <th style={{ padding: "6px 8px", textAlign: "center" }}>P</th><th style={{ padding: "6px 8px", textAlign: "center" }}>I</th><th style={{ padding: "6px 8px", textAlign: "center" }}>N</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {detail.standings.map((s, i) => (
-                          <tr key={i} style={{ borderTop: "1px solid var(--border)", color: "var(--text)" }}>
-                            <td style={{ padding: "7px 8px", color: "var(--text-dim)", fontFamily: "var(--font-display)", fontWeight: 900 }}>{s.rank ?? i + 1}</td>
-                            <td style={{ padding: "7px 8px", display: "flex", alignItems: "center", gap: 8 }}>
-                              {s.teamLogo && <img src={s.teamLogo} alt="" style={{ width: 20, height: 20, objectFit: "contain" }} />}
-                              <span style={{ fontFamily: "var(--font-head)", fontWeight: 700 }}>{s.teamName ?? "—"}</span>
-                            </td>
-                            <td style={{ padding: "7px 8px", textAlign: "center", color: "var(--green)" }}>{s.wins}</td>
-                            <td style={{ padding: "7px 8px", textAlign: "center", color: "var(--pink)" }}>{s.losses}</td>
-                            <td style={{ padding: "7px 8px", textAlign: "center", color: "var(--text-muted)" }}>{s.ties}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <p style={{ fontFamily: "var(--font-ui)", fontSize: 13, color: "var(--text-muted)", textAlign: "center", padding: 20 }}>Nema tabele/grupa za ovaj turnir.</p>
-                )
-              )}
-
-              {tab === "matches" && <MatchList matches={detail.matches} />}
-            </>
-          )}
+                {activeTab === "schedule" && <MatchList matches={schedule} />}
+                {activeTab === "results" && <MatchList matches={results} />}
+                </div>
+              </>
+            );
+          })()}
         </motion.div>
       </motion.div>
     </AnimatePresence>,
     document.body
   );
+}
+
+function TeamIcon({ logo }: { logo: string | null }) {
+  return logo
+    ? <img src={logo} alt="" style={{ width: 20, height: 20, objectFit: "contain", flexShrink: 0 }} />
+    : <span style={{ width: 20, height: 20, flexShrink: 0, display: "inline-block", background: "rgba(255,255,255,0.06)", borderRadius: 5 }} />;
 }
 
 function MatchList({ matches }: { matches: ProTournamentMatchDto[] }) {
@@ -161,12 +145,20 @@ function MatchList({ matches }: { matches: ProTournamentMatchDto[] }) {
         const won2 = m.status === "finished" && m.team2Score > m.team1Score;
         const when = m.scheduledAt ? new Date(m.scheduledAt).toLocaleString("sr-RS", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : null;
         return (
-          <div key={m.externalId} className="pg-glass" style={{ borderRadius: 10, padding: "10px 14px", display: "flex", alignItems: "center", gap: 12 }}>
+          <div key={m.externalId} className="pg-glass" style={ROW_STYLE}>
             <span style={{ width: 8, height: 8, borderRadius: "50%", background: STATUS_COLOR[m.status] ?? "var(--text-dim)", flexShrink: 0 }} />
-            <span style={{ flex: 1, textAlign: "right", fontFamily: "var(--font-head)", fontSize: 13, fontWeight: won1 ? 800 : 600, color: won1 ? "var(--text)" : "var(--text-muted)" }}>{m.team1Name ?? "TBD"}</span>
-            <span style={{ fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 900, color: "var(--text)", minWidth: 44, textAlign: "center" }}>{m.team1Score} : {m.team2Score}</span>
-            <span style={{ flex: 1, fontFamily: "var(--font-head)", fontSize: 13, fontWeight: won2 ? 800 : 600, color: won2 ? "var(--text)" : "var(--text-muted)" }}>{m.team2Name ?? "TBD"}</span>
-            {when && <span style={{ fontFamily: "var(--font-ui)", fontSize: 10, color: "var(--text-dim)", flexShrink: 0 }}>{when}</span>}
+            <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8 }}>
+              <span style={{ fontFamily: "var(--font-head)", fontSize: 13, fontWeight: won1 ? 800 : 600, color: won1 ? "var(--text)" : "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.team1Name ?? "TBD"}</span>
+              <TeamIcon logo={m.team1Logo} />
+            </div>
+            <span style={{ fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 900, color: m.status === "upcoming" ? "var(--text-dim)" : "var(--text)", width: 56, textAlign: "center", flexShrink: 0 }}>
+              {m.status === "upcoming" ? "VS" : `${m.team1Score} : ${m.team2Score}`}
+            </span>
+            <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 8 }}>
+              <TeamIcon logo={m.team2Logo} />
+              <span style={{ fontFamily: "var(--font-head)", fontSize: 13, fontWeight: won2 ? 800 : 600, color: won2 ? "var(--text)" : "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.team2Name ?? "TBD"}</span>
+            </div>
+            <span style={{ width: 92, flexShrink: 0, textAlign: "right", fontFamily: "var(--font-ui)", fontSize: 13, fontWeight: 600, color: "var(--text)" }}>{when ?? ""}</span>
           </div>
         );
       })}

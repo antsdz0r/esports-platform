@@ -5,5 +5,6 @@ export interface IProTournamentRepository {
   findBySerie(serieExternalId: string): Promise<ProTournament[]>;
   findByExternalId(externalId: string): Promise<ProTournament | null>;
   findActiveByGame(gameSlug: string): Promise<ProTournament[]>;
+  findByGame(gameSlug: string): Promise<ProTournament[]>;
   findDistinctGames(): Promise<string[]>;
 }

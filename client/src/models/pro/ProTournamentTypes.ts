@@ -25,6 +25,7 @@ export interface ProTournamentListDto {
   endAt: string | null;
   leagueName: string | null;
   serieName: string | null;
+  leagueImageUrl: string | null;
 }
 
 export interface ProTournamentMatchDto {

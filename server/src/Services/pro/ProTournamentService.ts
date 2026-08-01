@@ -42,12 +42,18 @@ export class ProTournamentService implements IProTournamentService {
     return ProTournamentStatus.RUNNING;
   }
 
-  private toListDto(t: ProTournament, leagueName: string | null, serieName: string | null): ProTournamentListDto {
+  // "Popularnost" preko PandaScore tier-a: s (najprestizniji) -> d, ostalo najniže.
+  private tierRank(tier: string | null): number {
+    const order: Record<string, number> = { s: 0, a: 1, b: 2, c: 3, d: 4 };
+    return tier ? (order[tier.toLowerCase()] ?? 5) : 5;
+  }
+
+  private toListDto(t: ProTournament, leagueName: string | null, serieName: string | null, leagueImageUrl: string | null = null): ProTournamentListDto {
     return new ProTournamentListDto(
       t.externalId, t.name, t.gameSlug, t.tier, t.hasBracket, t.status,
       t.beginAt ? t.beginAt.toISOString() : null,
       t.endAt ? t.endAt.toISOString() : null,
-      leagueName, serieName,
+      leagueName, serieName, leagueImageUrl,
     );
   }
 
@@ -79,6 +85,30 @@ export class ProTournamentService implements IProTournamentService {
     );
   }
 
+  // Rundu svakog meca racunamo iz bracket grafa: mec bez prethodnih = runda 1,
+  // inace runda = 1 + max(runda prethodnih meceva). Memoizovano, sa cycle-guardom.
+  private computeBracketRounds(brackets: PsMatch[]): Map<number, number> {
+    const byId = new Map<number, PsMatch>();
+    for (const m of brackets) if (m.id) byId.set(m.id, m);
+    const memo = new Map<number, number>();
+    const roundOf = (id: number, stack: Set<number>): number => {
+      const cached = memo.get(id);
+      if (cached != null) return cached;
+      if (stack.has(id)) return 1;
+      stack.add(id);
+      const m = byId.get(id);
+      const prev = (m?.previous_matches ?? [])
+        .map((p) => p.match_id)
+        .filter((x): x is number => x != null && byId.has(x));
+      const r = prev.length === 0 ? 1 : 1 + Math.max(...prev.map((p) => roundOf(p, stack)));
+      stack.delete(id);
+      memo.set(id, r);
+      return r;
+    };
+    for (const m of brackets) if (m.id) roundOf(m.id, new Set());
+    return memo;
+  }
+
   private mapPsStanding(row: PsStandingRow, tournamentExternalId: string): ProStanding | null {
     const name = row.team?.name ?? row.team?.acronym ?? null;
     if (!name) return null;
@@ -95,16 +125,46 @@ export class ProTournamentService implements IProTournamentService {
 
   async getLeagues(gameSlug: string): Promise<ProLeagueDto[]> {
     const leagues = await this.leagueRepo.findByGame(gameSlug);
-    const active = await this.tournamentRepo.findActiveByGame(gameSlug);
-    const activeLeagueIds = new Set(active.map((t) => t.leagueExternalId).filter((x): x is string => !!x));
-    return leagues.map((l) => new ProLeagueDto(l.externalId, l.name, l.slug, l.imageUrl, activeLeagueIds.has(l.externalId)));
+    const allT = await this.tournamentRepo.findByGame(gameSlug);
+
+    const activeLeagueIds = new Set(
+      allT.filter((t) => t.status === ProTournamentStatus.RUNNING).map((t) => t.leagueExternalId).filter((x): x is string => !!x)
+    );
+    const bestTier = new Map<string, number>();
+    for (const t of allT) {
+      if (!t.leagueExternalId) continue;
+      const r = this.tierRank(t.tier);
+      const cur = bestTier.get(t.leagueExternalId);
+      if (cur == null || r < cur) bestTier.set(t.leagueExternalId, r);
+    }
+
+    const dtos = leagues.map((l) => new ProLeagueDto(l.externalId, l.name, l.slug, l.imageUrl, activeLeagueIds.has(l.externalId)));
+    // Popularnost: aktivne prvo, pa po najboljem tier-u, pa po nazivu.
+    dtos.sort((a, b) => {
+      if (a.hasActive !== b.hasActive) return a.hasActive ? -1 : 1;
+      const ra = bestTier.get(a.externalId) ?? 9;
+      const rb = bestTier.get(b.externalId) ?? 9;
+      if (ra !== rb) return ra - rb;
+      return a.name.localeCompare(b.name);
+    });
+    return dtos;
   }
 
   async getActiveTournaments(gameSlug: string): Promise<ProTournamentListDto[]> {
     const active = await this.tournamentRepo.findActiveByGame(gameSlug);
+    active.sort((a, b) =>
+      this.tierRank(a.tier) - this.tierRank(b.tier) ||
+      (a.beginAt?.getTime() ?? 0) - (b.beginAt?.getTime() ?? 0)
+    );
     const leagues = await this.leagueRepo.findByGame(gameSlug);
     const leagueName = new Map(leagues.map((l) => [l.externalId, l.name]));
-    return active.map((t) => this.toListDto(t, t.leagueExternalId ? (leagueName.get(t.leagueExternalId) ?? null) : null, null));
+    const leagueImage = new Map(leagues.map((l) => [l.externalId, l.imageUrl]));
+    return active.map((t) => this.toListDto(
+      t,
+      t.leagueExternalId ? (leagueName.get(t.leagueExternalId) ?? null) : null,
+      null,
+      t.leagueExternalId ? (leagueImage.get(t.leagueExternalId) ?? null) : null,
+    ));
   }
 
   async getSeries(leagueExternalId: string): Promise<ProSerieDto[]> {
@@ -172,6 +232,27 @@ export class ProTournamentService implements IProTournamentService {
       const model = this.mapPsMatch(pm, externalId);
       if (model) await this.matchRepo.upsert(model);
     }
+
+    // Bracket: izvuci pravu strukturu (rundu po dubini iz previous_matches) i upsertuj round/position.
+    if (t.hasBracket) {
+      const brackets = await this.client.getTournamentBrackets(externalId);
+      const rounds = this.computeBracketRounds(brackets);
+      const posCounter = new Map<number, number>();
+      for (const bm of brackets) {
+        if (!bm.id) continue;
+        const model = this.mapPsMatch(bm, externalId);
+        if (!model) continue;
+        const r = rounds.get(bm.id) ?? null;
+        model.round = r;
+        if (r != null) {
+          const p = posCounter.get(r) ?? 0;
+          model.position = p;
+          posCounter.set(r, p + 1);
+        }
+        await this.matchRepo.upsert(model);
+      }
+    }
+
     const matches = await this.matchRepo.findByTournament(externalId);
 
     // Standings — sveze sa izvora, kesiranje, pa citanje.

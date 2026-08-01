@@ -2,6 +2,7 @@ import { Request, Response, Router } from "express";
 import { UserRole } from "../../Domain/enums/UserRole";
 import { IProTournamentService } from "../../Domain/services/pro/IProTournamentService";
 import { IProStructureSyncService } from "../../Domain/services/pro/IProStructureSyncService";
+import { IProFavoriteService } from "../../Domain/services/pro/IProFavoriteService";
 import { IAuditLogService } from "../../Domain/services/audit_logs/IAuditLogService";
 import { authenticate } from "../../Middlewares/authentification/AuthMiddleware";
 import { authorize } from "../../Middlewares/authorization/AuthorizeMiddleware";
@@ -16,12 +17,18 @@ export class ProTournamentController {
     private readonly tournamentService: IProTournamentService,
     private readonly structureSyncService: IProStructureSyncService,
     private readonly auditLogService: IAuditLogService,
+    private readonly favoriteService: IProFavoriteService,
   ) {
     this.router.get("/pro/games", this.getGames.bind(this));
     this.router.get("/pro/games/:slug/leagues", this.getLeagues.bind(this));
     this.router.get("/pro/games/:slug/tournaments/active", this.getActive.bind(this));
     this.router.get("/pro/leagues/:id/series", this.getSeries.bind(this));
     this.router.get("/pro/series/:id/tournaments", this.getTournaments.bind(this));
+    // Favoriti (pre /pro/tournaments/:id da se ne poklopi ruta)
+    this.router.get("/pro/favorites", authenticate, this.listFavorites.bind(this));
+    this.router.get("/pro/favorites/ids", authenticate, this.listFavoriteIds.bind(this));
+    this.router.post("/pro/favorites/:id", authenticate, this.addFavorite.bind(this));
+    this.router.delete("/pro/favorites/:id", authenticate, this.removeFavorite.bind(this));
     this.router.get("/pro/tournaments/:id", this.getTournamentDetail.bind(this));
     this.router.post("/pro/structure/sync", authenticate, authorize(UserRole.ADMIN), this.syncStructure.bind(this));
   }
@@ -98,6 +105,52 @@ export class ProTournamentController {
         req.socket.remoteAddress ?? null
       );
       res.status(200).json({ success: true, data: { leagues: result.leagues, series: result.series, tournaments: result.tournaments } });
+    } catch {
+      res.status(500).json({ success: false, message: "Internal server error" });
+    }
+  }
+
+  private async listFavorites(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = req.user?.id;
+      if (!userId) { res.status(401).json({ success: false, message: "Neautorizovano" }); return; }
+      res.status(200).json({ success: true, data: await this.favoriteService.listFavorites(userId) });
+    } catch {
+      res.status(500).json({ success: false, message: "Internal server error" });
+    }
+  }
+
+  private async listFavoriteIds(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = req.user?.id;
+      if (!userId) { res.status(401).json({ success: false, message: "Neautorizovano" }); return; }
+      res.status(200).json({ success: true, data: await this.favoriteService.listIds(userId) });
+    } catch {
+      res.status(500).json({ success: false, message: "Internal server error" });
+    }
+  }
+
+  private async addFavorite(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = req.user?.id;
+      if (!userId) { res.status(401).json({ success: false, message: "Neautorizovano" }); return; }
+      const id = req.params.id as string;
+      if (!ID.test(id)) { res.status(400).json({ success: false, message: "Invalid id" }); return; }
+      await this.favoriteService.add(userId, id);
+      res.status(201).json({ success: true, message: "Dodato u omiljene" });
+    } catch {
+      res.status(500).json({ success: false, message: "Internal server error" });
+    }
+  }
+
+  private async removeFavorite(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = req.user?.id;
+      if (!userId) { res.status(401).json({ success: false, message: "Neautorizovano" }); return; }
+      const id = req.params.id as string;
+      if (!ID.test(id)) { res.status(400).json({ success: false, message: "Invalid id" }); return; }
+      await this.favoriteService.remove(userId, id);
+      res.status(200).json({ success: true, message: "Uklonjeno iz omiljenih" });
     } catch {
       res.status(500).json({ success: false, message: "Internal server error" });
     }

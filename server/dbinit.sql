@@ -251,5 +251,16 @@ CREATE TABLE PRO_STANDINGS(
     INDEX idx_pro_standings_tour (tournament_external_id)
 );
 
+-- ── Omiljeni pro turniri (favoriti) po useru ──
+CREATE TABLE PRO_FAVORITES(
+    id                     INT AUTO_INCREMENT PRIMARY KEY,
+    user_id                INT UNSIGNED NOT NULL,
+    tournament_external_id VARCHAR(60) NOT NULL,
+    created_at             DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_pro_fav (user_id, tournament_external_id),
+    INDEX idx_pro_fav_user (user_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
 
 

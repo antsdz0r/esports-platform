@@ -24,6 +24,7 @@ import { ProLeagueRepository } from "./Database/repositories/pro/ProLeagueReposi
 import { ProSerieRepository } from "./Database/repositories/pro/ProSerieRepository";
 import { ProTournamentRepository } from "./Database/repositories/pro/ProTournamentRepository";
 import { ProStandingRepository } from "./Database/repositories/pro/ProStandingRepository";
+import { ProFavoriteRepository } from "./Database/repositories/pro/ProFavoriteRepository";
 
 
 
@@ -43,6 +44,7 @@ import { ProMatchService } from "./Services/pro/ProMatchService";
 import { ProStreamAdminService } from "./Services/pro/ProStreamAdminService";
 import { ProStructureSyncService } from "./Services/pro/ProStructureSyncService";
 import { ProTournamentService } from "./Services/pro/ProTournamentService";
+import { ProFavoriteService } from "./Services/pro/ProFavoriteService";
 
 import { AuthController }   from "./WebAPI/controllers/AuthController";
 import { UserController }   from "./WebAPI/controllers/UserController";
@@ -84,6 +86,7 @@ const proLeagueRepo = new ProLeagueRepository(db, logger);
 const proSerieRepo = new ProSerieRepository(db, logger);
 const proTournamentRepo = new ProTournamentRepository(db, logger);
 const proStandingRepo = new ProStandingRepository(db, logger);
+const proFavoriteRepo = new ProFavoriteRepository(db, logger);
 
 // Services
 const authService   = new AuthService(userRepo);
@@ -108,6 +111,7 @@ const proMatchService = new ProMatchService(proMatchRepo, proStreamRepo);
 const proStreamAdminService = new ProStreamAdminService(proStreamRepo, proMatchRepo);
 export const proStructureSyncService = new ProStructureSyncService(pandaScoreClient, proLeagueRepo, proSerieRepo, proTournamentRepo, logger);
 const proTournamentService = new ProTournamentService(pandaScoreClient, proLeagueRepo, proSerieRepo, proTournamentRepo, proStandingRepo, proMatchRepo);
+const proFavoriteService = new ProFavoriteService(proFavoriteRepo);
 
 // Express rute
 const app = express();
@@ -126,6 +130,6 @@ app.use("/api", new MatchController(matchService).getRouter());
 app.use("/api", new AuditLogController(auditLogService).getRouter());
 app.use("/api", new StreamController(matchStreamService, auditLogService).getRouter());
 app.use("/api", new ProController(proMatchService, proSyncService, proStreamAdminService, auditLogService).getRouter());
-app.use("/api", new ProTournamentController(proTournamentService, proStructureSyncService, auditLogService).getRouter());
+app.use("/api", new ProTournamentController(proTournamentService, proStructureSyncService, auditLogService, proFavoriteService).getRouter());
 
 export default app;

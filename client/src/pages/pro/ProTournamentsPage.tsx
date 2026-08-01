@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "../../hooks/auth/useAuthHook";
 import { PageHeader, Spinner, Empty, ErrorBox, SuccessBox, PgBtn } from "../../components/ui/UI";
-import { fadeUp, staggerContainer } from "../../components/ui/motion";
+import { staggerContainer } from "../../components/ui/motion";
 import ProTournamentDetailModal from "../../components/pro/ProTournamentDetailModal";
+import TournamentCard from "../../components/pro/TournamentCard";
 import { proTournamentApi } from "../../api_services/pro/ProTournamentAPIService";
 import type { ProLeagueDto, ProSerieDto, ProTournamentListDto } from "../../models/pro/ProTournamentTypes";
 
@@ -13,8 +15,16 @@ const GAME_LABELS: Record<string, string> = {
 };
 function gameLabel(slug: string): string { return GAME_LABELS[slug] ?? slug.replace(/-/g, " "); }
 
-const CARD_BG = "linear-gradient(165deg, rgba(34,44,82,0.72), rgba(15,19,40,0.9))";
-const CARD_BORDER = "1px solid rgba(78,120,210,0.38)";
+// Redosled igara po popularnosti (globalna esports gledanost); nepoznate idu na kraj.
+const GAME_ORDER = [
+  "league-of-legends", "cs-go", "cs2", "cs-2", "csgo", "valorant", "dota-2",
+  "ow", "overwatch", "r6-siege", "rainbow-6-siege", "rl", "rocket-league",
+  "mlbb", "mobile-legends", "cod-mw", "call-of-duty", "starcraft-2", "kog", "king-of-glory", "fifa",
+];
+function gameRank(slug: string): number {
+  const i = GAME_ORDER.indexOf(slug);
+  return i === -1 ? 999 : i;
+}
 
 export default function ProTournamentsPage() {
   const { user } = useAuth();
@@ -34,13 +44,16 @@ export default function ProTournamentsPage() {
   const [openSerie, setOpenSerie] = useState<string | null>(null);
   const [tournaments, setTournaments] = useState<ProTournamentListDto[]>([]);
   const [detailId, setDetailId] = useState<string | null>(null);
+  const [favIds, setFavIds] = useState<Set<string>>(new Set());
+  const [toast, setToast] = useState("");
 
   useEffect(() => {
     const load = async () => {
       const res = await proTournamentApi.getGames();
       if (res.success && res.data && res.data.length > 0) {
-        setGames(res.data);
-        setGame(res.data[0]);
+        const sorted = [...res.data].sort((a, b) => gameRank(a) - gameRank(b) || a.localeCompare(b));
+        setGames(sorted);
+        setGame(sorted[0]);
       } else {
         setError(res.success ? "" : (res.message ?? "Greška"));
         setLoading(false);
@@ -61,6 +74,24 @@ export default function ProTournamentsPage() {
     };
     void load();
   }, [game]);
+
+  useEffect(() => {
+    if (!user) { setFavIds(new Set()); return; }
+    void proTournamentApi.getFavoriteIds().then((r) => { if (r.success && r.data) setFavIds(new Set(r.data)); });
+  }, [user]);
+
+  const showToast = (msg: string) => { setToast(msg); window.setTimeout(() => setToast(""), 2200); };
+
+  const toggleFavorite = async (t: ProTournamentListDto, next: boolean) => {
+    setFavIds((prev) => { const s = new Set(prev); if (next) s.add(t.externalId); else s.delete(t.externalId); return s; });
+    const res = next ? await proTournamentApi.addFavorite(t.externalId) : await proTournamentApi.removeFavorite(t.externalId);
+    if (!res.success) {
+      setFavIds((prev) => { const s = new Set(prev); if (next) s.delete(t.externalId); else s.add(t.externalId); return s; });
+      showToast(res.message ?? "Greška");
+      return;
+    }
+    showToast(next ? "Added to Favorites" : "Uklonjeno iz omiljenih");
+  };
 
   const runSync = async () => {
     setSyncing(true); setError(""); setSuccess("");
@@ -108,9 +139,14 @@ export default function ProTournamentsPage() {
             const on = g === game;
             return (
               <button key={g} onClick={() => setGame(g)}
-                style={{ fontFamily: "var(--font-ui)", fontSize: 12, fontWeight: 700, letterSpacing: "0.04em", padding: "6px 14px", borderRadius: 8, cursor: "pointer",
-                  background: on ? "rgba(0,212,255,0.16)" : "rgba(255,255,255,0.03)", color: on ? "var(--text)" : "var(--text-muted)",
-                  border: on ? "1px solid rgba(0,212,255,0.45)" : "1px solid var(--border)" }}>
+                style={{
+                  fontFamily: "var(--font-ui)", fontSize: 13, fontWeight: 800, letterSpacing: "0.03em",
+                  padding: "9px 18px", borderRadius: 10, cursor: "pointer", transition: "all 0.15s",
+                  background: on ? "rgba(0,212,255,0.22)" : "rgba(44,56,98,0.6)",
+                  color: on ? "#eafcff" : "var(--text-soft)",
+                  border: on ? "1px solid var(--cyan)" : "1px solid rgba(120,150,220,0.32)",
+                  boxShadow: on ? "0 0 18px rgba(0,212,255,0.4)" : "0 1px 6px rgba(0,0,0,0.25)",
+                }}>
                 {gameLabel(g)}
               </button>
             );
@@ -123,30 +159,27 @@ export default function ProTournamentsPage() {
       ) : (
         <>
           {/* Aktivni turniri */}
-          <div style={{ fontFamily: "var(--font-ui)", fontSize: 12, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 10 }}>Aktivni turniri</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 11, marginBottom: 16 }}>
+            <span style={{ width: 4, height: 22, borderRadius: 2, background: "linear-gradient(180deg, var(--cyan), var(--violet))", boxShadow: "0 0 12px rgba(0,212,255,0.55)" }} />
+            <span style={{ fontFamily: "var(--font-head)", fontSize: 20, fontWeight: 800, letterSpacing: "0.01em", color: "var(--text)" }}>Aktivni turniri</span>
+          </div>
           {active.length === 0 ? (
             <p style={{ fontFamily: "var(--font-ui)", fontSize: 13, color: "var(--text-dim)", marginBottom: 24 }}>Nema aktivnih turnira za ovu igru.</p>
           ) : (
             <motion.div variants={staggerContainer(0.05)} initial="hidden" animate="show"
               style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 14, marginBottom: 28 }}>
               {active.map((t) => (
-                <motion.div key={t.externalId} variants={fadeUp} whileHover={{ scale: 1.02, y: -2, boxShadow: "0 12px 34px rgba(0,212,255,0.2)" }}
-                  transition={{ type: "spring", stiffness: 320, damping: 24 }} onClick={() => setDetailId(t.externalId)}
-                  style={{ cursor: "pointer", borderRadius: 14, padding: 14, background: CARD_BG, border: CARD_BORDER }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-                    <span className="pg-dot-pulse" style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--pink)" }} />
-                    <span style={{ fontFamily: "var(--font-ui)", fontSize: 10, fontWeight: 700, color: "var(--pink)" }}>UŽIVO</span>
-                    {t.hasBracket && <span style={{ marginLeft: "auto", fontFamily: "var(--font-ui)", fontSize: 10, color: "var(--text-dim)" }}>bracket</span>}
-                  </div>
-                  <div style={{ fontFamily: "var(--font-head)", fontSize: 15, fontWeight: 800, color: "var(--text)" }}>{t.leagueName ?? t.name}</div>
-                  <div style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--text-secondary)" }}>{t.name}</div>
-                </motion.div>
+                <TournamentCard key={t.externalId} t={t} onOpen={() => setDetailId(t.externalId)}
+                  isFavorite={favIds.has(t.externalId)} onToggleFavorite={toggleFavorite} showFavorite={!!user} />
               ))}
             </motion.div>
           )}
 
           {/* Sve lige */}
-          <div style={{ fontFamily: "var(--font-ui)", fontSize: 12, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 10 }}>Svi turniri · {gameLabel(game)}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 11, marginBottom: 16, marginTop: 6 }}>
+            <span style={{ width: 4, height: 22, borderRadius: 2, background: "linear-gradient(180deg, var(--cyan), var(--violet))", boxShadow: "0 0 12px rgba(0,212,255,0.55)" }} />
+            <span style={{ fontFamily: "var(--font-head)", fontSize: 20, fontWeight: 800, letterSpacing: "0.01em", color: "var(--text)" }}>Svi turniri · {gameLabel(game)}</span>
+          </div>
           {leagues.length === 0 ? (
             <Empty message="Nema liga za ovu igru." />
           ) : (
@@ -203,6 +236,15 @@ export default function ProTournamentsPage() {
       {detailId && (
         <ProTournamentDetailModal externalId={detailId} gameLabel={gameLabel(game)} onClose={() => setDetailId(null)} />
       )}
+
+      {toast && createPortal(
+        <div style={{ position: "fixed", bottom: 28, left: "50%", transform: "translateX(-50%)", zIndex: 100001,
+          background: "rgba(10,14,30,0.96)", border: "1px solid var(--cyan)", color: "#eafcff",
+          padding: "11px 20px", borderRadius: 11, fontFamily: "var(--font-ui)", fontSize: 13, fontWeight: 700,
+          display: "flex", alignItems: "center", gap: 9, boxShadow: "0 10px 34px rgba(0,0,0,0.5), 0 0 18px rgba(0,212,255,0.32)" }}>
+          <span style={{ color: "#fff", fontSize: 15 }}>★</span> {toast}
+        </div>, document.body)}
     </div>
   );
 }
+

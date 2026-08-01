@@ -49,4 +49,21 @@ export const proTournamentApi = {
       .then((r) => r.data)
       .catch((e) => fail<{ leagues: number; series: number; tournaments: number }>(e?.response?.data?.message ?? "Sync neuspešan"));
   },
+
+  // ── Favoriti (omiljeni pro turniri) ──
+  async getFavoriteIds(): Promise<ApiResp<string[]>> {
+    return axios.get<ApiResp<string[]>>(`${BASE}pro/favorites/ids`, { headers: authHeader() }).then((r) => r.data).catch(() => fail<string[]>("Greška"));
+  },
+
+  async listFavorites(): Promise<ApiResp<ProTournamentListDto[]>> {
+    return axios.get<ApiResp<ProTournamentListDto[]>>(`${BASE}pro/favorites`, { headers: authHeader() }).then((r) => r.data).catch(() => fail<ProTournamentListDto[]>("Greška"));
+  },
+
+  async addFavorite(externalId: string): Promise<ApiResp<unknown>> {
+    return axios.post<ApiResp<unknown>>(`${BASE}pro/favorites/${externalId}`, {}, { headers: authHeader() }).then((r) => r.data).catch((e) => fail<unknown>(e?.response?.data?.message ?? "Greška"));
+  },
+
+  async removeFavorite(externalId: string): Promise<ApiResp<unknown>> {
+    return axios.delete<ApiResp<unknown>>(`${BASE}pro/favorites/${externalId}`, { headers: authHeader() }).then((r) => r.data).catch((e) => fail<unknown>(e?.response?.data?.message ?? "Greška"));
+  },
 };

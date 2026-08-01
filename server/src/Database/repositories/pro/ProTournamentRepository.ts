@@ -99,6 +99,23 @@ export class ProTournamentRepository implements IProTournamentRepository {
     }
   }
 
+  async findByGame(gameSlug: string): Promise<ProTournament[]> {
+    const res = await this.db.getReadConnection();
+    if (!res) return [];
+    try {
+      const [rows] = await res.conn.execute<RowDataPacket[]>(
+        "SELECT * FROM PRO_TOURNAMENTS WHERE game_slug = ? ORDER BY begin_at DESC",
+        [gameSlug]
+      );
+      return rows.map((r) => this.map(r));
+    } catch {
+      this.logger.error("ProTournamentRepository", "findByGame failed");
+      return [];
+    } finally {
+      res.conn.release();
+    }
+  }
+
   async findDistinctGames(): Promise<string[]> {
     const res = await this.db.getReadConnection();
     if (!res) return [];

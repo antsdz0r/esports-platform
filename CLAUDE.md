@@ -175,6 +175,26 @@ Tabele iz pro/stream modula: `MATCH_STREAMS`, `PRO_MATCHES`, `PRO_STREAMS` (defi
 Sesija sa završenim mečevima + ručnim kasterima **ne uvodi nove tabele** (koristi postojeći
 `PRO_STREAMS.source` = 'pandascore' | 'local').
 
+**Favoriti (nova tabela `PRO_FAVORITES`)** — pokrenuti CREATE TABLE samo na masteru (127.0.0.1:3306):
+```sql
+CREATE TABLE PRO_FAVORITES(
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT UNSIGNED NOT NULL,
+  tournament_external_id VARCHAR(60) NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_pro_fav (user_id, tournament_external_id),
+  INDEX idx_pro_fav_user (user_id),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+```
+Backend: `IProFavoriteRepository`+`ProFavoriteRepository` (add/remove/listIds/listForUser JOIN),
+`IProFavoriteService`+`ProFavoriteService` (vraća `ProTournamentListDto`); rute na `ProTournamentController`
+(auth): `GET /api/pro/favorites`, `GET /api/pro/favorites/ids`, `POST/DELETE /api/pro/favorites/:id`.
+Frontend: deljena `components/pro/TournamentCard.tsx` (ppv kartica + bela zvezdica favorita),
+`proTournamentApi` (getFavoriteIds/listFavorites/addFavorite/removeFavorite); ProTournamentsPage
+markira/togluje favorite + toast „Added to Favorites"; `Moji turniri` (user/TournamentsPage) prikazuje
+sekciju „★ Omiljeni pro turniri".
+
 ---
 
 ## 6. Env varijable

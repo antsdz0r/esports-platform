@@ -30,6 +30,7 @@ export class ProTournamentListDto {
     public endAt: string | null,
     public leagueName: string | null,
     public serieName: string | null,
+    public leagueImageUrl: string | null,
   ) {}
 }
 
