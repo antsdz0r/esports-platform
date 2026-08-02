@@ -55,7 +55,7 @@ export default function ProTournamentsPage() {
         setGames(sorted);
         setGame(sorted[0]);
       } else {
-        setError(res.success ? "" : (res.message ?? "Greška"));
+        setError(res.success ? "" : (res.message ?? "Something went wrong"));
         setLoading(false);
       }
     };
@@ -87,7 +87,7 @@ export default function ProTournamentsPage() {
     const res = next ? await proTournamentApi.addFavorite(t.externalId) : await proTournamentApi.removeFavorite(t.externalId);
     if (!res.success) {
       setFavIds((prev) => { const s = new Set(prev); if (next) s.delete(t.externalId); else s.add(t.externalId); return s; });
-      showToast(res.message ?? "Greška");
+      showToast(res.message ?? "Something went wrong");
       return;
     }
     showToast(next ? "Added to Favorites" : "Uklonjeno iz omiljenih");
@@ -100,7 +100,7 @@ export default function ProTournamentsPage() {
       setSuccess(`Struktura: ${res.data?.leagues ?? 0} liga, ${res.data?.series ?? 0} serija, ${res.data?.tournaments ?? 0} turnira.`);
       const gRes = await proTournamentApi.getGames();
       if (gRes.success && gRes.data) setGames(gRes.data);
-    } else setError(res.message ?? "Sync neuspešan");
+    } else setError(res.message ?? "Sync failed");
     setSyncing(false);
   };
 
@@ -121,11 +121,11 @@ export default function ProTournamentsPage() {
   return (
     <div>
       <PageHeader
-        eyebrow="Pro scena"
-        title="Turniri"
+        eyebrow="Pro scene"
+        title="Tournaments"
         action={isAdmin ? (
           <PgBtn variant="primary" size="sm" disabled={syncing} onClick={runSync}>
-            {syncing ? "Sinhronizacija..." : "⟳ Sinhronizuj strukturu"}
+            {syncing ? "Syncing..." : "⟳ Sync structure"}
           </PgBtn>
         ) : undefined}
       />
@@ -155,16 +155,16 @@ export default function ProTournamentsPage() {
       )}
 
       {loading ? <Spinner /> : games.length === 0 ? (
-        <Empty message={isAdmin ? "Nema turnira — klikni Sinhronizuj strukturu da povučeš sa izvora." : "Trenutno nema turnira."} />
+        <Empty message={isAdmin ? "No tournaments — click Sync structure to pull from the source." : "No tournaments right now."} />
       ) : (
         <>
           {/* Aktivni turniri */}
           <div style={{ display: "flex", alignItems: "center", gap: 11, marginBottom: 16 }}>
             <span style={{ width: 4, height: 22, borderRadius: 2, background: "linear-gradient(180deg, var(--cyan), var(--violet))", boxShadow: "0 0 12px rgba(0,212,255,0.55)" }} />
-            <span style={{ fontFamily: "var(--font-head)", fontSize: 20, fontWeight: 800, letterSpacing: "0.01em", color: "var(--text)" }}>Aktivni turniri</span>
+            <span style={{ fontFamily: "var(--font-head)", fontSize: 20, fontWeight: 800, letterSpacing: "0.01em", color: "var(--text)" }}>Active tournaments</span>
           </div>
           {active.length === 0 ? (
-            <p style={{ fontFamily: "var(--font-ui)", fontSize: 13, color: "var(--text-dim)", marginBottom: 24 }}>Nema aktivnih turnira za ovu igru.</p>
+            <p style={{ fontFamily: "var(--font-ui)", fontSize: 13, color: "var(--text-dim)", marginBottom: 24 }}>No active tournaments for this game.</p>
           ) : (
             <motion.div variants={staggerContainer(0.05)} initial="hidden" animate="show"
               style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 14, marginBottom: 28 }}>
@@ -181,7 +181,7 @@ export default function ProTournamentsPage() {
             <span style={{ fontFamily: "var(--font-head)", fontSize: 20, fontWeight: 800, letterSpacing: "0.01em", color: "var(--text)" }}>Svi turniri · {gameLabel(game)}</span>
           </div>
           {leagues.length === 0 ? (
-            <Empty message="Nema liga za ovu igru." />
+            <Empty message="No leagues for this game." />
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {leagues.map((l) => (
@@ -190,14 +190,14 @@ export default function ProTournamentsPage() {
                     style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", background: "none", border: "none", cursor: "pointer", textAlign: "left" }}>
                     {l.imageUrl ? <img src={l.imageUrl} alt="" style={{ width: 26, height: 26, objectFit: "contain" }} /> : <span style={{ width: 26 }} />}
                     <span style={{ flex: 1, fontFamily: "var(--font-head)", fontSize: 15, fontWeight: 700, color: "var(--text)" }}>{l.name}</span>
-                    {l.hasActive && <span style={{ fontFamily: "var(--font-ui)", fontSize: 10, fontWeight: 700, color: "var(--pink)", padding: "2px 8px", borderRadius: 6, background: "rgba(255,45,126,0.1)", border: "1px solid rgba(255,45,126,0.3)" }}>UŽIVO</span>}
+                    {l.hasActive && <span style={{ fontFamily: "var(--font-ui)", fontSize: 10, fontWeight: 700, color: "var(--pink)", padding: "2px 8px", borderRadius: 6, background: "rgba(255,45,126,0.1)", border: "1px solid rgba(255,45,126,0.3)" }}>LIVE</span>}
                     <span style={{ color: "var(--text-dim)", fontSize: 13 }}>{openLeague === l.externalId ? "▴" : "▾"}</span>
                   </button>
 
                   {openLeague === l.externalId && (
                     <div style={{ padding: "0 16px 14px", borderTop: "1px solid var(--border)" }}>
                       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", margin: "12px 0" }}>
-                        {series.length === 0 ? <span style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--text-dim)" }}>Učitavanje izdanja…</span> :
+                        {series.length === 0 ? <span style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--text-dim)" }}>Loading editions…</span> :
                           series.map((s) => {
                             const on = openSerie === s.externalId;
                             return (
@@ -212,7 +212,7 @@ export default function ProTournamentsPage() {
                       </div>
                       {openSerie && (
                         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                          {tournaments.length === 0 ? <span style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--text-dim)" }}>Nema faza / učitavanje…</span> :
+                          {tournaments.length === 0 ? <span style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--text-dim)" }}>No stages / loading…</span> :
                             tournaments.map((t) => (
                               <button key={t.externalId} onClick={() => setDetailId(t.externalId)}
                                 style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 8, cursor: "pointer", textAlign: "left",

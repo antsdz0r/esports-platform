@@ -42,13 +42,13 @@ export class ProController {
 
       const result = await this.proSyncService.sync(gameSlug);
       if (!result.ok) {
-        res.status(502).json({ success: false, message: result.error ?? "Sinhronizacija neuspešna" });
+        res.status(502).json({ success: false, message: result.error ?? "Sync failed" });
         return;
       }
 
       await this.auditLogService.log(
         req.user?.id ?? null, "SYNC_PRO", "pro_match", null,
-        `Sinhronizovano ${result.synced} pro mečeva${gameSlug ? ` (${gameSlug})` : ""}`,
+        `Synced ${result.synced} pro matches${gameSlug ? ` (${gameSlug})` : ""}`,
         req.socket.remoteAddress ?? null
       );
       res.status(200).json({ success: true, data: { synced: result.synced } });
@@ -80,9 +80,9 @@ export class ProController {
       const created = await this.proStreamAdminService.addLocal(
         matchId, platform as StreamPlatform, (channel as string).trim(), (language as string).trim()
       );
-      if (!created.ok) { res.status(400).json({ success: false, message: created.error ?? "Dodavanje neuspešno" }); return; }
+      if (!created.ok) { res.status(400).json({ success: false, message: created.error ?? "Failed to add" }); return; }
 
-      await this.auditLogService.log(req.user?.id ?? null, "CREATE_PRO_STREAM", "pro_stream", created.stream?.id ?? null, `Dodat kaster za pro meč #${matchId}`, req.socket.remoteAddress ?? null);
+      await this.auditLogService.log(req.user?.id ?? null, "CREATE_PRO_STREAM", "pro_stream", created.stream?.id ?? null, `Added caster for pro match #${matchId}`, req.socket.remoteAddress ?? null);
       res.status(201).json({ success: true, data: created.stream });
     } catch {
       res.status(500).json({ success: false, message: "Internal server error" });
@@ -94,8 +94,8 @@ export class ProController {
       const streamId = parseInt(req.params.streamId as string, 10);
       if (isNaN(streamId)) { res.status(400).json({ success: false, message: "Invalid streamId" }); return; }
       const ok = await this.proStreamAdminService.removeLocal(streamId);
-      if (ok) await this.auditLogService.log(req.user?.id ?? null, "DELETE_PRO_STREAM", "pro_stream", streamId, `Obrisan pro stream #${streamId}`, req.socket.remoteAddress ?? null);
-      res.status(ok ? 200 : 404).json({ success: ok, message: ok ? "Stream obrisan" : "Stream nije nađen ili nije lokalni" });
+      if (ok) await this.auditLogService.log(req.user?.id ?? null, "DELETE_PRO_STREAM", "pro_stream", streamId, `Deleted pro stream #${streamId}`, req.socket.remoteAddress ?? null);
+      res.status(ok ? 200 : 404).json({ success: ok, message: ok ? "Stream deleted" : "Stream not found or not local" });
     } catch {
       res.status(500).json({ success: false, message: "Internal server error" });
     }

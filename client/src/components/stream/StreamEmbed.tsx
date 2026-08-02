@@ -27,8 +27,8 @@ export default function StreamEmbed({ streams, emptyTitle, emptySub }: {
         background: "rgba(255,255,255,0.03)", color: "var(--text-muted)",
         fontFamily: "var(--font-ui)", fontSize: 13, gap: 6,
       }}>
-        <span style={{ fontFamily: "var(--font-head)", fontSize: 15, fontWeight: 800, color: "var(--text)" }}>{emptyTitle ?? "Nema dostupnih streamova"}</span>
-        <span>{emptySub ?? "Stream se pojavljuje kada meč krene uživo."}</span>
+        <span style={{ fontFamily: "var(--font-head)", fontSize: 15, fontWeight: 800, color: "var(--text)" }}>{emptyTitle ?? "No streams available"}</span>
+        <span>{emptySub ?? "The stream appears when the match goes live."}</span>
       </div>
     );
   }

@@ -62,7 +62,7 @@ export default function WatchlistPage() {
     try {
       const res = await fetch(`${BASE}tournaments/watchlist/my`, { headers });
       const data = await res.json();
-      if (!res.ok) { setError("Neuspešno učitavanje liste praćenja"); return; }
+      if (!res.ok) { setError("Failed to load your watchlist"); return; }
       const list = parseData<Tournament>(data);
       setTournaments(list);
 
@@ -88,7 +88,7 @@ export default function WatchlistPage() {
       );
       setLatest(Object.fromEntries(entries));
     } catch {
-      setError("Neuspešno učitavanje liste praćenja");
+      setError("Failed to load your watchlist");
     } finally {
       setLoading(false);
     }
@@ -100,10 +100,10 @@ export default function WatchlistPage() {
     setRemovingId(tournamentId);
     try {
       const res = await fetch(`${BASE}tournaments/${tournamentId}/watch`, { method: "DELETE", headers });
-      if (!res.ok) { setError("Greška pri uklanjanju sa liste"); return; }
+      if (!res.ok) { setError("Failed to remove from watchlist"); return; }
       setTournaments((prev) => prev.filter((t) => t.tournamentId !== tournamentId));
     } catch {
-      setError("Greška pri uklanjanju sa liste");
+      setError("Failed to remove from watchlist");
     } finally {
       setRemovingId(null);
     }
@@ -111,7 +111,7 @@ export default function WatchlistPage() {
 
   const renderLatest = (m: Match | null) => {
     if (!m) {
-      return <span style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--text-dim)" }}>Još nema mečeva</span>;
+      return <span style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--text-dim)" }}>No matches yet</span>;
     }
     const t1 = m.team1Name ?? "TBD";
     const t2 = m.team2Name ?? "TBD";
@@ -129,13 +129,13 @@ export default function WatchlistPage() {
       return (
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--pink)", boxShadow: "0 0 8px var(--pink)" }} />
-          <span style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--text)" }}>UŽIVO · {t1} vs {t2}</span>
+          <span style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--text)" }}>LIVE · {t1} vs {t2}</span>
         </div>
       );
     }
     return (
       <span style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--text-muted)" }}>
-        Sledeći: {t1} vs {t2}{m.scheduledTime ? ` · ${new Date(m.scheduledTime).toLocaleDateString("sr")}` : ""}
+        Next: {t1} vs {t2}{m.scheduledTime ? ` · ${new Date(m.scheduledTime).toLocaleDateString("en-GB")}` : ""}
       </span>
     );
   };
@@ -143,14 +143,14 @@ export default function WatchlistPage() {
   return (
     <div>
       <PageHeader
-        eyebrow="Praćenje"
+        eyebrow="Following"
         title="Watchlist"
-        action={<PgBtn variant="ghost" size="sm" onClick={() => navigate("/dashboard/tournaments")}>Pregledaj turnire →</PgBtn>}
+        action={<PgBtn variant="ghost" size="sm" onClick={() => navigate("/dashboard/tournaments")}>Browse tournaments →</PgBtn>}
       />
       {error && <ErrorBox message={error} />}
 
       {loading ? <Spinner /> : tournaments.length === 0 ? (
-        <Empty message="Ne pratiš nijedan turnir. Otvori turnir i klikni „Prati“ da ga dodaš ovde." />
+        <Empty message="You aren't following any tournaments. Open a tournament and click Follow to add it here." />
       ) : (
         <motion.div variants={staggerContainer(0.07)} initial="hidden" animate="show"
           style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(330px, 1fr))", gap: 20 }}>
@@ -180,7 +180,7 @@ export default function WatchlistPage() {
                     <h3 style={{ fontFamily: "var(--font-head)", fontSize: 18, fontWeight: 700, color: "var(--text)", marginBottom: 12, lineHeight: 1.25 }}>{t.name}</h3>
 
                     <div style={{ marginBottom: 14, minHeight: 20 }}>
-                      <p style={{ fontFamily: "var(--font-ui)", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 6 }}>Najnoviji rezultat</p>
+                      <p style={{ fontFamily: "var(--font-ui)", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 6 }}>Latest result</p>
                       {renderLatest(latest[t.tournamentId] ?? null)}
                     </div>
 
@@ -196,7 +196,7 @@ export default function WatchlistPage() {
                     <div onClick={(e) => e.stopPropagation()}>
                       <PgBtn variant="ghost" size="sm" full disabled={isRemoving}
                         onClick={() => void unwatch(t.tournamentId)}>
-                        {isRemoving ? "..." : "★ Otprati"}
+                        {isRemoving ? "..." : "★ Unfollow"}
                       </PgBtn>
                     </div>
                   </div>

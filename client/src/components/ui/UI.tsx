@@ -24,7 +24,7 @@ export function Spinner({ size = 36 }: { size?: number }) {
 
 /*
    Empty / Error / Success*/
-export function Empty({ message = "Nema podataka" }: { message?: string }) {
+export function Empty({ message = "No data" }: { message?: string }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "60px 20px", gap: 14 }}>
       <div style={{ width: 56, height: 56, borderRadius: 14, background: "rgba(124,92,255,0.06)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -115,9 +115,9 @@ export function Pagination({ page, total, pageSize, onChange }: { page: number; 
   });
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 20, justifyContent: "center" }}>
-      <button disabled={page <= 1} onClick={() => onChange(page - 1)} style={btn(page <= 1)}>← Prethodna</button>
+      <button disabled={page <= 1} onClick={() => onChange(page - 1)} style={btn(page <= 1)}>← Previous</button>
       <span style={{ fontFamily: "var(--font-display)", fontSize: 13, color: "var(--violet2)" }}>{page} / {totalPages}</span>
-      <button disabled={page >= totalPages} onClick={() => onChange(page + 1)} style={btn(page >= totalPages)}>Sledeća →</button>
+      <button disabled={page >= totalPages} onClick={() => onChange(page + 1)} style={btn(page >= totalPages)}>Next →</button>
     </div>
   );
 }
@@ -139,7 +139,7 @@ export function Counter({ value, duration = 1200, suffix = "", prefix = "" }: { 
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
   }, [value, duration]);
-  return <span>{prefix}{display.toLocaleString("sr")}{suffix}</span>;
+  return <span>{prefix}{display.toLocaleString("en-US")}{suffix}</span>;
 }
 
 /* 

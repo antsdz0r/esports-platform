@@ -21,15 +21,15 @@ export class GameCatalogService implements IGameCatalogService {
 
   async create(data: CreateGameData): Promise<{ ok: boolean; game?: GameCatalog; error?: string }> {
     const byName = await this.gameRepo.findByName(data.name);
-    if (byName.gameId !== 0) return { ok: false, error: "Igra sa tim imenom vec postoji" };
+    if (byName.gameId !== 0) return { ok: false, error: "A game with that name already exists" };
 
     const byTag = await this.gameRepo.findByTag(data.tag);
-    if (byTag.gameId !== 0) return { ok: false, error: "Igra sa tim tagom vec postoji" };
+    if (byTag.gameId !== 0) return { ok: false, error: "A game with that tag already exists" };
 
     const created = await this.gameRepo.create(
       new GameCatalog(0, data.name, data.tag, data.genre, data.maxPlayers, data.imageUrl ?? null)
     );
-    if (created.gameId === 0) return { ok: false, error: "Greska pri kreiranju igre" };
+    if (created.gameId === 0) return { ok: false, error: "Failed to create game" };
 
     return { ok: true, game: created };
   }

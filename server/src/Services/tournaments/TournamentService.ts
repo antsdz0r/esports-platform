@@ -63,10 +63,10 @@ export class TournamentService implements ITournamentService {
 
   async create(data: CreateTournamentData): Promise<{ ok: boolean; tournament?: Tournament; error?: string }> {
     const validFormats = Object.values(TournamentFormat) as string[];
-    if (!validFormats.includes(data.format)) return { ok: false, error: "Neispravan format" };
+    if (!validFormats.includes(data.format)) return { ok: false, error: "Invalid format" };
     if (data.format !== TournamentFormat.ROUND_ROBIN && !this.isPowerOfTwo(data.maxTeams))
-      return { ok: false, error: "Broj timova mora biti stepen broja 2" };
-    if (data.registrationDeadline <= new Date()) return { ok: false, error: "Rok prijave mora biti u buducnosti" };
+      return { ok: false, error: "Number of teams must be a power of 2" };
+    if (data.registrationDeadline <= new Date()) return { ok: false, error: "Registration deadline must be in the future" };
 
     const tournament = new Tournament(
       0, data.gameId, data.name, data.format,
@@ -76,7 +76,7 @@ export class TournamentService implements ITournamentService {
     );
     const created = await this.tournamentRepo.create(tournament);
     return created.tournamentId === 0
-      ? { ok: false, error: "Greska pri kreiranju turnira" }
+      ? { ok: false, error: "Failed to create tournament" }
       : { ok: true, tournament: created };
   }
 
@@ -102,15 +102,15 @@ export class TournamentService implements ITournamentService {
 
   async registerTeam(tournamentId: number, teamId: number, captainId: number): Promise<{ ok: boolean; error?: string }> {
     const tournament = await this.tournamentRepo.findById(tournamentId);
-    if (tournament.tournamentId === 0) return { ok: false, error: "Turnir ne postoji" };
-    if (tournament.status !== TournamentStatus.OPEN) return { ok: false, error: "Prijave su zatvorene" };
-    if (new Date() > tournament.registrationDeadLine) return { ok: false, error: "Rok prijave je istekao" };
+    if (tournament.tournamentId === 0) return { ok: false, error: "The tournament does not exist" };
+    if (tournament.status !== TournamentStatus.OPEN) return { ok: false, error: "Registrations are closed" };
+    if (new Date() > tournament.registrationDeadLine) return { ok: false, error: "The registration deadline has passed" };
     const alreadyRegistered = await this.registrationRepo.exists(tournamentId, teamId);
-    if (alreadyRegistered) return { ok: false, error: "Tim je vec prijavljen" };
+    if (alreadyRegistered) return { ok: false, error: "The team is already registered" };
     const members = await this.teamMemberRepo.getMembersByTeam(teamId);
     const isCaptain = members.some((m) => m.playerId === captainId && m.role === TeamMemberRole.CAPTAIN);
-    if (!isCaptain) return { ok: false, error: "Samo kapiten moze prijaviti tim" };
-    if (members.length < 1) return { ok: false, error: "Tim nema dovoljno clanova" };
+    if (!isCaptain) return { ok: false, error: "Only the captain can register the team" };
+    if (members.length < 1) return { ok: false, error: "The team doesn't have enough members" };
 
     // Igrač ne sme da se prijavi na turnir kroz dva tima:
     // ako neki član ovog tima već igra za drugi tim koji je prijavljen na turnir, prijava se odbija.
@@ -121,14 +121,14 @@ export class TournamentService implements ITournamentService {
       for (const otherId of otherTeamIds) {
         const otherMembers = await this.teamMemberRepo.getMembersByTeam(otherId);
         if (otherMembers.some((m) => myMemberIds.has(m.playerId))) {
-          return { ok: false, error: "Igrač iz ovog tima je već prijavljen na turnir kroz drugi tim" };
+          return { ok: false, error: "A player from this team is already registered for the tournament through another team" };
         }
       }
     }
 
     const reg = new TournamentRegistration(tournamentId, teamId, new Date(), TournamentRegistrationStatus.PENDING, null);
     const ok = await this.registrationRepo.registerTeam(reg);
-    return ok ? { ok: true } : { ok: false, error: "Greska pri prijavi" };
+    return ok ? { ok: true } : { ok: false, error: "Registration failed" };
   }
 
   async unregisterTeam(tournamentId: number, teamId: number, captainId: number): Promise<boolean> {
@@ -172,9 +172,9 @@ export class TournamentService implements ITournamentService {
 
   async lockAndGenerateBracket(tournamentId: number): Promise<{ ok: boolean; error?: string }> {
     const tournament = await this.tournamentRepo.findById(tournamentId);
-    if (tournament.tournamentId === 0) return { ok: false, error: "Turnir ne postoji" };
+    if (tournament.tournamentId === 0) return { ok: false, error: "The tournament does not exist" };
     if (tournament.status !== TournamentStatus.OPEN)
-      return { ok: false, error: "Bracket je vec generisan ili turnir nije otvoren" };
+      return { ok: false, error: "Bracket already generated or tournament not open" };
 
     const registrations = await this.registrationRepo.getTeamsForTournament(tournamentId);
 
@@ -188,14 +188,14 @@ export class TournamentService implements ITournamentService {
     const confirmed = registrations.filter((r) => r.status === TournamentRegistrationStatus.CONFIRMED);
     const n = confirmed.length;
 
-    if (n < 2) return { ok: false, error: "Potrebna su najmanje 2 tima" };
-    if (n % 2 !== 0) return { ok: false, error: "Turnir ne može da počne sa neparnim brojem timova" };
+    if (n < 2) return { ok: false, error: "At least 2 teams are required" };
+    if (n % 2 !== 0) return { ok: false, error: "The tournament can't start with an odd number of teams" };
 
     const isElimination =
       tournament.format === TournamentFormat.SINGLE_ELIM ||
       tournament.format === TournamentFormat.DOUBLE_ELIM;
     if (isElimination && !this.isPowerOfTwo(n)) {
-      return { ok: false, error: "Broj timova mora biti stepen broja 2 (2, 4, 8, 16...)" };
+      return { ok: false, error: "Number of teams must be a power of 2 (2, 4, 8, 16...)" };
     }
 
     const seeded = [...confirmed].sort(
@@ -355,10 +355,10 @@ export class TournamentService implements ITournamentService {
   // Idempotentno je — popunjava samo prazne slotove, pa služi i kao "popravka" zaglavljenog bracketa.
   async advanceBracket(tournamentId: number): Promise<{ ok: boolean; error?: string; advanced?: number }> {
     const tournament = await this.tournamentRepo.findById(tournamentId);
-    if (tournament.tournamentId === 0) return { ok: false, error: "Turnir ne postoji" };
+    if (tournament.tournamentId === 0) return { ok: false, error: "The tournament does not exist" };
 
     const listedGames = await this.gameRepo.findByTournamentId(tournamentId);
-    if (listedGames.length === 0) return { ok: false, error: "Bracket još nije generisan" };
+    if (listedGames.length === 0) return { ok: false, error: "The bracket hasn't been generated yet" };
 
     let advanced = 0;
     let championDecided = false;
@@ -399,7 +399,7 @@ export class TournamentService implements ITournamentService {
     }
 
     if (advanced === 0 && !championDecided) {
-      return { ok: false, error: "Nema timova za napredovanje — prvo završi sve mečeve trenutne runde" };
+      return { ok: false, error: "No teams to advance — finish all matches of the current round first" };
     }
 
     return { ok: true, advanced };
@@ -412,29 +412,29 @@ export class TournamentService implements ITournamentService {
   ): Promise<{ ok: boolean; error?: string }> {
     // Cita se sa mastera da bi winner/loser linkovi bili sveži (read-modify-write).
     const game = await this.gameRepo.findByIdMaster(gameId);
-    if (game.gameId === 0) return { ok: false, error: "Meč ne postoji" };
+    if (game.gameId === 0) return { ok: false, error: "Match does not exist" };
 
     // Validacija rezultata i pobednika
     const scoreParts = score.split(":");
     const scoreA = parseInt(scoreParts[0], 10);
     const scoreB = parseInt(scoreParts[1], 10);
     if (scoreParts.length !== 2 || isNaN(scoreA) || isNaN(scoreB)) {
-      return { ok: false, error: "Neispravan format rezultata (npr. 2:0)" };
+      return { ok: false, error: "Invalid result format (e.g. 2:0)" };
     }
     if (scoreA === scoreB) {
-      return { ok: false, error: "Rezultat ne može biti nerešen — pobednik mora biti jasan" };
+      return { ok: false, error: "The result can't be a tie — the winner must be clear" };
     }
     if (winnerTeamId !== game.team1Id && winnerTeamId !== game.team2Id) {
-      return { ok: false, error: "Pobednik mora biti jedan od timova u meču" };
+      return { ok: false, error: "The winner must be one of the teams in the match" };
     }
     const winnerIsTeam1 = winnerTeamId === game.team1Id;
     const team1HasHigherScore = scoreA > scoreB;
     if (winnerIsTeam1 !== team1HasHigherScore) {
-      return { ok: false, error: "Rezultat ne odgovara pobedniku — pobednik mora imati veći skor" };
+      return { ok: false, error: "The result doesn't match the winner — the winner must have the higher score" };
     }
 
     const ok = await this.gameRepo.updateResult(gameId, score, winnerTeamId, GameStatus.COMPLETED);
-    if (!ok) return { ok: false, error: "Azuriranje nije uspelo" };
+    if (!ok) return { ok: false, error: "Update failed" };
 
     const team1Id = game.team1Id;
     const team2Id = game.team2Id;

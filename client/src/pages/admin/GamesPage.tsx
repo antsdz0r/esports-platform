@@ -61,7 +61,7 @@ export default function GamesPage() {
       const data = await res.json();
       setGames(data.success ? data.data : []);
     } catch {
-      setError("Neuspešno učitavanje igara");
+      setError("Failed to load games");
     } finally {
       setLoading(false);
     }
@@ -111,7 +111,7 @@ export default function GamesPage() {
   const handleSave = async () => {
     const maxPlayers = parseInt(form.maxPlayers, 10);
     if (!form.name.trim() || !form.tag.trim() || !form.genre.trim() || isNaN(maxPlayers) || maxPlayers <= 0) {
-      setError("Sva polja su obavezna. Max igrači mora biti pozitivan broj.");
+      setError("All fields are required. Max players must be a positive number.");
       return;
     }
     setSaving(true);
@@ -130,28 +130,28 @@ export default function GamesPage() {
         { method: editGame ? "PUT" : "POST", headers: authHeaders, body: fd }
       );
       const data = await res.json();
-      if (!res.ok) { setError(data.message ?? "Greška pri snimanju"); return; }
-      setSuccess(editGame ? "Igra ažurirana!" : "Igra kreirana!");
+      if (!res.ok) { setError(data.message ?? "Failed to save"); return; }
+      setSuccess(editGame ? "Game updated!" : "Game created!");
       closeModal();
       await fetchGames();
     } catch {
-      setError("Greška pri snimanju");
+      setError("Failed to save");
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!(await confirm({ variant: "danger", title: "Obriši igru", message: "Da li želiš da obrišeš ovu igru?", confirmText: "Da, obriši" }))) return;
+    if (!(await confirm({ variant: "danger", title: "Delete game", message: "Do you want to delete this game?", confirmText: "Yes, delete" }))) return;
     setDeletingId(id);
     try {
       const res = await fetch(`${BASE}games/${id}`, { method: "DELETE", headers: authHeaders });
       const data = await res.json();
-      if (!res.ok) { setError(data.message ?? "Brisanje neuspešno"); return; }
-      setSuccess("Igra obrisana.");
+      if (!res.ok) { setError(data.message ?? "Delete failed"); return; }
+      setSuccess("Game deleted.");
       await fetchGames();
     } catch {
-      setError("Greška pri brisanju");
+      setError("Failed to delete");
     } finally {
       setDeletingId(null);
     }
@@ -160,12 +160,12 @@ export default function GamesPage() {
   return (
     <div>
       <PageHeader
-        eyebrow="Admin · Upravljanje"
-        title="Igre"
+        eyebrow="Admin · Management"
+        title="Games"
         action={
           <div style={{ display: "flex", gap: 10 }}>
             <Link to="/admin"><PgBtn variant="ghost" size="sm">← Dashboard</PgBtn></Link>
-            <PgBtn variant="primary" size="sm" onClick={openCreate}>+ Nova igra</PgBtn>
+            <PgBtn variant="primary" size="sm" onClick={openCreate}>+ New game</PgBtn>
           </div>
         }
       />
@@ -174,11 +174,11 @@ export default function GamesPage() {
       {error && !showModal && <ErrorBox message={error} />}
 
       {loading ? <Spinner /> : games.length === 0 ? (
-        <Empty message="Nema igara. Dodaj prvu igru klikom na '+ Nova igra'." />
+        <Empty message="No games. Add your first game by clicking '+ New game'." />
       ) : (
         <motion.div variants={staggerContainer(0.05)} initial="hidden" animate="show">
           <Table>
-            <TableHead columns={["Slika", "Naziv", "Tag", "Žanr", "Max igrača", "Akcije"]} />
+            <TableHead columns={["Image", "Name", "Tag", "Genre", "Max players", "Actions"]} />
             <tbody>
               {games.map((g) => (
                 <motion.tr key={g.gameId} variants={fadeUp}
@@ -209,7 +209,7 @@ export default function GamesPage() {
                     <PgBtn variant="danger" size="sm"
                       disabled={deletingId === g.gameId}
                       onClick={() => handleDelete(g.gameId)}>
-                      {deletingId === g.gameId ? "..." : "Briši"}
+                      {deletingId === g.gameId ? "..." : "Delete"}
                     </PgBtn>
                   </td>
                 </motion.tr>
@@ -221,7 +221,7 @@ export default function GamesPage() {
 
       <AnimatePresence>
         {showModal && (
-          <Modal title={editGame ? "Izmeni igru" : "Nova igra"} onClose={closeModal}>
+          <Modal title={editGame ? "Edit game" : "New game"} onClose={closeModal}>
             {error && <ErrorBox message={error} />}
 
             {/* Image picker */}
@@ -246,7 +246,7 @@ export default function GamesPage() {
                 </div>
                 <div style={{ flex: 1 }}>
                   <PgBtn variant="ghost" size="sm" onClick={() => fileInputRef.current?.click()}>
-                    {imagePreview ? "Zameni sliku" : "Odaberi sliku"}
+                    {imagePreview ? "Replace image" : "Choose image"}
                   </PgBtn>
                   {imageFile && (
                     <p style={{ fontFamily: "var(--font-ui)", fontSize: 11, color: "var(--text-dim)", marginTop: 6 }}>
@@ -255,7 +255,7 @@ export default function GamesPage() {
                   )}
                   {!imageFile && editGame?.imageUrl && (
                     <p style={{ fontFamily: "var(--font-ui)", fontSize: 11, color: "var(--text-dim)", marginTop: 6 }}>
-                      Trenutna slika ostaje ako ne odabereš novu.
+                      The current image stays if you don&apos;t pick a new one.
                     </p>
                   )}
                   <p style={{ fontFamily: "var(--font-ui)", fontSize: 10, color: "var(--text-dim)", marginTop: 4 }}>
@@ -272,22 +272,22 @@ export default function GamesPage() {
               />
             </div>
 
-            <FormField label="Naziv igre">
-              <input style={inputStyle} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="npr. League of Legends" />
+            <FormField label="Game name">
+              <input style={inputStyle} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. League of Legends" />
             </FormField>
-            <FormField label="Tag (kratka oznaka)">
-              <input style={inputStyle} value={form.tag} onChange={e => setForm(f => ({ ...f, tag: e.target.value }))} placeholder="npr. LOL" maxLength={10} />
+            <FormField label="Tag (short label)">
+              <input style={inputStyle} value={form.tag} onChange={e => setForm(f => ({ ...f, tag: e.target.value }))} placeholder="e.g. LOL" maxLength={10} />
             </FormField>
-            <FormField label="Žanr">
-              <input style={inputStyle} value={form.genre} onChange={e => setForm(f => ({ ...f, genre: e.target.value }))} placeholder="npr. MOBA, FPS, RTS..." />
+            <FormField label="Genre">
+              <input style={inputStyle} value={form.genre} onChange={e => setForm(f => ({ ...f, genre: e.target.value }))} placeholder="e.g. MOBA, FPS, RTS..." />
             </FormField>
-            <FormField label="Max igrača po timu">
-              <input style={inputStyle} type="number" min={1} value={form.maxPlayers} onChange={e => setForm(f => ({ ...f, maxPlayers: e.target.value }))} placeholder="npr. 5" />
+            <FormField label="Max players per team">
+              <input style={inputStyle} type="number" min={1} value={form.maxPlayers} onChange={e => setForm(f => ({ ...f, maxPlayers: e.target.value }))} placeholder="e.g. 5" />
             </FormField>
             <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
-              <PgBtn variant="ghost" size="sm" onClick={closeModal}>Otkaži</PgBtn>
-              <PgBtn variant="primary" size="sm" disabled={saving} onClick={handleSave}>
-                {saving ? "Snimanje..." : editGame ? "Sačuvaj izmene" : "Kreiraj igru"}
+              <PgBtn variant="ghost" size="sm" onClick={closeModal}>Cancel</PgBtn>
+<PgBtn variant="primary" size="sm" disabled={saving} onClick={handleSave}>
+                {saving ? "Saving..." : editGame ? "Save changes" : "Create game"}
               </PgBtn>
             </div>
           </Modal>

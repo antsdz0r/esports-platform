@@ -86,7 +86,7 @@ export default function TournamentCard({ t, onOpen, isFavorite, onToggleFavorite
         {showFavorite && (
           <button
             onClick={(e) => { e.stopPropagation(); onToggleFavorite(t, !isFavorite); }}
-            title={isFavorite ? "Ukloni iz omiljenih" : "Dodaj u omiljene"}
+            title={isFavorite ? "Remove from favorites" : "Add to favorites"}
             style={{ position: "absolute", top: 8, right: 8, width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center",
               background: "rgba(0,0,0,0.42)", border: "none", borderRadius: 9, cursor: "pointer", padding: 0, backdropFilter: "blur(4px)" }}>
             <StarIcon filled={isFavorite} />

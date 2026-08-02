@@ -10,6 +10,9 @@ export interface IProMatchRepository {
   // Da li mec sa datim id-em postoji (za validaciju pre dodavanja streama).
   exists(id: number): Promise<boolean>;
 
+  // Jedan mec po internom id-u (npr. za proveru zakljucanosti pick'em tipa). null ako ne postoji.
+  findById(id: number): Promise<ProMatch | null>;
+
   // Mecevi kojima treba povuci PRAVI rezultat pojedinacno (getMatchById):
   //  - zaglavljeni 'live'/'upcoming' cije je vreme proslo (>6h) i nisu skoro osvezeni,
   //  - skoro zavrseni (u feed prozoru) koji odavno nisu osvezeni (mozda parcijalan skor).

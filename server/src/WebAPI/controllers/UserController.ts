@@ -42,10 +42,10 @@ export class UserController {
 
   private async uploadAvatar(req: Request, res: Response): Promise<void> {
     try {
-      if (!req.file) { res.status(400).json({ success: false, message: "Fajl nije priložen" }); return; }
+      if (!req.file) { res.status(400).json({ success: false, message: "No file attached" }); return; }
       const url = "/uploads/avatars/" + req.file.filename;
       const ok = await this.userService.updateProfilePicture(req.user!.id, url);
-      if (!ok) { res.status(500).json({ success: false, message: "Greška pri snimanju" }); return; }
+      if (!ok) { res.status(500).json({ success: false, message: "Failed to save" }); return; }
       res.json({ success: true, data: { profilePicture: url } });
     } catch {
       res.status(500).json({ success: false, message: "Internal server error" });
@@ -85,7 +85,7 @@ export class UserController {
       const id = parseInt(req.params.id as string, 10);
       if (isNaN(id)) { res.status(400).json({ success: false, message: "Invalid id" }); return; }
       const ok = await this.userService.deactivate(id);
-      if (ok) await this.auditLogService.log(req.user?.id ?? null, "DEACTIVATE_USER", "user", id, `Deaktiviran korisnik #${id}`, req.socket.remoteAddress ?? null);
+      if (ok) await this.auditLogService.log(req.user?.id ?? null, "DEACTIVATE_USER", "user", id, `Deactivated user #${id}`, req.socket.remoteAddress ?? null);
       res.status(ok ? 200 : 500).json({ success: ok, message: ok ? "User deactivated" : "Failed" });
     } catch {
       res.status(500).json({ success: false, message: "Internal server error" });
@@ -100,8 +100,8 @@ export class UserController {
       const validRoles = Object.values(UserRole);
       if (!role || !validRoles.includes(role)) { res.status(400).json({ success: false, message: "Neispravna uloga" }); return; }
       const ok = await this.userService.updateRole(id, role);
-      if (ok) await this.auditLogService.log(req.user?.id ?? null, "CHANGE_ROLE", "user", id, `Promenjena uloga korisnika #${id} na ${role}`, req.socket.remoteAddress ?? null);
-      res.status(ok ? 200 : 404).json({ success: ok, message: ok ? "Uloga promenjena" : "Korisnik nije pronađen" });
+      if (ok) await this.auditLogService.log(req.user?.id ?? null, "CHANGE_ROLE", "user", id, `Changed role of user #${id} to ${role}`, req.socket.remoteAddress ?? null);
+      res.status(ok ? 200 : 404).json({ success: ok, message: ok ? "Role changed" : "User not found" });
     } catch {
       res.status(500).json({ success: false, message: "Internal server error" });
     }

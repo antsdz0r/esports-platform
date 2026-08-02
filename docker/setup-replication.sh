@@ -298,6 +298,67 @@ CREATE TABLE PRO_STANDINGS (
   INDEX idx_pro_standings_tour (tournament_external_id)
 );
 
+CREATE TABLE PRO_FAVORITES (
+  id                     INT AUTO_INCREMENT PRIMARY KEY,
+  user_id                INT UNSIGNED NOT NULL,
+  tournament_external_id VARCHAR(60) NOT NULL,
+  created_at             DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_pro_fav (user_id, tournament_external_id),
+  INDEX idx_pro_fav_user (user_id),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE PRO_CHAT_MESSAGES (
+  id                INT AUTO_INCREMENT PRIMARY KEY,
+  match_external_id VARCHAR(60)  NOT NULL,
+  user_id           INT UNSIGNED NULL,
+  gamer_tag         VARCHAR(30)  NOT NULL,
+  message           VARCHAR(500) NOT NULL,
+  created_at        DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_pro_chat_match (match_external_id, id),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE TABLE PRO_PREDICTIONS (
+  id             INT AUTO_INCREMENT PRIMARY KEY,
+  user_id        INT UNSIGNED NOT NULL,
+  pro_match_id   INT NOT NULL,
+  predicted_side TINYINT      NOT NULL,
+  is_correct     TINYINT(1)   NULL,
+  points_awarded INT          NOT NULL DEFAULT 0,
+  settled_at     DATETIME     NULL,
+  created_at     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_pred (user_id, pro_match_id),
+  INDEX idx_pred_user (user_id),
+  INDEX idx_pred_match (pro_match_id),
+  INDEX idx_pred_unsettled (is_correct),
+  FOREIGN KEY (user_id)      REFERENCES users(id)      ON DELETE CASCADE,
+  FOREIGN KEY (pro_match_id) REFERENCES PRO_MATCHES(id) ON DELETE CASCADE
+);
+
+CREATE TABLE PRO_PICKEM_STATS (
+  user_id             INT UNSIGNED PRIMARY KEY,
+  total_points        INT NOT NULL DEFAULT 0,
+  total_predictions   INT NOT NULL DEFAULT 0,
+  correct_predictions INT NOT NULL DEFAULT 0,
+  current_streak      INT NOT NULL DEFAULT 0,
+  best_streak         INT NOT NULL DEFAULT 0,
+  updated_at          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_pickem_points (total_points),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE USER_BADGES (
+  id         INT AUTO_INCREMENT PRIMARY KEY,
+  user_id    INT UNSIGNED NOT NULL,
+  badge_code VARCHAR(50)  NOT NULL,
+  earned_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_user_badge (user_id, badge_code),
+  INDEX idx_user_badges_user (user_id),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
 SQL
 
 MASTER_TABLES=$($M -s --skip-column-names \

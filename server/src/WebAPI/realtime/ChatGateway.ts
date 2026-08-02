@@ -88,12 +88,12 @@ export class ChatGateway {
     const msg = parsed as { type?: unknown; text?: unknown; id?: unknown };
 
     if (msg.type === "message") {
-      if (!c.user) { this.sendTo(ws, { type: "error", message: "Prijavi se da bi slao poruke." }); return; }
+      if (!c.user) { this.sendTo(ws, { type: "error", message: "Log in to send messages." }); return; }
       const now = Date.now();
       if (now - c.lastSentAt < this.RATE_MS) { this.sendTo(ws, { type: "error", message: "Uspori malo…" }); return; }
       const text = typeof msg.text === "string" ? msg.text : "";
       const res = await this.chatService.post(c.matchId, c.user.id, c.user.gamerTag, text);
-      if (!res.ok || !res.message) { this.sendTo(ws, { type: "error", message: res.error ?? "Neuspesno slanje" }); return; }
+      if (!res.ok || !res.message) { this.sendTo(ws, { type: "error", message: res.error ?? "Failed to send" }); return; }
       c.lastSentAt = now;
       this.broadcast(c.matchId, { type: "message", data: res.message });
       return;

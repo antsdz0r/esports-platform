@@ -23,8 +23,8 @@ export const ProtectedRoute: React.FC<{ children: React.ReactNode; requiredRole:
       <AnimatedBackground particles={12} />
       <div className="pg-glass" style={{ padding: 40, textAlign: "center", maxWidth: 380, position: "relative", zIndex: 3, border: "1px solid rgba(255,45,126,0.3)" }}>
         <div style={{ fontFamily: "var(--font-display)", fontSize: 44, fontWeight: 900, color: "rgba(255,45,126,0.18)", marginBottom: 8 }}>403</div>
-        <p style={{ color: "#ff8fb4", fontSize: 14, marginBottom: 20 }}>Nemate dozvolu za pristup ovoj stranici.</p>
-        <PgBtn variant="ghost" size="sm" onClick={logout}>Odjava</PgBtn>
+        <p style={{ color: "#ff8fb4", fontSize: 14, marginBottom: 20 }}>You don&apos;t have permission to access this page.</p>
+        <PgBtn variant="ghost" size="sm" onClick={logout}>Log out</PgBtn>
       </div>
     </div>
   );

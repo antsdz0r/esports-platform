@@ -131,7 +131,7 @@ export default function HealthPage() {
 
       <motion.div variants={staggerContainer(0.08)} initial="hidden" animate="show"
         style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 16, marginBottom: 32 }}>
-        <motion.div variants={fadeUp}><StatCard label="Ukupno čvorova" value={<Counter value={all.length} />} icon="🖥️" /></motion.div>
+        <motion.div variants={fadeUp}><StatCard label="Total nodes" value={<Counter value={all.length} />} icon="🖥️" /></motion.div>
         <motion.div variants={fadeUp}><StatCard label="Healthy"  value={<Counter value={healthy} />}  color="var(--green)" icon="✅" /></motion.div>
         <motion.div variants={fadeUp}><StatCard label="Degraded" value={<Counter value={degraded} />} color="var(--gold)"  icon="⚠️" /></motion.div>
         <motion.div variants={fadeUp}><StatCard label="Offline"  value={<Counter value={down} />}     color="var(--pink)"  icon="❌" /></motion.div>
@@ -139,10 +139,10 @@ export default function HealthPage() {
 
       {loading ? <Spinner /> : (
         <>
-          <SectionTitle label="Database čvorovi (master + replike)" right={`AUTO-REFRESH 10s · tick#${tick}`} />
+          <SectionTitle label="Database nodes (master + replicas)" right={`AUTO-REFRESH 10s · tick#${tick}`} />
           <motion.div variants={staggerContainer(0.08)} initial="hidden" animate="show"
             style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 16, marginBottom: 32 }}>
-            {dbNodes.length === 0 ? <p style={{ color: "var(--text-muted)", fontSize: 13 }}>Nema podataka o DB čvorovima.</p> : dbNodes.map((n) => {
+            {dbNodes.length === 0 ? <p style={{ color: "var(--text-muted)", fontSize: 13 }}>No data for DB nodes.</p> : dbNodes.map((n) => {
               const accent = statusColor(n.status);
               return (
                 <motion.div key={n.name} variants={fadeUp} whileHover={{ y: -4 }} className="pg-glass"
@@ -157,33 +157,33 @@ export default function HealthPage() {
                   </div>
                   <div style={{ display: "flex", gap: 22, marginBottom: 12 }}>
                     <div>
-                      <p style={statLbl}>Latencija</p>
+                      <p style={statLbl}>Latency</p>
                       <p style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 900, color: n.status === "offline" || n.status === "unreachable" ? "var(--pink)" : latColor(n.latencyMs) }}>{n.latencyMs != null ? `${n.latencyMs}ms` : "N/A"}</p>
                     </div>
                     <div>
-                      <p style={statLbl}>Uloga</p>
+                      <p style={statLbl}>Role</p>
                       <span className="pg-badge" style={{ background: n.role === "master" ? "rgba(255,45,126,0.12)" : "rgba(124,92,255,0.12)", color: n.role === "master" ? "var(--pink)" : "var(--violet2)", border: `1px solid ${n.role === "master" ? "rgba(255,45,126,0.3)" : "rgba(124,92,255,0.3)"}`, marginTop: 4 }}>{n.role.toUpperCase()}</span>
                     </div>
                   </div>
                   {n.role === "slave" && (
                     <div style={{ marginBottom: 10 }}>
-                      <p style={statLbl}>Replikacija</p>
+                      <p style={statLbl}>Replication</p>
                       <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontFamily: "var(--font-ui)", fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: n.replicaOk ? "var(--green)" : "var(--pink)" }}>
                         <span style={{ width: 7, height: 7, borderRadius: "50%", background: n.replicaOk ? "var(--green)" : "var(--pink)", boxShadow: `0 0 6px ${n.replicaOk ? "var(--green)" : "var(--pink)"}`, display: "inline-block" }} />
-                        {n.replicaOk ? "Aktivna · u rotaciji čitanja" : "Stala · čita se sa mastera"}
+                        {n.replicaOk ? "Active · in read rotation" : "Stale · reading from master"}
                       </span>
                     </div>
                   )}
-                  <p style={{ fontFamily: "monospace", fontSize: 10, color: "var(--text-dim)" }}>Provera: {new Date(n.lastCheck).toLocaleTimeString("sr")}</p>
+                  <p style={{ fontFamily: "monospace", fontSize: 10, color: "var(--text-dim)" }}>Checked: {new Date(n.lastCheck).toLocaleTimeString("en-GB")}</p>
                 </motion.div>
               );
             })}
           </motion.div>
 
-          <SectionTitle label="API server čvorovi" />
+          <SectionTitle label="API server nodes" />
           <motion.div variants={staggerContainer(0.08)} initial="hidden" animate="show"
             style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 16 }}>
-            {apiNodes.length === 0 ? <p style={{ color: "var(--text-muted)", fontSize: 13 }}>Nema podataka o API čvorovima.</p> : apiNodes.map((n) => {
+            {apiNodes.length === 0 ? <p style={{ color: "var(--text-muted)", fontSize: 13 }}>No data for API nodes.</p> : apiNodes.map((n) => {
               const accent = statusColor(n.status);
               return (
                 <motion.div key={n.name} variants={fadeUp} whileHover={{ y: -4 }} className="pg-glass"
@@ -198,15 +198,15 @@ export default function HealthPage() {
                   </div>
                   <div style={{ display: "flex", gap: 22 }}>
                     <div>
-                      <p style={statLbl}>Latencija</p>
+                      <p style={statLbl}>Latency</p>
                       <p style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 900, color: n.status === "unreachable" ? "var(--pink)" : latColor(n.latencyMs) }}>{n.latencyMs != null ? `${n.latencyMs}ms` : "N/A"}</p>
                     </div>
                     <div>
-                      <p style={statLbl}>Konekcije</p>
+                      <p style={statLbl}>Connections</p>
                       <p style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 900, color: "var(--text)" }}>{n.activeConnections}</p>
                     </div>
                   </div>
-                  <p style={{ fontFamily: "monospace", fontSize: 10, color: "var(--text-dim)", marginTop: 12 }}>Provera: {new Date(n.lastCheck).toLocaleTimeString("sr")}</p>
+                  <p style={{ fontFamily: "monospace", fontSize: 10, color: "var(--text-dim)", marginTop: 12 }}>Checked: {new Date(n.lastCheck).toLocaleTimeString("en-GB")}</p>
                 </motion.div>
               );
             })}

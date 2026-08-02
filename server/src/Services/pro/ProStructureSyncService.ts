@@ -54,7 +54,7 @@ export class ProStructureSyncService implements IProStructureSyncService {
     ]);
 
     if (running.length + upcoming.length + past.length === 0) {
-      return { ok: false, leagues: 0, series: 0, tournaments: 0, error: "Nema podataka sa izvora (proveri token)" };
+      return { ok: false, leagues: 0, series: 0, tournaments: 0, error: "No data from the source (check the token)" };
     }
 
     const batches: [PsTournament[], ProTournamentStatus][] = [

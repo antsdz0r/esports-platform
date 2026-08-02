@@ -83,12 +83,12 @@ export function NotificationBell() {
                 className="pg-glass"
                 style={{ position: "fixed", top: pos.top, right: pos.right, zIndex: 99999, width: 320, borderRadius: 14, overflow: "hidden", boxShadow: "0 20px 60px rgba(0,0,0,0.5)" }}>
                 <div style={{ padding: "14px 18px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <span style={{ fontFamily: "var(--font-head)", fontSize: 14, fontWeight: 700, color: "var(--text)" }}>Pozivnice</span>
+                  <span style={{ fontFamily: "var(--font-head)", fontSize: 14, fontWeight: 700, color: "var(--text)" }}>Invites</span>
                   <span style={{ fontFamily: "var(--font-display)", fontSize: 12, color: "var(--text-muted)" }}>{count} pending</span>
                 </div>
                 {count === 0 ? (
                   <div style={{ padding: "28px 18px", textAlign: "center", color: "var(--text-dim)", fontFamily: "var(--font-ui)", fontSize: 13 }}>
-                    Nema novih pozivnica 🎉
+                    No new invites 🎉
                   </div>
                 ) : (
                   <div style={{ maxHeight: 360, overflowY: "auto" }}>
@@ -96,10 +96,10 @@ export function NotificationBell() {
                       <div key={inv.id} style={{ padding: "14px 18px", borderBottom: "1px solid var(--border)", display: "flex", flexDirection: "column", gap: 10 }}>
                         <div>
                           <p style={{ fontFamily: "var(--font-head)", fontSize: 14, fontWeight: 700, color: "var(--text)", marginBottom: 3 }}>
-                            {inv.teamName ?? `Tim #${inv.teamId}`}
+                            {inv.teamName ?? `Team #${inv.teamId}`}
                           </p>
                           <p style={{ fontFamily: "var(--font-ui)", fontSize: 11, color: "var(--text-muted)" }}>
-                            Pozvan {new Date(inv.createdAt).toLocaleDateString("sr")}
+                            Invited {new Date(inv.createdAt).toLocaleDateString("en-GB")}
                           </p>
                         </div>
                         <div style={{ display: "flex", gap: 8 }}>
@@ -107,13 +107,13 @@ export function NotificationBell() {
                             disabled={responding === inv.id}
                             onClick={() => respond(inv.id, inv.teamId, true)}
                             style={{ flex: 1, padding: "7px 0", borderRadius: 8, border: "none", background: "linear-gradient(120deg, var(--violet), var(--cyan))", color: "#fff", fontFamily: "var(--font-ui)", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                            {responding === inv.id ? "..." : "✓ Prihvati"}
+                            {responding === inv.id ? "..." : "✓ Accept"}
                           </button>
                           <button
                             disabled={responding === inv.id}
                             onClick={() => respond(inv.id, inv.teamId, false)}
                             style={{ flex: 1, padding: "7px 0", borderRadius: 8, border: "1px solid var(--border)", background: "transparent", color: "var(--text-muted)", fontFamily: "var(--font-ui)", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                            ✕ Odbij
+                            ✕ Decline
                           </button>
                         </div>
                       </div>

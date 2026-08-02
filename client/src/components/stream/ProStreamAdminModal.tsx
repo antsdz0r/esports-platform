@@ -37,7 +37,7 @@ export default function ProStreamAdminModal({ matchId, onClose, onChanged }: {
     setLoading(true);
     const res = await proApi.getMatchStreams(matchId);
     if (res.success && res.data) setStreams(res.data);
-    else setError(res.message ?? "Greška pri učitavanju");
+    else setError(res.message ?? "Failed to load");
     setLoading(false);
   };
 
@@ -48,12 +48,12 @@ export default function ProStreamAdminModal({ matchId, onClose, onChanged }: {
     setSaving(true);
     const res = await proApi.addStream(matchId, { platform, channel: channel.trim(), language: language.trim() });
     if (res.success) {
-      setSuccess("Kaster dodat.");
+      setSuccess("Caster added.");
       setChannel("");
       await load();
       onChanged();
     } else {
-      setError(res.message ?? "Neuspešno dodavanje");
+      setError(res.message ?? "Failed to add");
     }
     setSaving(false);
   };
@@ -66,7 +66,7 @@ export default function ProStreamAdminModal({ matchId, onClose, onChanged }: {
       await load();
       onChanged();
     } else {
-      setError(res.message ?? "Neuspešno brisanje");
+      setError(res.message ?? "Failed to delete");
     }
     setBusyId(null);
   };
@@ -85,8 +85,8 @@ export default function ProStreamAdminModal({ matchId, onClose, onChanged }: {
 
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div>
-              <p style={{ fontFamily: "var(--font-ui)", fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 4 }}>Pro meč #{matchId}</p>
-              <h3 style={{ fontFamily: "var(--font-head)", fontSize: 18, fontWeight: 800, color: "var(--text)" }}>Kasteri i streamovi</h3>
+              <p style={{ fontFamily: "var(--font-ui)", fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 4 }}>Pro match #{matchId}</p>
+              <h3 style={{ fontFamily: "var(--font-head)", fontSize: 18, fontWeight: 800, color: "var(--text)" }}>Casters and streams</h3>
             </div>
             <button onClick={onClose} style={{ background: "none", border: "none", color: "var(--text-dim)", fontSize: 20, cursor: "pointer" }}>✕</button>
           </div>
@@ -98,7 +98,7 @@ export default function ProStreamAdminModal({ matchId, onClose, onChanged }: {
           {loading ? (
             <div style={{ display: "flex", justifyContent: "center", padding: "12px 0" }}><Spinner /></div>
           ) : streams.length === 0 ? (
-            <p style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--text-muted)", textAlign: "center", padding: "8px 0" }}>Još nema streamova za ovaj meč.</p>
+            <p style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--text-muted)", textAlign: "center", padding: "8px 0" }}>No streams for this match yet.</p>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {streams.map((s) => {
@@ -114,18 +114,18 @@ export default function ProStreamAdminModal({ matchId, onClose, onChanged }: {
                       </p>
                     </div>
                     <span style={{ fontFamily: "var(--font-ui)", fontSize: 9, fontWeight: 700, letterSpacing: "0.06em", padding: "3px 8px", borderRadius: 6, border: `1px solid ${isLocal ? "var(--cyan)" : "var(--border)"}`, background: isLocal ? "rgba(0,212,255,0.10)" : "rgba(255,255,255,0.03)", color: isLocal ? "var(--cyan)" : "var(--text-dim)" }}>
-                      {isLocal ? "RUČNO" : "AUTO"}
+                      {isLocal ? "MANUAL" : "AUTO"}
                     </span>
                     {isLocal ? (
                       <button
                         disabled={busyId === s.id}
                         onClick={() => void remove(s.id)}
-                        title="Obriši"
+                        title="Delete"
                         style={{ background: "none", border: "1px solid var(--pink)", color: "var(--pink)", fontSize: 12, cursor: "pointer", padding: "3px 9px", borderRadius: 6 }}>
                         ✕
                       </button>
                     ) : (
-                      <span title="Automatski sa izvora — briše se pri sledećoj sinhronizaciji" style={{ color: "var(--text-dim)", fontSize: 13, padding: "0 4px" }}>🔒</span>
+                      <span title="Automatic from the source — removed on the next sync" style={{ color: "var(--text-dim)", fontSize: 13, padding: "0 4px" }}>🔒</span>
                     )}
                   </div>
                 );
@@ -135,19 +135,19 @@ export default function ProStreamAdminModal({ matchId, onClose, onChanged }: {
 
           {/* Forma za dodavanje */}
           <div style={{ borderTop: "1px solid var(--border)", paddingTop: 16, display: "flex", flexDirection: "column", gap: 10 }}>
-            <p style={{ fontFamily: "var(--font-ui)", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--violet2)" }}>Dodaj kaster / stream</p>
+            <p style={{ fontFamily: "var(--font-ui)", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--violet2)" }}>Add caster / stream</p>
 
             <div style={{ display: "flex", gap: 8 }}>
               <select className="pg-input" value={platform} onChange={(e) => setPlatform(e.target.value as Platform)} style={{ flex: 1 }}>
                 {PLATFORMS.map((p) => <option key={p} value={p}>{p}</option>)}
               </select>
-              <input className="pg-input" placeholder="Jezik (en, sr...)" value={language} onChange={(e) => setLanguage(e.target.value)} style={{ width: 120, boxSizing: "border-box" }} />
+              <input className="pg-input" placeholder="Language (en, sr...)" value={language} onChange={(e) => setLanguage(e.target.value)} style={{ width: 120, boxSizing: "border-box" }} />
             </div>
 
             <input className="pg-input" placeholder={CHANNEL_HINT[platform]} value={channel} onChange={(e) => setChannel(e.target.value)} style={{ width: "100%", boxSizing: "border-box" }} />
 
             <PgBtn variant="primary" size="sm" disabled={saving || !channel.trim()} onClick={add}>
-              {saving ? "Dodavanje..." : "＋ Dodaj stream"}
+              {saving ? "Adding..." : "＋ Add stream"}
             </PgBtn>
           </div>
         </motion.div>

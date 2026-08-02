@@ -26,34 +26,34 @@ export const proApi = {
     return axios
       .get<ApiResp<ProMatch[]>>(`${BASE}pro/matches`, { params: { limit } })
       .then((r) => r.data)
-      .catch(() => ({ success: false, message: "Neuspešno učitavanje pro mečeva" }));
+      .catch(() => ({ success: false, message: "Failed to load pro matches" }));
   },
 
   async sync(game?: string): Promise<ApiResp<{ synced: number }>> {
     return axios
       .post<ApiResp<{ synced: number }>>(`${BASE}pro/sync`, game ? { game } : {}, { headers: authHeader() })
       .then((r) => r.data)
-      .catch((e) => ({ success: false, message: e?.response?.data?.message ?? "Sinhronizacija neuspešna" }));
+      .catch((e) => ({ success: false, message: e?.response?.data?.message ?? "Sync failed" }));
   },
 
   async getMatchStreams(matchId: number): Promise<ApiResp<ProStreamAdmin[]>> {
     return axios
       .get<ApiResp<ProStreamAdmin[]>>(`${BASE}pro/matches/${matchId}/streams`, { headers: authHeader() })
       .then((r) => r.data)
-      .catch((e) => ({ success: false, message: e?.response?.data?.message ?? "Neuspešno učitavanje streamova" }));
+      .catch((e) => ({ success: false, message: e?.response?.data?.message ?? "Failed to load streams" }));
   },
 
   async addStream(matchId: number, data: AddProStreamData): Promise<ApiResp<ProStreamAdmin>> {
     return axios
       .post<ApiResp<ProStreamAdmin>>(`${BASE}pro/matches/${matchId}/streams`, data, { headers: authHeader() })
       .then((r) => r.data)
-      .catch((e) => ({ success: false, message: e?.response?.data?.message ?? "Neuspešno dodavanje streama" }));
+      .catch((e) => ({ success: false, message: e?.response?.data?.message ?? "Failed to add stream" }));
   },
 
   async removeStream(streamId: number): Promise<ApiResp<unknown>> {
     return axios
       .delete<ApiResp<unknown>>(`${BASE}pro/streams/${streamId}`, { headers: authHeader() })
       .then((r) => r.data)
-      .catch((e) => ({ success: false, message: e?.response?.data?.message ?? "Neuspešno brisanje streama" }));
+      .catch((e) => ({ success: false, message: e?.response?.data?.message ?? "Failed to delete stream" }));
   },
 };

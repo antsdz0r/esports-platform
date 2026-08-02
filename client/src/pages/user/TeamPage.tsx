@@ -44,7 +44,7 @@ export default function TeamsPage() {
       const data = await res.json();
       setTeams(parseData<Team>(data));
     } catch {
-      setError("Neuspešno učitavanje timova");
+      setError("Failed to load teams");
     } finally {
       setLoading(false);
     }
@@ -74,7 +74,7 @@ export default function TeamsPage() {
         }
       } else setError(data.message);
     } catch {
-      setError("Neuspešno kreiranje tima");
+      setError("Failed to create team");
     } finally {
       setCreating(false);
     }
@@ -82,8 +82,8 @@ export default function TeamsPage() {
 
   return (
     <div>
-      <PageHeader eyebrow="Ekipe" title="Moji timovi"
-        action={<PgBtn variant="primary" onClick={() => setShowCreate((v) => !v)}>+ Novi tim</PgBtn>} />
+      <PageHeader eyebrow="Squads" title="My teams"
+        action={<PgBtn variant="primary" onClick={() => setShowCreate((v) => !v)}>+ New team</PgBtn>} />
 
       {error && <ErrorBox message={error} />}
 
@@ -92,9 +92,9 @@ export default function TeamsPage() {
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
             style={{ overflow: "hidden", marginBottom: 24 }}>
             <div className="pg-glass" style={{ padding: 26, border: "1px solid var(--border-bright)" }}>
-              <p style={{ fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 700, letterSpacing: "0.06em", color: "var(--text)", marginBottom: 20 }}>KREIRAJ TIM</p>
+              <p style={{ fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 700, letterSpacing: "0.06em", color: "var(--text)", marginBottom: 20 }}>CREATE TEAM</p>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
-                <FormField label="Naziv tima *">
+                <FormField label="Team name *">
                   <input placeholder="Dragon Force" value={form.teamName} onChange={(e) => setForm({ ...form, teamName: e.target.value })} className="pg-input" />
                 </FormField>
                 <FormField label="Tag (2-6) *">
@@ -102,25 +102,25 @@ export default function TeamsPage() {
                 </FormField>
               </div>
               <div style={{ marginBottom: 14 }}>
-                <FormField label="Logo URL (opciono)">
+                <FormField label="Logo URL (optional)">
                   <input placeholder="https://..." value={form.logo} onChange={(e) => setForm({ ...form, logo: e.target.value })} className="pg-input" />
                 </FormField>
               </div>
               <div style={{ marginBottom: 20 }}>
-                <FormField label="Opis (opciono)">
-                  <input placeholder="Kratki opis tima..." value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="pg-input" />
+                <FormField label="Description (optional)">
+                  <input placeholder="Short team description..." value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="pg-input" />
                 </FormField>
               </div>
               <div style={{ display: "flex", gap: 10 }}>
-                <PgBtn variant="primary" onClick={createTeam} disabled={creating}>{creating ? "Kreiranje..." : "Kreiraj"}</PgBtn>
-                <PgBtn variant="ghost" onClick={() => setShowCreate(false)}>Otkaži</PgBtn>
+                <PgBtn variant="primary" onClick={createTeam} disabled={creating}>{creating ? "Creating..." : "Create"}</PgBtn>
+                <PgBtn variant="ghost" onClick={() => setShowCreate(false)}>Cancel</PgBtn>
               </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {loading ? <Spinner /> : teams.length === 0 ? <Empty message="Nemaš nijedan tim. Kreiraj jedan!" /> : (
+      {loading ? <Spinner /> : teams.length === 0 ? <Empty message="You don't have any teams yet. Create one!" /> : (
         <motion.div variants={staggerContainer(0.07)} initial="hidden" animate="show"
           style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 18 }}>
           {teams.map((t, i) => {
@@ -129,7 +129,7 @@ export default function TeamsPage() {
               <motion.div key={t.teamId} variants={fadeUp}
                 onClick={() => setMembersModal({ teamId: t.teamId, teamName: t.teamName })}
                 style={{ cursor: "pointer" }}
-                title="Klikni za detalje članova">
+                title="Click for member details">
                 <TiltCard glow={glow} style={{ padding: 22 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
                     <div style={{ width: 54, height: 54, borderRadius: 12, background: `${glow}1a`, border: `1px solid ${glow}45`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden", boxShadow: `0 0 18px ${glow}30` }}>
@@ -143,7 +143,7 @@ export default function TeamsPage() {
                     </div>
                   </div>
                   <p style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.5, minHeight: 38 }}>{t.description || "Nema opisa."}</p>
-                  <p style={{ fontFamily: "var(--font-ui)", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", color: glow, marginTop: 12, opacity: 0.7 }}>POGLEDAJ ČLANOVE →</p>
+                  <p style={{ fontFamily: "var(--font-ui)", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", color: glow, marginTop: 12, opacity: 0.7 }}>VIEW MEMBERS →</p>
                 </TiltCard>
               </motion.div>
             );
@@ -201,9 +201,9 @@ function TeamMembersModal({ teamId, teamName, token, currentUserId, onClose }: {
         const res = await fetch(`${BASE}teams/${teamId}/members`, { headers: authHeader });
         const data = await res.json();
         if (data.success) setMembers(data.data as TeamMemberInfo[]);
-        else setError("Neuspešno učitavanje članova");
+        else setError("Failed to load members");
       } catch {
-        setError("Greška pri učitavanju");
+        setError("Failed to load");
       } finally {
         setLoading(false);
       }
@@ -225,7 +225,7 @@ function TeamMembersModal({ teamId, teamName, token, currentUserId, onClose }: {
       });
       onClose();
     } catch {
-      setError("Greška pri napuštanju tima");
+      setError("Failed to leave team");
     } finally {
       setLeaving(false);
       setLeaveConfirm(false);
@@ -243,7 +243,7 @@ function TeamMembersModal({ teamId, teamName, token, currentUserId, onClose }: {
       setMembers(prev => prev.filter(m => m.playerId !== confirmMember.playerId));
       setConfirmMember(null);
     } catch {
-      setError("Greška pri uklanjanju člana");
+      setError("Failed to remove member");
     } finally {
       setRemoving(false);
     }
@@ -274,7 +274,7 @@ function TeamMembersModal({ teamId, teamName, token, currentUserId, onClose }: {
         setInvitedIds(alreadyInvited);
       }
     } catch {
-      setInviteError("Greška pri učitavanju korisnika");
+      setInviteError("Failed to load users");
     } finally {
       setUsersLoading(false);
     }
@@ -296,15 +296,14 @@ function TeamMembersModal({ teamId, teamName, token, currentUserId, onClose }: {
         setSearch("");
         setInvitedIds(prev => new Set(prev).add(inviteeId));
       } else {
-        if ((data.message as string | undefined)?.toLowerCase().includes("već postoji") ||
-            (data.message as string | undefined)?.toLowerCase().includes("vec postoji")) {
+        if ((data.message as string | undefined)?.toLowerCase().includes("already")) {
           setInvitedIds(prev => new Set(prev).add(inviteeId));
         } else {
-          setInviteError(data.message ?? "Greška pri slanju pozivnice");
+          setInviteError(data.message ?? "Failed to send invite");
         }
       }
     } catch {
-      setInviteError("Greška pri slanju pozivnice");
+      setInviteError("Failed to send invite");
     } finally {
       setInviting(false);
     }
@@ -336,15 +335,15 @@ function TeamMembersModal({ teamId, teamName, token, currentUserId, onClose }: {
             style={{ width: "100%", maxWidth: 360, borderRadius: 16, padding: 28, border: "1px solid var(--border-bright)", textAlign: "center" }}>
             <p style={{ fontSize: 28, marginBottom: 14 }}>⚠️</p>
             <p style={{ fontFamily: "var(--font-head)", fontSize: 16, fontWeight: 700, color: "var(--text)", marginBottom: 8 }}>
-              Izbaci igrača
+              Kick player
             </p>
             <p style={{ fontFamily: "var(--font-ui)", fontSize: 13, color: "var(--text-muted)", marginBottom: 24, lineHeight: 1.5 }}>
-              Da li želiš da izbacis <strong style={{ color: "var(--text)" }}>{confirmMember.gamerTag}</strong> iz tima <strong style={{ color: "var(--text)" }}>{teamName}</strong>?
+              Do you want to kick <strong style={{ color: "var(--text)" }}>{confirmMember.gamerTag}</strong> from the team <strong style={{ color: "var(--text)" }}>{teamName}</strong>?
             </p>
             <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
-              <PgBtn variant="ghost" onClick={() => setConfirmMember(null)} disabled={removing}>Otkaži</PgBtn>
+              <PgBtn variant="ghost" onClick={() => setConfirmMember(null)} disabled={removing}>Cancel</PgBtn>
               <PgBtn variant="danger" onClick={() => void confirmRemove()} disabled={removing}>
-                {removing ? "Uklanjanje..." : "Da, izbaci"}
+                {removing ? "Removing..." : "Yes, kick"}
               </PgBtn>
             </div>
           </motion.div>
@@ -371,7 +370,7 @@ function TeamMembersModal({ teamId, teamName, token, currentUserId, onClose }: {
 
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 22 }}>
             <div>
-              <p style={{ fontFamily: "var(--font-ui)", fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 4 }}>Članovi tima</p>
+              <p style={{ fontFamily: "var(--font-ui)", fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 4 }}>Team members</p>
               <p style={{ fontFamily: "var(--font-head)", fontSize: 20, fontWeight: 800, color: "var(--text)" }}>{teamName}</p>
             </div>
             <button onClick={onClose} style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: 22, lineHeight: 1, padding: 4 }}>×</button>
@@ -382,7 +381,7 @@ function TeamMembersModal({ teamId, teamName, token, currentUserId, onClose }: {
           ) : error ? (
             <ErrorBox message={error} />
           ) : members.length === 0 ? (
-            <p style={{ color: "var(--text-muted)", fontSize: 13, textAlign: "center", padding: "16px 0" }}>Nema članova.</p>
+            <p style={{ color: "var(--text-muted)", fontSize: 13, textAlign: "center", padding: "16px 0" }}>No members.</p>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {captain && <MemberRow member={captain} />}
@@ -409,12 +408,12 @@ function TeamMembersModal({ teamId, teamName, token, currentUserId, onClose }: {
                     transition: "all 0.2s",
                   }}
                 >
-                  ✉ Pošalji pozivnicu
+                  ✉ Send invite
                 </button>
               ) : (
                 <div>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-                    <p style={{ fontFamily: "var(--font-ui)", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--violet2)" }}>Pozovi igrača</p>
+                    <p style={{ fontFamily: "var(--font-ui)", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--violet2)" }}>Invite a player</p>
                     <button onClick={() => { setInviteOpen(false); setSearch(""); setInviteError(""); setInviteSuccess(""); }}
                       style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: 16 }}>×</button>
                   </div>
@@ -424,7 +423,7 @@ function TeamMembersModal({ teamId, teamName, token, currentUserId, onClose }: {
 
                   <input
                     className="pg-input"
-                    placeholder="Traži po gamertagu..."
+                    placeholder="Search by gamertag..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     style={{ width: "100%", marginBottom: 10, boxSizing: "border-box" }}
@@ -435,7 +434,7 @@ function TeamMembersModal({ teamId, teamName, token, currentUserId, onClose }: {
                     <div style={{ display: "flex", justifyContent: "center", padding: "12px 0" }}><Spinner size={24} /></div>
                   ) : filteredUsers.length === 0 ? (
                     <p style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", padding: "8px 0" }}>
-                      {search ? "Nema rezultata." : "Nema dostupnih igrača."}
+                      {search ? "No results." : "No available players."}
                     </p>
                   ) : (
                     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -451,7 +450,7 @@ function TeamMembersModal({ teamId, teamName, token, currentUserId, onClose }: {
                               padding: "4px 12px", borderRadius: 7,
                               border: "1px solid var(--border)", background: "rgba(255,255,255,0.04)", color: "var(--text-dim)",
                             }}>
-                              Pozvan
+                              Invited
                             </span>
                           ) : (
                             <button
@@ -463,7 +462,7 @@ function TeamMembersModal({ teamId, teamName, token, currentUserId, onClose }: {
                                 border: "1px solid var(--cyan)", background: "rgba(0,229,255,0.10)", color: "var(--cyan)",
                                 opacity: inviting ? 0.5 : 1, transition: "opacity 0.2s",
                               }}>
-                              Pozovi
+                              Invite
                             </button>
                           )}
                         </div>
@@ -486,7 +485,7 @@ function TeamMembersModal({ teamId, teamName, token, currentUserId, onClose }: {
                   border: "1px solid rgba(255,45,126,0.4)", background: "rgba(255,45,126,0.07)", color: "var(--pink)",
                   transition: "all 0.2s",
                 }}>
-                🚪 Napusti tim
+                🚪 Leave team
               </button>
             </div>
           )}
@@ -513,15 +512,15 @@ function TeamMembersModal({ teamId, teamName, token, currentUserId, onClose }: {
             style={{ width: "100%", maxWidth: 360, borderRadius: 16, padding: 28, border: "1px solid var(--border-bright)", textAlign: "center" }}>
             <p style={{ fontSize: 28, marginBottom: 14 }}>🚪</p>
             <p style={{ fontFamily: "var(--font-head)", fontSize: 16, fontWeight: 700, color: "var(--text)", marginBottom: 8 }}>
-              Napusti tim
+              Leave team
             </p>
             <p style={{ fontFamily: "var(--font-ui)", fontSize: 13, color: "var(--text-muted)", marginBottom: 24, lineHeight: 1.5 }}>
-              Da li želiš da napustiš tim <strong style={{ color: "var(--text)" }}>{teamName}</strong>?
+              Do you want to leave the team <strong style={{ color: "var(--text)" }}>{teamName}</strong>?
             </p>
             <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
-              <PgBtn variant="ghost" onClick={() => setLeaveConfirm(false)} disabled={leaving}>Otkaži</PgBtn>
+              <PgBtn variant="ghost" onClick={() => setLeaveConfirm(false)} disabled={leaving}>Cancel</PgBtn>
               <PgBtn variant="danger" onClick={() => void leaveTeam()} disabled={leaving}>
-                {leaving ? "Napuštanje..." : "Da, napusti"}
+                {leaving ? "Leaving..." : "Yes, leave"}
               </PgBtn>
             </div>
           </motion.div>
@@ -547,7 +546,7 @@ function MemberRow({ member, onRemove }: { member: TeamMemberInfo; onRemove?: ()
         {member.fullName && <p style={{ fontFamily: "var(--font-ui)", fontSize: 11, color: "var(--text-muted)" }}>{member.fullName}</p>}
       </div>
       <span style={{ fontFamily: "var(--font-ui)", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: isCaptain ? "var(--violet)" : "var(--text-dim)", background: isCaptain ? "rgba(124,92,255,0.12)" : "rgba(255,255,255,0.06)", padding: "2px 8px", borderRadius: 6 }}>
-        {isCaptain ? "kapiten" : "član"}
+        {isCaptain ? "captain" : "member"}
       </span>
       {onRemove && (
         <button

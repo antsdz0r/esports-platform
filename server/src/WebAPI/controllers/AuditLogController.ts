@@ -16,8 +16,8 @@ export class AuditLogController {
       const page  = parseInt(req.query.page  as string ?? "1",  10) || 1;
       const limit = parseInt(req.query.limit as string ?? "20", 10) || 20;
 
-      if (isNaN(page) || page < 1)   { res.status(400).json({ success: false, message: "Neispravan page" }); return; }
-      if (isNaN(limit) || limit < 1) { res.status(400).json({ success: false, message: "Neispravan limit" }); return; }
+      if (isNaN(page) || page < 1)   { res.status(400).json({ success: false, message: "Invalid page" }); return; }
+      if (isNaN(limit) || limit < 1) { res.status(400).json({ success: false, message: "Invalid limit" }); return; }
 
       const result = await this.auditLogService.getAll(page, limit);
       res.json({

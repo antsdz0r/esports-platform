@@ -86,7 +86,7 @@ export class ProTournamentController {
       const id = req.params.id as string;
       if (!ID.test(id)) { res.status(400).json({ success: false, message: "Invalid id" }); return; }
       const detail = await this.tournamentService.getTournamentDetail(id);
-      if (!detail) { res.status(404).json({ success: false, message: "Turnir nije pronađen" }); return; }
+      if (!detail) { res.status(404).json({ success: false, message: "Tournament not found" }); return; }
       res.status(200).json({ success: true, data: detail });
     } catch {
       res.status(500).json({ success: false, message: "Internal server error" });
@@ -98,10 +98,10 @@ export class ProTournamentController {
       const rawGame = (req.body?.game ?? req.query.game) as string | undefined;
       const games = rawGame && SLUG.test(rawGame) ? [rawGame] : undefined;
       const result = await this.structureSyncService.syncStructure(games);
-      if (!result.ok) { res.status(502).json({ success: false, message: result.error ?? "Sync neuspešan" }); return; }
+      if (!result.ok) { res.status(502).json({ success: false, message: result.error ?? "Sync failed" }); return; }
       await this.auditLogService.log(
         req.user?.id ?? null, "SYNC_PRO_STRUCTURE", "pro_tournament", null,
-        `Struktura: ${result.leagues} liga, ${result.series} serija, ${result.tournaments} turnira`,
+        `Structure: ${result.leagues} leagues, ${result.series} series, ${result.tournaments} tournaments`,
         req.socket.remoteAddress ?? null
       );
       res.status(200).json({ success: true, data: { leagues: result.leagues, series: result.series, tournaments: result.tournaments } });
@@ -113,7 +113,7 @@ export class ProTournamentController {
   private async listFavorites(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user?.id;
-      if (!userId) { res.status(401).json({ success: false, message: "Neautorizovano" }); return; }
+      if (!userId) { res.status(401).json({ success: false, message: "Unauthorized" }); return; }
       res.status(200).json({ success: true, data: await this.favoriteService.listFavorites(userId) });
     } catch {
       res.status(500).json({ success: false, message: "Internal server error" });
@@ -123,7 +123,7 @@ export class ProTournamentController {
   private async listFavoriteIds(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user?.id;
-      if (!userId) { res.status(401).json({ success: false, message: "Neautorizovano" }); return; }
+      if (!userId) { res.status(401).json({ success: false, message: "Unauthorized" }); return; }
       res.status(200).json({ success: true, data: await this.favoriteService.listIds(userId) });
     } catch {
       res.status(500).json({ success: false, message: "Internal server error" });
@@ -133,7 +133,7 @@ export class ProTournamentController {
   private async addFavorite(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user?.id;
-      if (!userId) { res.status(401).json({ success: false, message: "Neautorizovano" }); return; }
+      if (!userId) { res.status(401).json({ success: false, message: "Unauthorized" }); return; }
       const id = req.params.id as string;
       if (!ID.test(id)) { res.status(400).json({ success: false, message: "Invalid id" }); return; }
       await this.favoriteService.add(userId, id);
@@ -146,7 +146,7 @@ export class ProTournamentController {
   private async removeFavorite(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user?.id;
-      if (!userId) { res.status(401).json({ success: false, message: "Neautorizovano" }); return; }
+      if (!userId) { res.status(401).json({ success: false, message: "Unauthorized" }); return; }
       const id = req.params.id as string;
       if (!ID.test(id)) { res.status(400).json({ success: false, message: "Invalid id" }); return; }
       await this.favoriteService.remove(userId, id);

@@ -4,10 +4,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { AnimatedBackground } from "../ui/AnimatedBackground";
 
 const guestNav = [
-  { to: "/pro",               label: "Pro mečevi",    icon: "📺" },
-  { to: "/pro/turniri",       label: "Turniri",       icon: "◈" },
-  { to: "/guest/tournaments", label: "Zajednica",     icon: "◆" },
-  { to: "/guest/games",       label: "Katalog igara", icon: "🎮" },
+  { to: "/pro",               label: "Pro matches",   icon: "📺" },
+  { to: "/pro/turniri",       label: "Tournaments",   icon: "◈" },
+  { to: "/guest/tournaments", label: "Community",     icon: "◆" },
+  { to: "/guest/games",       label: "Game catalog",  icon: "🎮" },
 ];
 
 export function GuestLayout({ children }: { children: ReactNode }) {
@@ -50,7 +50,7 @@ export function GuestLayout({ children }: { children: ReactNode }) {
                 <p style={{ fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 900, letterSpacing: "0.08em", color: "var(--text)" }}>
                   PULSE<span style={{ color: "var(--violet2)" }}>GRID</span>
                 </p>
-                <p style={{ fontFamily: "var(--font-ui)", fontSize: 9, fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "var(--gold)" }}>👁 GOST</p>
+                <p style={{ fontFamily: "var(--font-ui)", fontSize: 9, fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "var(--gold)" }}>👁 GUEST</p>
               </motion.div>
             )}
           </AnimatePresence>
@@ -87,14 +87,14 @@ export function GuestLayout({ children }: { children: ReactNode }) {
         {/* Collapse toggle */}
         <button onClick={() => setCollapsed((c) => !c)}
           style={{ margin: "0 12px 8px", padding: "8px", borderRadius: 8, background: "rgba(124,92,255,0.05)", border: "1px solid var(--border)", color: "var(--text-muted)", cursor: "pointer", fontFamily: "var(--font-ui)", fontSize: 12, transition: "all 0.2s" }}>
-          {collapsed ? "»" : "« Skupi"}
+          {collapsed ? "»" : "« Collapse"}
         </button>
 
         {/* Guest CTA */}
         <div style={{ borderTop: "1px solid var(--border)", padding: "14px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
           {!collapsed && (
             <p style={{ fontFamily: "var(--font-ui)", fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--text-dim)", marginBottom: 4 }}>
-              👁 Gost mod
+              👁 Guest mode
             </p>
           )}
           <button
@@ -105,9 +105,9 @@ export function GuestLayout({ children }: { children: ReactNode }) {
               border: "1px solid rgba(124,92,255,0.45)", background: "rgba(124,92,255,0.12)", color: "var(--violet2)",
               transition: "all 0.2s",
             }}
-            title="Prijavi se"
+            title="Log in"
           >
-            {collapsed ? "→" : "Prijavi se"}
+            {collapsed ? "→" : "Log in"}
           </button>
           {!collapsed && (
             <button
@@ -119,7 +119,7 @@ export function GuestLayout({ children }: { children: ReactNode }) {
                 transition: "all 0.2s",
               }}
             >
-              Registruj se
+              Sign up
             </button>
           )}
           <button
@@ -147,11 +147,11 @@ export function GuestLayout({ children }: { children: ReactNode }) {
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <span style={{ fontFamily: "var(--font-ui)", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--gold)", padding: "3px 10px", borderRadius: 6, border: "1px solid rgba(255,196,68,0.3)", background: "rgba(255,196,68,0.07)" }}>
-              👁 Gost
+              👁 Guest
             </span>
             <button onClick={() => navigate("/login")}
               style={{ fontFamily: "var(--font-ui)", fontSize: 12, fontWeight: 700, letterSpacing: "0.06em", padding: "6px 16px", borderRadius: 8, cursor: "pointer", border: "1px solid rgba(124,92,255,0.45)", background: "rgba(124,92,255,0.12)", color: "var(--violet2)", transition: "all 0.2s" }}>
-              Prijavi se →
+              Log in →
             </button>
           </div>
         </div>

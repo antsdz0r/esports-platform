@@ -8,18 +8,20 @@ import { ProfileModal } from "../ui/ProfileModal";
 
 const userNav = [
   { to: "/dashboard",             label: "Dashboard",   icon: "⬡" },
-  { to: "/dashboard/teams",       label: "Timovi",      icon: "◎" },
-  { to: "/dashboard/pro-turniri", label: "Turniri",     icon: "◈" },
-  { to: "/dashboard/pro",         label: "Pro mečevi",  icon: "📺" },
-  { to: "/dashboard/tournaments", label: "Moji turniri", icon: "◆" },
-  { to: "/dashboard/invites",     label: "Pozivnice",   icon: "✉" },
+  { to: "/dashboard/teams",       label: "Teams",       icon: "◎" },
+  { to: "/dashboard/pro-turniri", label: "Tournaments", icon: "◈" },
+  { to: "/dashboard/pro",         label: "Pro matches", icon: "📺" },
+  { to: "/dashboard/pickem",      label: "Pick'em",     icon: "🎯" },
+  { to: "/dashboard/tournaments", label: "My tournaments", icon: "◆" },
+  { to: "/dashboard/invites",     label: "Invites",     icon: "✉" },
   { to: "/dashboard/watchlist",   label: "Watchlist",   icon: "★" },
 ];
 const adminNav = [
   { to: "/admin",             label: "Dashboard",   icon: "⬡" },
-  { to: "/admin/users",       label: "Korisnici",   icon: "◎" },
-  { to: "/admin/pro-turniri", label: "Turniri",     icon: "◈" },
-  { to: "/admin/pro",         label: "Pro mečevi",  icon: "📺" },
+  { to: "/admin/users",       label: "Users",       icon: "◎" },
+  { to: "/admin/pro-turniri", label: "Tournaments", icon: "◈" },
+  { to: "/admin/pro",         label: "Pro matches", icon: "📺" },
+  { to: "/admin/pickem",      label: "Pick'em",     icon: "🎯" },
   { to: "/admin/audit",       label: "Audit Log",   icon: "▤" },
   { to: "/admin/health",      label: "Health",      icon: "♥" },
 ];
@@ -126,7 +128,7 @@ export function Layout({ children }: { children: ReactNode }) {
         {/* Collapse toggle */}
         <button onClick={() => setCollapsed((c) => !c)}
           style={{ margin: "0 12px 8px", padding: "8px", borderRadius: 8, background: "rgba(124,92,255,0.05)", border: "1px solid var(--border)", color: "var(--text-muted)", cursor: "pointer", fontFamily: "var(--font-ui)", fontSize: 12, transition: "all 0.2s" }}>
-          {collapsed ? "»" : "« Skupi"}
+          {collapsed ? "»" : "« Collapse"}
         </button>
 
         {/* User */}
@@ -146,8 +148,8 @@ export function Layout({ children }: { children: ReactNode }) {
             )}
             {!collapsed && (
               <button onClick={toggleTheme}
-                title={theme === "dark" ? "Pređi na light mode" : "Pređi na dark mode"}
-                aria-label="Promeni temu"
+                title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+                aria-label="Change theme"
                 style={{ marginLeft: "auto", position: "relative", width: 62, height: 30, borderRadius: 999, flexShrink: 0, cursor: "pointer", padding: 0, border: "1px solid var(--border-bright)", background: "var(--bg-glass)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", display: "flex", alignItems: "center", overflow: "hidden", boxShadow: "inset 0 1px 3px rgba(0,0,0,0.2)" }}>
                 <span style={{ position: "absolute", left: 8, display: "flex", color: "var(--gold)", opacity: theme === "light" ? 1 : 0.45, transition: "opacity 0.3s" }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></svg>
@@ -168,7 +170,7 @@ export function Layout({ children }: { children: ReactNode }) {
               style={{ fontFamily: "var(--font-ui)", fontSize: 11, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-dim)", background: "transparent", border: "none", cursor: "pointer", padding: 0, transition: "color 0.2s" }}
               onMouseEnter={(e) => (e.currentTarget.style.color = "var(--pink)")}
               onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-dim)")}>
-              Odjava →
+              Log out →
             </button>
           )}
         </div>

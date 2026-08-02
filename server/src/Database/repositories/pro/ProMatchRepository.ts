@@ -126,6 +126,23 @@ export class ProMatchRepository implements IProMatchRepository {
     }
   }
 
+  async findById(id: number): Promise<ProMatch | null> {
+    const res = await this.db.getReadConnection();
+    if (!res) return null;
+    try {
+      const [rows] = await res.conn.execute<RowDataPacket[]>(
+        "SELECT * FROM PRO_MATCHES WHERE id = ? LIMIT 1",
+        [id]
+      );
+      return rows[0] ? this.map(rows[0]) : null;
+    } catch {
+      this.logger.error("ProMatchRepository", "findById failed");
+      return null;
+    } finally {
+      res.conn.release();
+    }
+  }
+
   async exists(id: number): Promise<boolean> {
     const res = await this.db.getReadConnection();
     if (!res) return false;

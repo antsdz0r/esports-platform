@@ -27,7 +27,7 @@ export class ChatService implements IChatService {
     if (clean.length > MAX_LEN) return { ok: false, error: `Najvise ${MAX_LEN} karaktera` };
 
     const saved = await this.repo.insert(matchExternalId, userId, gamerTag, clean);
-    if (!saved) return { ok: false, error: "Neuspesno slanje" };
+    if (!saved) return { ok: false, error: "Failed to send" };
     return { ok: true, message: this.toDto(saved) };
   }
 

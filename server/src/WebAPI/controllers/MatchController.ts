@@ -68,11 +68,11 @@ export class MatchController {
       const { playerId, teamId } = req.body;
       const captainId = req.user!.id;
 
-      if (!playerId || !teamId) { res.status(400).json({ success: false, message: "playerId i teamId su obavezni" }); return; }
+      if (!playerId || !teamId) { res.status(400).json({ success: false, message: "playerId and teamId are required" }); return; }
 
       const result = await this.matchService.addPlayer(gameId, Number(playerId), Number(teamId), captainId);
       result.ok
-        ? res.status(201).json({ success: true, message: "Igrač dodat u meč" })
+        ? res.status(201).json({ success: true, message: "Player added to match" })
         : res.status(400).json({ success: false, message: result.error });
     } catch {
       res.status(500).json({ success: false, message: "Internal server error" });
@@ -86,10 +86,10 @@ export class MatchController {
       const { performance } = req.body;
       const captainId = req.user!.id;
 
-      if (!performance) { res.status(400).json({ success: false, message: "performance je obavezan" }); return; }
+      if (!performance) { res.status(400).json({ success: false, message: "performance is required" }); return; }
 
       const ok = await this.matchService.updatePerformance(gameId, playerId, captainId, performance);
-      res.status(ok ? 200 : 404).json({ success: ok, message: ok ? "Ažurirano" : "Nije pronađeno" });
+      res.status(ok ? 200 : 404).json({ success: ok, message: ok ? "Updated" : "Not found" });
     } catch {
       res.status(500).json({ success: false, message: "Internal server error" });
     }
@@ -102,7 +102,7 @@ export class MatchController {
       const captainId = req.user!.id;
 
       const ok = await this.matchService.removePlayer(gameId, playerId, captainId);
-      res.status(ok ? 200 : 404).json({ success: ok, message: ok ? "Igrač uklonjen" : "Nije pronađeno" });
+      res.status(ok ? 200 : 404).json({ success: ok, message: ok ? "Player removed" : "Not found" });
     } catch {
       res.status(500).json({ success: false, message: "Internal server error" });
     }
@@ -116,11 +116,11 @@ export class MatchController {
       const { score, winnerTeamId, status } = req.body;
       const validStatuses: string[] = [GameStatus.SCHEDULED, GameStatus.IN_PROGRESS, GameStatus.COMPLETED];
       if (!score || !status || !validStatuses.includes(status as string)) {
-        res.status(400).json({ success: false, message: "score i status su obavezni" }); return;
+        res.status(400).json({ success: false, message: "score and status are required" }); return;
       }
 
       const ok = await this.matchService.updateResult(id, score as string, winnerTeamId != null ? Number(winnerTeamId) : null, status as GameStatus);
-      res.status(ok ? 200 : 404).json({ success: ok, message: ok ? "Rezultat ažuriran" : "Meč nije pronađen" });
+      res.status(ok ? 200 : 404).json({ success: ok, message: ok ? "Result updated" : "Match not found" });
     } catch {
       res.status(500).json({ success: false, message: "Internal server error" });
     }
@@ -134,11 +134,11 @@ export class MatchController {
       const { scheduledTime } = req.body;
       const dt = scheduledTime ? new Date(scheduledTime as string) : null;
       if (scheduledTime && isNaN(dt!.getTime())) {
-        res.status(400).json({ success: false, message: "Neispravan format datuma" }); return;
+        res.status(400).json({ success: false, message: "Invalid date format" }); return;
       }
 
       const ok = await this.matchService.updateScheduledTime(id, dt);
-      res.status(ok ? 200 : 404).json({ success: ok, message: ok ? "Vreme meca ažurirano" : "Meč nije pronađen" });
+      res.status(ok ? 200 : 404).json({ success: ok, message: ok ? "Match time updated" : "Match not found" });
     } catch {
       res.status(500).json({ success: false, message: "Internal server error" });
     }

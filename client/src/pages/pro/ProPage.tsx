@@ -24,17 +24,17 @@ function gameLabel(slug: string): string {
 }
 
 const STATUS_FILTERS: { key: "all" | ProMatchStatus; label: string }[] = [
-  { key: "all", label: "Sve" },
-  { key: "live", label: "Uživo" },
-  { key: "upcoming", label: "Predstojeće" },
-  { key: "finished", label: "Završeno" },
+  { key: "all", label: "All" },
+  { key: "live", label: "Live" },
+  { key: "upcoming", label: "Upcoming" },
+  { key: "finished", label: "Finished" },
 ];
 
 const STATUS_META: Record<ProMatchStatus, { label: string; color: string; bg: string }> = {
-  live: { label: "UŽIVO", color: "var(--pink)", bg: "rgba(255,45,126,0.14)" },
-  upcoming: { label: "USKORO", color: "var(--cyan)", bg: "rgba(0,212,255,0.12)" },
-  finished: { label: "ZAVRŠENO", color: "var(--green)", bg: "rgba(0,240,160,0.12)" },
-  canceled: { label: "OTKAZANO", color: "var(--text-dim)", bg: "rgba(255,255,255,0.05)" },
+  live: { label: "LIVE", color: "var(--pink)", bg: "rgba(255,45,126,0.14)" },
+  upcoming: { label: "SOON", color: "var(--cyan)", bg: "rgba(0,212,255,0.12)" },
+  finished: { label: "FINISHED", color: "var(--green)", bg: "rgba(0,240,160,0.12)" },
+  canceled: { label: "CANCELED", color: "var(--text-dim)", bg: "rgba(255,255,255,0.05)" },
 };
 
 // Zaseban, distinktan panel da se kartice odvoje od pozadine sajta + neon-plavi akcenat.
@@ -78,7 +78,7 @@ export default function ProPage() {
     setLoading(true);
     const res = await proApi.getMatches(200);
     if (res.success && res.data) setMatches(res.data);
-    else setError(res.message ?? "Greška pri učitavanju");
+    else setError(res.message ?? "Failed to load");
     setLoading(false);
   };
 
@@ -106,10 +106,10 @@ export default function ProPage() {
     setSuccess("");
     const res = await proApi.sync();
     if (res.success) {
-      setSuccess(`Sinhronizovano ${res.data?.synced ?? 0} mečeva.`);
+      setSuccess(`Synced ${res.data?.synced ?? 0} matches.`);
       await load();
     } else {
-      setError(res.message ?? "Sinhronizacija neuspešna");
+      setError(res.message ?? "Sync failed");
     }
     setSyncing(false);
   };
@@ -123,11 +123,11 @@ export default function ProPage() {
   return (
     <div>
       <PageHeader
-        eyebrow="Uživo · Pro scena"
-        title="Pro mečevi"
+        eyebrow="Live · Pro scene"
+        title="Pro matches"
         action={isAdmin ? (
           <PgBtn variant="primary" size="sm" disabled={syncing} onClick={runSync}>
-            {syncing ? "Sinhronizacija..." : "⟳ Sinhronizuj"}
+            {syncing ? "Syncing..." : "⟳ Sync"}
           </PgBtn>
         ) : undefined}
       />
@@ -166,7 +166,7 @@ export default function ProPage() {
                   color: isActive ? "var(--text)" : "var(--text-muted)",
                   border: isActive ? "1px solid rgba(0,212,255,0.45)" : "1px solid var(--border)",
                 }}>
-                {g === "all" ? "Sve" : gameLabel(g)}
+                {g === "all" ? "All" : gameLabel(g)}
               </button>
             );
           })}
@@ -174,7 +174,7 @@ export default function ProPage() {
       )}
 
       {loading ? <Spinner /> : visible.length === 0 ? (
-        <Empty message={isAdmin ? "Nema pro mečeva — klikni Sinhronizuj da povučeš sa izvora." : "Trenutno nema pro mečeva."} />
+        <Empty message={isAdmin ? "No pro matches — click Sync to pull from the source." : "No pro matches right now."} />
       ) : (
         <motion.div variants={staggerContainer(0.05)} initial="hidden" animate="show"
           style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 16, alignItems: "stretch" }}>
@@ -182,7 +182,7 @@ export default function ProPage() {
             const st = STATUS_META[m.status];
             const won1 = m.status === "finished" && m.team1Score > m.team2Score;
             const won2 = m.status === "finished" && m.team2Score > m.team1Score;
-            const when = m.scheduledAt ? new Date(m.scheduledAt).toLocaleString("sr-RS", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : null;
+            const when = m.scheduledAt ? new Date(m.scheduledAt).toLocaleString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : null;
             return (
               <motion.div key={m.id} variants={fadeUp}
                 whileHover={{ scale: 1.02, y: -3, boxShadow: "0 14px 40px rgba(0,212,255,0.22)" }}

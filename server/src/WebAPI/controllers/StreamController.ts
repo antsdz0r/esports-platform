@@ -63,7 +63,7 @@ export class StreamController {
       );
       if (!created.ok) { res.status(400).json({ success: false, message: created.error ?? "Stream create failed" }); return; }
 
-      await this.auditLogService.log(req.user?.id ?? null, "CREATE_STREAM", "stream", created.stream?.streamId ?? null, `Dodat stream za meč #${gameId}`, req.socket.remoteAddress ?? null);
+      await this.auditLogService.log(req.user?.id ?? null, "CREATE_STREAM", "stream", created.stream?.streamId ?? null, `Added stream for match #${gameId}`, req.socket.remoteAddress ?? null);
       res.status(201).json({ success: true, data: created.stream });
     } catch {
       res.status(500).json({ success: false, message: "Internal server error" });
@@ -86,7 +86,7 @@ export class StreamController {
           (language as string).trim(), title ? (title as string).trim() : null, isActive !== false
         )
       );
-      if (ok) await this.auditLogService.log(req.user?.id ?? null, "UPDATE_STREAM", "stream", streamId, `Izmenjen stream #${streamId}`, req.socket.remoteAddress ?? null);
+      if (ok) await this.auditLogService.log(req.user?.id ?? null, "UPDATE_STREAM", "stream", streamId, `Edited stream #${streamId}`, req.socket.remoteAddress ?? null);
       res.status(ok ? 200 : 404).json({ success: ok, message: ok ? "Stream updated" : "Stream not found" });
     } catch {
       res.status(500).json({ success: false, message: "Internal server error" });
@@ -98,7 +98,7 @@ export class StreamController {
       const streamId = parseInt(req.params.streamId as string, 10);
       if (isNaN(streamId)) { res.status(400).json({ success: false, message: "Invalid streamId" }); return; }
       const ok = await this.streamService.delete(streamId);
-      if (ok) await this.auditLogService.log(req.user?.id ?? null, "DELETE_STREAM", "stream", streamId, `Obrisan stream #${streamId}`, req.socket.remoteAddress ?? null);
+      if (ok) await this.auditLogService.log(req.user?.id ?? null, "DELETE_STREAM", "stream", streamId, `Deleted stream #${streamId}`, req.socket.remoteAddress ?? null);
       res.status(ok ? 200 : 404).json({ success: ok, message: ok ? "Stream deleted" : "Stream not found" });
     } catch {
       res.status(500).json({ success: false, message: "Internal server error" });

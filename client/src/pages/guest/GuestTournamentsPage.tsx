@@ -45,9 +45,9 @@ export default function GuestTournamentsPage() {
         const res = await fetch(`${BASE}tournaments`);
         const data = await res.json() as { success: boolean; data?: Tournament[] };
         if (data.success) setTournaments(data.data ?? []);
-        else setError("Greška pri učitavanju turnira");
+        else setError("Failed to load tournaments");
       } catch {
-        setError("Neuspešno učitavanje turnira");
+        setError("Failed to load tournaments");
       } finally {
         setLoading(false);
       }
@@ -60,7 +60,7 @@ export default function GuestTournamentsPage() {
 
   return (
     <div>
-      <PageHeader eyebrow="Turniri" title="Aktivni turniri" />
+      <PageHeader eyebrow="Tournaments" title="Active tournaments" />
 
       {/* Filter */}
       {!loading && tournaments.length > 0 && (
@@ -86,7 +86,7 @@ export default function GuestTournamentsPage() {
       {error && <ErrorBox message={error} />}
 
       {loading ? <Spinner /> : filtered.length === 0 ? (
-        <Empty message="Nema dostupnih turnira." />
+        <Empty message="No tournaments available." />
       ) : (
         <motion.div variants={staggerContainer(0.06)} initial="hidden" animate="show"
           style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 18 }}>

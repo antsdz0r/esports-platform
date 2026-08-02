@@ -21,12 +21,12 @@ export class MatchStreamService implements IMatchStreamService {
 
   async create(data: CreateStreamData): Promise<{ ok: boolean; stream?: MatchStream; error?: string }> {
     const matchExists = await this.gameRepo.exists(data.gameId);
-    if (!matchExists) return { ok: false, error: "Meč ne postoji" };
+    if (!matchExists) return { ok: false, error: "Match does not exist" };
 
     const created = await this.streamRepo.create(
       new MatchStream(0, data.gameId, data.platform, data.channel, data.type, data.language, data.title ?? null, true)
     );
-    if (created.streamId === 0) return { ok: false, error: "Greška pri kreiranju streama" };
+    if (created.streamId === 0) return { ok: false, error: "Failed to create stream" };
 
     return { ok: true, stream: created };
   }

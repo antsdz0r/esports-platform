@@ -13,7 +13,7 @@ export default function UsersPage() {
   useEffect(() => {
     usersApi.getAll()
       .then((res) => { if (res.success) setUsers(res.data ?? []); else setError(res.message); })
-      .catch(() => setError("Neuspešno učitavanje korisnika"))
+      .catch(() => setError("Failed to load users"))
       .finally(() => setLoading(false));
   }, []);
 
@@ -23,17 +23,17 @@ export default function UsersPage() {
 
   return (
     <div>
-      <PageHeader eyebrow="Admin" title="Korisnici" />
+      <PageHeader eyebrow="Admin" title="Users" />
       {error && <ErrorBox message={error} />}
 
       <div style={{ marginBottom: 20 }}>
-        <input placeholder="🔍  Pretraži po korisničkom imenu ili emailu..." value={search} onChange={(e) => setSearch(e.target.value)}
+        <input placeholder="🔍  Search by username or email..." value={search} onChange={(e) => setSearch(e.target.value)}
           className="pg-input" style={{ maxWidth: 420 }} />
       </div>
 
-      {loading ? <Spinner /> : filtered.length === 0 && !error ? <Empty message="Nema korisnika" /> : (
+      {loading ? <Spinner /> : filtered.length === 0 && !error ? <Empty message="No users" /> : (
         <Table>
-          <TableHead columns={["ID", "Korisničko ime", "Email", "Uloga", "Status"]} />
+          <TableHead columns={["ID", "Username", "Email", "Role", "Status"]} />
           <tbody>
             {filtered.map((u, i) => (
               <motion.tr key={u.id}
@@ -48,7 +48,7 @@ export default function UsersPage() {
                 <td style={{ padding: "13px 18px" }}>
                   <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontFamily: "var(--font-ui)", fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: u.isActive ? "var(--green)" : "var(--text-dim)" }}>
                     <span style={{ width: 6, height: 6, borderRadius: "50%", background: u.isActive ? "var(--green)" : "var(--text-dim)", boxShadow: u.isActive ? "0 0 6px var(--green)" : "none", display: "inline-block" }} />
-                    {u.isActive ? "Aktivan" : "Neaktivan"}
+                    {u.isActive ? "Active" : "Inactive"}
                   </span>
                 </td>
               </motion.tr>

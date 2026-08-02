@@ -58,6 +58,8 @@ DB_SLAVE2_PORT=3308
 PANDASCORE_TOKEN=<token sa app.pandascore.co>
 PRO_SYNC_LIVE_INTERVAL_MS=900000
 PRO_SYNC_UPCOMING_INTERVAL_MS=86400000
+# Pick'em poravnanje (bodovi/streak/bedževi) — sigurnosni interval, default 2 min
+PICKEM_SETTLE_INTERVAL_MS=120000
 ```
 
 ---
@@ -76,9 +78,57 @@ Ako dodaješ na postojeću bazu, pokreni samo nedostajuće `CREATE TABLE`-ove (a
 `users`, `GAME_CATALOG`, `TEAMS`, `TOURNAMENTS`, `GAMES`, `TEAM_MEMBERS`, `TOURNAMENT_REGISTRATIONS`,
 `MATCH_PLAYERS`, `USER_WATCHLIST`, `TEAM_INVITES`, `AUDIT_LOGS`, `MATCH_STREAMS`,
 `PRO_MATCHES`, `PRO_STREAMS`, `PRO_LEAGUES`, `PRO_SERIES`, `PRO_TOURNAMENTS`, `PRO_STANDINGS`,
-`PRO_FAVORITES`, `PRO_CHAT_MESSAGES`.
+`PRO_FAVORITES`, `PRO_CHAT_MESSAGES`, `PRO_PREDICTIONS`, `PRO_PICKEM_STATS`, `USER_BADGES`.
 
 Replikacija (master–slave) je opciona za rad sajta — `DbManager` fallback-uje čitanja na master.
+
+### 3a. Migracija za Pick'em + bedževe (nove tabele)
+
+Za **postojeću živu bazu** pokreni ove `CREATE TABLE`-ove **samo na masteru** (`127.0.0.1:3306`) —
+replikacija ih prenese na slave-ove. (Za svežu bazu su već u `dbinit.sql`.) Katalog bedževa je u kodu
+(`server/src/Domain/constants/BadgeDefinitions.ts`), pa nema seed-a — samo tri tabele:
+
+```sql
+CREATE TABLE PRO_PREDICTIONS(
+  id             INT AUTO_INCREMENT PRIMARY KEY,
+  user_id        INT UNSIGNED NOT NULL,
+  pro_match_id   INT NOT NULL,
+  predicted_side TINYINT      NOT NULL,          -- 1 = team1, 2 = team2
+  is_correct     TINYINT(1)   NULL,              -- NULL dok meč nije poravnat
+  points_awarded INT          NOT NULL DEFAULT 0,
+  settled_at     DATETIME     NULL,
+  created_at     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_pred (user_id, pro_match_id),
+  INDEX idx_pred_user (user_id),
+  INDEX idx_pred_match (pro_match_id),
+  INDEX idx_pred_unsettled (is_correct),
+  FOREIGN KEY (user_id)      REFERENCES users(id)      ON DELETE CASCADE,
+  FOREIGN KEY (pro_match_id) REFERENCES PRO_MATCHES(id) ON DELETE CASCADE
+);
+
+CREATE TABLE PRO_PICKEM_STATS(
+  user_id             INT UNSIGNED PRIMARY KEY,
+  total_points        INT NOT NULL DEFAULT 0,
+  total_predictions   INT NOT NULL DEFAULT 0,
+  correct_predictions INT NOT NULL DEFAULT 0,
+  current_streak      INT NOT NULL DEFAULT 0,
+  best_streak         INT NOT NULL DEFAULT 0,
+  updated_at          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_pickem_points (total_points),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE USER_BADGES(
+  id         INT AUTO_INCREMENT PRIMARY KEY,
+  user_id    INT UNSIGNED NOT NULL,
+  badge_code VARCHAR(50)  NOT NULL,
+  earned_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_user_badge (user_id, badge_code),
+  INDEX idx_user_badges_user (user_id),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+```
 
 ---
 
@@ -180,12 +230,15 @@ TLS sertifikat najlakše Let's Encrypt-om: `certbot --nginx -d tvojdomen`.
 
 - [ ] `client/.env`: `VITE_API_URL=https://tvojdomen/api/`, `VITE_WS_URL` prazno.
 - [ ] `server/.env`: `CLIENT_URL=https://tvojdomen`, `JWT_SECRET`, `DB_*`, `PANDASCORE_TOKEN`.
-- [ ] Baza: pokrenut `dbinit.sql` (ili svi `CREATE TABLE`-ovi), uklj. `PRO_FAVORITES` i `PRO_CHAT_MESSAGES`.
+- [ ] Baza: pokrenut `dbinit.sql` (ili svi `CREATE TABLE`-ovi), uklj. `PRO_FAVORITES`, `PRO_CHAT_MESSAGES`,
+      `PRO_PREDICTIONS`, `PRO_PICKEM_STATS`, `USER_BADGES` (vidi 3a).
 - [ ] `cd server && npm ci && npm run build` (bez tipskih grešaka) → pm2 `node dist/index.js`.
 - [ ] `cd client && npm ci && npm run build` → `client/dist` servira nginx.
 - [ ] nginx: statika + `/api` + `/ws/chat` (upgrade) + TLS; `certbot`.
 - [ ] Admin nalog: `UPDATE users SET role='admin' WHERE gamer_tag='<tag>';` pa relogin.
-- [ ] Provera: otvori lajv meč → chat „povezan" (zeleno), poruke rade; favoriti rade; strimovi se embed-uju.
+- [ ] Provera: otvori lajv meč → chat „connected" (zeleno), poruke rade; favoriti rade; strimovi se embed-uju.
+- [ ] Provera Pick'em: `/dashboard/pickem` → tipuj pobednika predstojećeg meča; posle završetka meča (auto-sync
+      ili „⟳ Sync" na `/admin/pro`) rezultat se poravna, bodovi/streak/rang i bedževi se ažuriraju.
 
 ---
 
@@ -199,3 +252,10 @@ TLS sertifikat najlakše Let's Encrypt-om: `certbot --nginx -d tvojdomen`.
 - (Opciono) `app.set('trust proxy', 1)` + čitanje `X-Forwarded-For` ako želiš pravi IP klijenta u
   audit logovima (iza nginx-a je inače `127.0.0.1`).
 - Samo zvanični iframe embed strimova (bez skrejpovanja videa) — legalno i uslov za AdSense.
+- **Pick'em poravnanje** je idempotentno i vođeno postojećim ProSync-om: kada pro meč dobije finalni
+  status (`finished` sa odlučenim pobednikom), neporavnate predikcije se boduju (10 + streak bonus do +10),
+  ažuriraju se `PRO_PICKEM_STATS` (bodovi/tačnost/streak, izvor rang liste) i dodeljuju bedževi. Ništa novo
+  za deploy osim tri tabele + opcioni `PICKEM_SETTLE_INTERVAL_MS`. PandaScore free tier kasni sa rezultatima,
+  pa se i tipovi poravnaju sa istim kašnjenjem.
+- **UI jezik je engleski.** Ceo klijent + poruke koje backend vraća su prevedeni na engleski (datumi koriste
+  `en-GB`). Interni dev-komentari u kodu ostaju na srpskom (nisu deo sajta).

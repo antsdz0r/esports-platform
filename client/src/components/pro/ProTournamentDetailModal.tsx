@@ -50,12 +50,12 @@ export default function ProTournamentDetailModal({ externalId, gameLabel, onClos
 
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, flexWrap: "wrap", flexShrink: 0 }}>
             <span style={{ fontFamily: "var(--font-ui)", fontSize: 11, fontWeight: 700, color: "var(--cyan)", padding: "2px 8px", borderRadius: 6, background: "rgba(0,212,255,0.10)", border: "1px solid rgba(0,212,255,0.30)" }}>{gameLabel}</span>
-            <span style={{ fontFamily: "var(--font-head)", fontSize: 18, fontWeight: 800, color: "var(--text)" }}>{detail?.name ?? "Turnir"}</span>
+            <span style={{ fontFamily: "var(--font-head)", fontSize: 18, fontWeight: 800, color: "var(--text)" }}>{detail?.name ?? "Tournament"}</span>
             <button onClick={onClose} style={{ marginLeft: "auto", background: "none", border: "none", color: "var(--text-dim)", fontSize: 20, cursor: "pointer", lineHeight: 1 }}>✕</button>
           </div>
 
           {loading ? <Spinner /> : !detail ? (
-            <p style={{ color: "var(--text-muted)", fontFamily: "var(--font-ui)", fontSize: 13, textAlign: "center", padding: 20 }}>Nema podataka za ovaj turnir.</p>
+            <p style={{ color: "var(--text-muted)", fontFamily: "var(--font-ui)", fontSize: 13, textAlign: "center", padding: 20 }}>No data for this tournament.</p>
           ) : (() => {
             const at = (m: ProTournamentMatchDto) => (m.scheduledAt ? new Date(m.scheduledAt).getTime() : 0);
             // Schedule: uzivo + predstojeci, od najskorijeg ka najdaljem (uzivo na vrh).
@@ -94,10 +94,10 @@ export default function ProTournamentDetailModal({ externalId, gameLabel, onClos
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "0 16px", fontFamily: "var(--font-ui)", fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", color: "var(--text-muted)" }}>
                         <span style={{ width: 24, flexShrink: 0 }}>#</span>
-                        <span style={{ flex: 1 }}>Tim</span>
-                        <span style={{ width: 40, textAlign: "center", flexShrink: 0 }}>P</span>
-                        <span style={{ width: 40, textAlign: "center", flexShrink: 0 }}>I</span>
-                        <span style={{ width: 40, textAlign: "center", flexShrink: 0 }}>N</span>
+                        <span style={{ flex: 1 }}>Team</span>
+                        <span style={{ width: 40, textAlign: "center", flexShrink: 0 }}>W</span>
+                        <span style={{ width: 40, textAlign: "center", flexShrink: 0 }}>L</span>
+                        <span style={{ width: 40, textAlign: "center", flexShrink: 0 }}>T</span>
                       </div>
                       {detail.standings.map((s, i) => (
                         <div key={i} className="pg-glass" style={ROW_STYLE}>
@@ -137,13 +137,13 @@ function TeamIcon({ logo }: { logo: string | null }) {
 }
 
 function MatchList({ matches }: { matches: ProTournamentMatchDto[] }) {
-  if (matches.length === 0) return <p style={{ fontFamily: "var(--font-ui)", fontSize: 13, color: "var(--text-muted)", textAlign: "center", padding: 20 }}>Nema mečeva.</p>;
+  if (matches.length === 0) return <p style={{ fontFamily: "var(--font-ui)", fontSize: 13, color: "var(--text-muted)", textAlign: "center", padding: 20 }}>No matches.</p>;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       {matches.map((m) => {
         const won1 = m.status === "finished" && m.team1Score > m.team2Score;
         const won2 = m.status === "finished" && m.team2Score > m.team1Score;
-        const when = m.scheduledAt ? new Date(m.scheduledAt).toLocaleString("sr-RS", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : null;
+        const when = m.scheduledAt ? new Date(m.scheduledAt).toLocaleString("en-GB", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : null;
         return (
           <div key={m.externalId} className="pg-glass" style={ROW_STYLE}>
             <span style={{ width: 8, height: 8, borderRadius: "50%", background: STATUS_COLOR[m.status] ?? "var(--text-dim)", flexShrink: 0 }} />

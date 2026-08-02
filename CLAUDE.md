@@ -60,8 +60,9 @@ audit log na svakoj mutaciji (`AUDIT_LOGS`).
 - Controller vraća `{ success, data }` ili `{ success, message }`; mutacije loguju preko `auditLogService.log(...)`.
 - Frontend api_service: interfejs + axios impl; `BASE = import.meta.env.VITE_API_URL` (završava se sa `/`);
   auth header iz `readItem("authToken")`.
-- UI tekst je na srpskom. **Ne stavljati navodnike unutar JSX string literala** (lako prekinu string —
-  koristiti tipografske „…" ili izbeći).
+- **UI tekst je na engleskom** (ceo klijent + poruke koje backend vraća; datumi `en-GB`). Interni
+  dev-komentari u kodu ostaju na srpskom. **Ne stavljati navodnike unutar JSX string literala** (lako
+  prekinu string — koristiti `&apos;`/`&quot;`, tipografske „…" ili izbeći).
 - CSS varijable teme: `--violet`, `--violet2`, `--cyan`, `--green`, `--gold`, `--pink`, `--text`,
   `--text-muted`, `--text-dim`, `--border`, `--font-head`, `--font-ui`, `--font-display`; klasa `pg-glass` za kartice.
 
@@ -165,6 +166,50 @@ Ručni streamovi idu sa `source='local'`, `is_official=0`, i **preživljavaju au
 
 ---
 
+## 4b. Šta je dodato u ovoj sesiji (Pick'em + bedževi + prevod na engleski)
+
+### F) Pick'em (predikcija pobednika pro mečeva + rang lista) — nad postojećim `PRO_MATCHES`
+Retencijski hook: ulogovan korisnik tipuje pobednika predstojećeg pro meča; kad meč dobije finalni rezultat,
+tip se automatski poravna (bodovi/streak/rang/bedževi). Tri nove tabele, bez ikakve izmene jezgra.
+
+- **Baza (nove tabele, vidi sekciju 5):** `PRO_PREDICTIONS` (jedan tip po useru po meču; `predicted_side`
+  1/2; `is_correct` NULL dok nije poravnat), `PRO_PICKEM_STATS` (agregat po useru — izvor rang liste i
+  streak-a), `USER_BADGES` (osvojeni bedževi). **Katalog bedževa je u kodu**, ne u bazi.
+- **Bodovanje:** tačan tip = `10 + min(streak-1,5)*2` (streak bonus do +10); netačan = 0 i reset streak-a.
+  Otkazani meč → void (tip se briše, ne ulazi u statistiku). Zaključavanje: tipuje se samo dok je meč
+  `upcoming` i početak je u budućnosti.
+- **Backend (`server/src/*/pickem/`):**
+  - Modeli `Prediction`, `PickemStats`, `UserBadge`; DTO-i `PickemMatchDto`/`LeaderboardDto`/`BadgeDto`/
+    `PickemSummaryDto` (`Domain/DTOs/pickem/PickemDtos.ts`); `Domain/constants/BadgeDefinitions.ts`
+    (`BADGE_DEFS` sa `test(snapshot)` kriterijumima + `BADGE_BY_CODE`).
+  - Repo: `PredictionRepository` (upsert/remove/votes/history/settlement queries), `PickemStatsRepository`
+    (getForUser/upsert/getRank/leaderboard/getRowForUser), `UserBadgeRepository` (award INSERT IGNORE).
+    Dodato i `ProMatchRepository.findById` (za lock proveru).
+  - Servis: `BadgeService.evaluateForUser` (snapshot → dodela bedževa, idempotentno); `PickemService`
+    (`predict`/`removePrediction`/`getMatches`/`getMyPredictions`/`getLeaderboard`/`getSummary`/`settlePending`
+    sa in-memory mutex-om i hronološkim streak-om).
+  - `WebAPI/validators/pickem/validatePrediction.ts`; `WebAPI/controllers/PickemController.ts` (sve rute
+    `authenticate`, bez audit log-a kao i favoriti):
+    `GET /api/pickem/matches`, `GET /api/pickem/predictions`, `GET /api/pickem/leaderboard`,
+    `GET /api/pickem/summary`, `POST` i `DELETE /api/pickem/matches/:matchId/predict`.
+  - DI u `app.ts` (`export const pickemService`). **Poravnanje**: `index.ts` zove `pickemService.settlePending()`
+    posle svakog auto-sync-a + na sigurnosnom intervalu `PICKEM_SETTLE_INTERVAL_MS` (default 2 min), pa i ručni
+    „⟳ Sync" na `/admin/pro` proradi u roku od 2 min.
+- **Frontend:** `models/pickem/PickemTypes.ts`, `api_services/pickem/PickemAPIService.ts`,
+  `components/pickem/PickCard.tsx` (dugmad za tim + community % + rezultat), `BadgeShelf.tsx` (zaključani/
+  otključani bedževi po tier-u), `PickemLeaderboard.tsx`, i `pages/pickem/PickemPage.tsx` (stat kartice +
+  tabovi Predict / My picks / Leaderboard / Badges, auto-refresh 30s). Rute `/dashboard/pickem` i
+  `/admin/pickem`; nav stavka „🎯 Pick'em".
+- **Ograničenja:** PandaScore free tier kasni sa rezultatima → i poravnanje kasni; završeni mečevi ispadaju
+  iz feed-a posle 3 dana (istorija „My picks" ide iz `PRO_PREDICTIONS` join-a, bez tog limita).
+
+### G) Prevod celog sajta na engleski
+Ceo klijentski UI + poruke koje backend vraća (`message`/`error` u JSON-u, audit-log opisi, katalog bedževa)
+prevedeni su na engleski. Datumi koriste `en-GB`. Interni dev-komentari u kodu ostaju na srpskom. Konvencija
+jezika ažurirana u sekciji 3.
+
+---
+
 ## 5. Migracije baze (primeniti pri prelasku na novi računar / novu bazu)
 
 Šema je već u `server/dbinit.sql` i `docker/setup-replication.sh`. Za **postojeću živu bazu** pokreni
@@ -222,6 +267,46 @@ WS adresa: `VITE_WS_URL` (dev = `ws://localhost:4000`, mimo LB); u prod-u prazno
 iz `VITE_API_URL`. Gateway prima WS samo sa `CLIENT_URL` origin-a (prazno/"*" = dev, sve dozvoljeno).
 **Deployment**: vidi `DEPLOYMENT.md` (nginx: statika + `/api` + `/ws/chat` upgrade + TLS, prod env, pm2, migracije).
 
+**Pick'em + bedževi (nove tabele `PRO_PREDICTIONS`, `PRO_PICKEM_STATS`, `USER_BADGES`)** — CREATE TABLE samo na
+masteru (127.0.0.1:3306). Katalog bedževa je u kodu (`Domain/constants/BadgeDefinitions.ts`), pa nema seed-a.
+```sql
+CREATE TABLE PRO_PREDICTIONS(
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT UNSIGNED NOT NULL,
+  pro_match_id INT NOT NULL,
+  predicted_side TINYINT NOT NULL,           -- 1 = team1, 2 = team2
+  is_correct TINYINT(1) NULL,                -- NULL dok meč nije poravnat
+  points_awarded INT NOT NULL DEFAULT 0,
+  settled_at DATETIME NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_pred (user_id, pro_match_id),
+  INDEX idx_pred_user (user_id), INDEX idx_pred_match (pro_match_id), INDEX idx_pred_unsettled (is_correct),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (pro_match_id) REFERENCES PRO_MATCHES(id) ON DELETE CASCADE
+);
+CREATE TABLE PRO_PICKEM_STATS(
+  user_id INT UNSIGNED PRIMARY KEY,
+  total_points INT NOT NULL DEFAULT 0,
+  total_predictions INT NOT NULL DEFAULT 0,
+  correct_predictions INT NOT NULL DEFAULT 0,
+  current_streak INT NOT NULL DEFAULT 0,
+  best_streak INT NOT NULL DEFAULT 0,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_pickem_points (total_points),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+CREATE TABLE USER_BADGES(
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT UNSIGNED NOT NULL,
+  badge_code VARCHAR(50) NOT NULL,
+  earned_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_user_badge (user_id, badge_code),
+  INDEX idx_user_badges_user (user_id),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+```
+
 ---
 
 ## 6. Env varijable
@@ -243,6 +328,7 @@ DB_SLAVE2_PORT=3308
 PANDASCORE_TOKEN=<token sa app.pandascore.co, besplatan tier>
 PRO_SYNC_LIVE_INTERVAL_MS=900000
 PRO_SYNC_UPCOMING_INTERVAL_MS=86400000
+PICKEM_SETTLE_INTERVAL_MS=120000
 ```
 `client/.env`:
 ```
@@ -281,9 +367,11 @@ Token je privatan — samo na serveru, nikad na klijentu.
 
 ## 9. Sledeći koraci (backlog)
 
-- **Pick'em** (predikcije + leaderboard) preko pro/turnir mečeva — retencijski hook.
+- ~~**Pick'em** (predikcije + leaderboard)~~ — **URAĐENO** (sekcija 4b: predikcija pobednika pro mečeva,
+  bodovi+streak, rang lista). Sledeće: pick'em i nad korisničkim turnirima; predikcija tačnog skora (BO).
 - ~~Ručno dodavanje kastera za pro mečeve~~ — **URAĐENO** (sekcija 4a/E: `source='local'` preživljava sync).
-- Sistem **bedževa/statusa i sezonskih nagrada** (nula troška), kasnije sponzorisane nagrade + reklame.
+- ~~Sistem **bedževa/statusa**~~ — **URAĐENO** (sekcija 4b: automatski pick'em milestones + streak;
+  katalog u kodu). Sledeće: sezonske/sponzorisane nagrade, admin ručna dodela, prikaz bedža uz chat nadimak.
 - **SEO javne stranice** za timove/mečeve/turnire (indeksirani URL-ovi).
 - **Dublja istorija „Završeno"**: trenutno prozor od 2 dana u feed-u; za pravi arhiv/rezultate napraviti
   zaseban endpoint + stranicu (bez limita od 2 dana), po mogućstvu sortirano po važnosti lige.

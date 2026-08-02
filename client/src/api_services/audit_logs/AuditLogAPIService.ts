@@ -24,6 +24,6 @@ export const auditLogApi: IAuditLogAPIService = {
         headers: authHeader(),
       })
       .then((r) => r.data)
-      .catch(() => makeError<AuditLogDto[]>("Neuspešno učitavanje audit loga"));
+      .catch(() => makeError<AuditLogDto[]>("Failed to load audit log"));
   },
 };

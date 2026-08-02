@@ -74,9 +74,9 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
                 )}
                 <div style={{ fontFamily: "var(--font-ui)", fontSize: 13, color: "var(--text-muted)", marginBottom: 24, lineHeight: 1.55 }}>{opts.message}</div>
                 <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
-                  <PgBtn variant="ghost" size="sm" onClick={() => close(false)}>{opts.cancelText ?? "Otkaži"}</PgBtn>
+                  <PgBtn variant="ghost" size="sm" onClick={() => close(false)}>{opts.cancelText ?? "Cancel"}</PgBtn>
                   <PgBtn variant={variant === "cyan" ? "cyan" : variant === "danger" ? "danger" : "primary"} size="sm" onClick={() => close(true)}>
-                    {opts.confirmText ?? "Potvrdi"}
+                    {opts.confirmText ?? "Confirm"}
                   </PgBtn>
                 </div>
               </motion.div>

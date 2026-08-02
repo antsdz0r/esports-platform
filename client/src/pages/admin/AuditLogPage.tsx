@@ -35,7 +35,7 @@ export default function AuditLogPage() {
           setError(res.message);
         }
       })
-      .catch(() => setError("Neuspešno učitavanje audit loga"))
+      .catch(() => setError("Failed to load audit log"))
       .finally(() => setLoading(false));
   }, []);
 
@@ -46,10 +46,10 @@ export default function AuditLogPage() {
       <PageHeader eyebrow="Admin" title="Audit Log" />
       {error && <ErrorBox message={error} />}
 
-      {loading ? <Spinner /> : logs.length === 0 && !error ? <Empty message="Nema zabeleženih događaja" /> : (
+      {loading ? <Spinner /> : logs.length === 0 && !error ? <Empty message="No recorded events" /> : (
         <>
           <Table>
-            <TableHead columns={["ID", "Vreme", "Korisnik", "Akcija", "Entitet", "Opis", "IP adresa"]} />
+            <TableHead columns={["ID", "Time", "User", "Action", "Entity", "Description", "IP address"]} />
             <tbody>
               {logs.map((l, i) => (
                 <motion.tr key={l.id}
@@ -59,7 +59,7 @@ export default function AuditLogPage() {
                   onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.background = "transparent")}>
                   <td style={{ padding: "13px 18px", fontFamily: "var(--font-display)", fontSize: 12, color: "var(--text-dim)" }}>#{l.id}</td>
                   <td style={{ padding: "13px 18px", fontFamily: "monospace", fontSize: 12, color: "var(--text-muted)", whiteSpace: "nowrap" }}>
-                    {new Date(l.createdAt).toLocaleString("sr")}
+                    {new Date(l.createdAt).toLocaleString("en-GB")}
                   </td>
                   <td style={{ padding: "13px 18px", fontFamily: "var(--font-display)", fontSize: 12, color: "var(--text-dim)" }}>
                     {l.userId != null ? `#${l.userId}` : "—"}

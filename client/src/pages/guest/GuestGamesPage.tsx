@@ -32,9 +32,9 @@ export default function GuestGamesPage() {
         const res = await fetch(`${BASE}games`);
         const data = await res.json() as { success: boolean; data?: Game[] };
         if (data.success) setGames(data.data ?? []);
-        else setError("Greška pri učitavanju igara");
+        else setError("Failed to load games");
       } catch {
-        setError("Neuspešno učitavanje igara");
+        setError("Failed to load games");
       } finally {
         setLoading(false);
       }
@@ -44,12 +44,12 @@ export default function GuestGamesPage() {
 
   return (
     <div>
-      <PageHeader eyebrow="Katalog" title="Igre" />
+      <PageHeader eyebrow="Catalog" title="Games" />
 
       {error && <ErrorBox message={error} />}
 
       {loading ? <Spinner /> : games.length === 0 ? (
-        <Empty message="Nema dostupnih igara." />
+        <Empty message="No games available." />
       ) : (
         <motion.div variants={staggerContainer(0.06)} initial="hidden" animate="show"
           style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 18 }}>
@@ -75,7 +75,7 @@ export default function GuestGamesPage() {
                         {g.genre}
                       </span>
                       <span style={{ fontFamily: "var(--font-ui)", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", padding: "2px 8px", borderRadius: 5, background: "rgba(255,255,255,0.05)", border: "1px solid var(--border)", color: "var(--text-muted)" }}>
-                        {g.maxPlayers} igrača/tim
+                        {g.maxPlayers} players/team
                       </span>
                     </div>
                   </div>

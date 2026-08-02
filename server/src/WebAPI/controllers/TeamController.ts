@@ -143,10 +143,10 @@ export class TeamController {
     try {
       const teamId = parseInt(req.params['id'] as string, 10);
       const { inviteeId } = req.body;
-      if (!inviteeId) { res.status(400).json({ success: false, message: "inviteeId je obavezan" }); return; }
+      if (!inviteeId) { res.status(400).json({ success: false, message: "inviteeId is required" }); return; }
       const result = await this.teamService.sendInvite(req.user!.id, teamId, Number(inviteeId));
       result.ok
-        ? res.status(201).json({ success: true, message: "Pozivnica poslata" })
+        ? res.status(201).json({ success: true, message: "Invite sent" })
         : res.status(400).json({ success: false, message: result.error });
     } catch {
       res.status(500).json({ success: false, message: "Internal server error" });
@@ -157,11 +157,11 @@ export class TeamController {
     try {
       const { inviteId, accept } = req.body;
       if (inviteId === undefined || accept === undefined) {
-        res.status(400).json({ success: false, message: "inviteId i accept su obavezni" }); return;
+        res.status(400).json({ success: false, message: "inviteId and accept are required" }); return;
       }
       const result = await this.teamService.respondInvite(req.user!.id, Number(inviteId), Boolean(accept));
       result.ok
-        ? res.json({ success: true, message: accept ? "Pozivnica prihvaćena" : "Pozivnica odbijena" })
+        ? res.json({ success: true, message: accept ? "Invite accepted" : "Invite declined" })
         : res.status(400).json({ success: false, message: result.error });
     } catch {
       res.status(500).json({ success: false, message: "Internal server error" });

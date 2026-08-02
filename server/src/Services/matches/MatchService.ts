@@ -123,16 +123,16 @@ export class MatchService implements IMatchService {
     const isCaptain = members.some(
       (m) => m.playerId === captainId && m.role === TeamMemberRole.CAPTAIN,
     );
-    if (!isCaptain) return { ok: false, error: "Samo kapiten moze dodati igraca u mec" };
+    if (!isCaptain) return { ok: false, error: "Only the captain can add a player to a match" };
 
     const isTeamMember = members.some((m) => m.playerId === playerId);
-    if (!isTeamMember) return { ok: false, error: "Igrac nije clan ovog tima" };
+    if (!isTeamMember) return { ok: false, error: "Player is not a member of this team" };
 
     const alreadyIn = await this.matchPlayerRepo.exists(gameId, playerId);
-    if (alreadyIn) return { ok: false, error: "Igrac je vec dodat u ovaj mec" };
+    if (alreadyIn) return { ok: false, error: "Player is already added to this match" };
 
     const ok = await this.matchPlayerRepo.addPlayer(new MatchPlayer(gameId, playerId, teamId, null));
-    return ok ? { ok: true } : { ok: false, error: "Greska pri dodavanju igraca" };
+    return ok ? { ok: true } : { ok: false, error: "Failed to add player" };
   }
 
   async updatePerformance(

@@ -29,7 +29,7 @@ export class AuthController {
       const { gamerTag, password } = req.body;
 
       if (!gamerTag || !password) {
-        res.status(400).json({ success: false, message: "gamerTag i password su obavezni." });
+        res.status(400).json({ success: false, message: "gamerTag and password are required." });
         return;
       }
 
@@ -43,7 +43,7 @@ export class AuthController {
       const result = await this.authService.login(gamerTag, password);
 
       if (result.id === 0) {
-        res.status(401).json({ success: false, message: "Neispravni kredencijali ili nalog nije aktivan." });
+        res.status(401).json({ success: false, message: "Invalid credentials or the account is not active." });
         return;
       }
 
@@ -54,11 +54,11 @@ export class AuthController {
       });
 
       const loginIp = req.socket.remoteAddress ?? null;
-      await this.auditLogService.log(result.id, "LOGIN", "user", result.id, `Korisnik ${result.gamerTag} se prijavio`, loginIp);
+      await this.auditLogService.log(result.id, "LOGIN", "user", result.id, `User ${result.gamerTag} logged in`, loginIp);
 
       res.status(200).json({
         success: true,
-        message: "Uspešna prijava.",
+        message: "Logged in successfully.",
         data: {
           id: result.id,
           gamerTag: result.gamerTag,
@@ -67,7 +67,7 @@ export class AuthController {
         },
       });
     } catch (err) {
-      res.status(500).json({ success: false, message: "Greška pri prijavi.", error: err });
+      res.status(500).json({ success: false, message: "Login failed.", error: err });
     }
   }
 
@@ -78,7 +78,7 @@ export class AuthController {
       if (!gamerTag || !email || !password) {
         res.status(400).json({
           success: false,
-          message: "gamerTag, email i password su obavezni.",
+          message: "gamerTag, email and password are required.",
         });
         return;
       }
@@ -103,7 +103,7 @@ export class AuthController {
       if (result.id === 0) {
         res.status(400).json({
           success: false,
-          message: "Registracija nije uspela. Gamer tag ili email već postoje.",
+          message: "Registration failed. Gamer tag or email already exists.",
         });
         return;
       }
@@ -115,11 +115,11 @@ export class AuthController {
       });
 
       const registerIp = req.socket.remoteAddress ?? null;
-      await this.auditLogService.log(result.id, "REGISTER", "user", result.id, `Nov korisnik registrovan: ${result.gamerTag}`, registerIp);
+      await this.auditLogService.log(result.id, "REGISTER", "user", result.id, `New user registered: ${result.gamerTag}`, registerIp);
 
       res.status(201).json({
         success: true,
-        message: "Uspešna registracija.",
+        message: "Registered successfully.",
         data: {
           id: result.id,
           gamerTag: result.gamerTag,
@@ -128,7 +128,7 @@ export class AuthController {
         },
       });
     } catch (err) {
-      res.status(500).json({ success: false, message: "Greška pri registraciji.", error: err });
+      res.status(500).json({ success: false, message: "Registration failed.", error: err });
     }
   }
 
@@ -136,10 +136,10 @@ export class AuthController {
   try {
     const userId = req.user!.id;
     const ip = req.socket.remoteAddress ?? null;
-    await this.auditLogService.log(userId, "LOGOUT", "user", userId, `Korisnik ${req.user!.gamerTag} se odjavio`, ip);
-    res.json({ success: true, message: "Uspešna odjava." });
+    await this.auditLogService.log(userId, "LOGOUT", "user", userId, `User ${req.user!.gamerTag} logged out`, ip);
+    res.json({ success: true, message: "Logged out successfully." });
   } catch {
-    res.status(500).json({ success: false, message: "Greška pri odjavi." });
+    res.status(500).json({ success: false, message: "Logout failed." });
   }
 }
 

@@ -16,7 +16,7 @@ export function LoginForm({ authApi }: { authApi: IAuthAPIService }) {
     e.preventDefault(); setError(""); setLoading(true);
     const res = await authApi.login(username, password);
     setLoading(false);
-    if (!res.success || !res.data) { setError(res.message ?? "Pogrešni kredencijali"); return; }
+    if (!res.success || !res.data) { setError(res.message ?? "Invalid credentials"); return; }
     login(res.data.token);
   };
 
@@ -31,9 +31,9 @@ export function LoginForm({ authApi }: { authApi: IAuthAPIService }) {
             <circle cx="30" cy="30" r="5.5" fill="var(--violet)" />
           </svg>
         </div>
-        <h1 className="pg-glitch" data-text="DOBRODOŠAO"
-          style={{ fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 900, letterSpacing: "0.08em", color: "var(--text)", marginBottom: 6 }}>DOBRODOŠAO</h1>
-        <p style={{ fontSize: 13, color: "var(--text-muted)" }}>Prijavi se u PulseGrid arenu</p>
+        <h1 className="pg-glitch" data-text="WELCOME"
+          style={{ fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 900, letterSpacing: "0.08em", color: "var(--text)", marginBottom: 6 }}>WELCOME</h1>
+        <p style={{ fontSize: 13, color: "var(--text-muted)" }}>Log in to the PulseGrid arena</p>
       </div>
 
       {error && (
@@ -44,23 +44,23 @@ export function LoginForm({ authApi }: { authApi: IAuthAPIService }) {
 
       <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <label style={lblStyle}>Korisničko ime</label>
-          <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} required placeholder="tvoj_username" className="pg-input" />
+          <label style={lblStyle}>Username</label>
+          <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} required placeholder="your_username" className="pg-input" />
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <label style={lblStyle}>Lozinka</label>
+          <label style={lblStyle}>Password</label>
           <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required placeholder="••••••••" className="pg-input" />
         </div>
         <div style={{ marginTop: 6 }}>
           <PgBtn type="submit" variant="primary" full disabled={loading}>
-            {loading ? "Prijavljivanje..." : "Prijavi se"}
+            {loading ? "Logging in..." : "Log in"}
           </PgBtn>
         </div>
       </form>
 
       <p style={{ textAlign: "center", color: "var(--text-muted)", fontSize: 13, marginTop: 20 }}>
-        Nemaš nalog?{" "}
-        <a href="/register" style={{ color: "var(--violet2)", fontWeight: 600 }}>Registruj se</a>
+        Don&apos;t have an account?{" "}
+        <a href="/register" style={{ color: "var(--violet2)", fontWeight: 600 }}>Sign up</a>
       </p>
 
       <div style={{ marginTop: 16, borderTop: "1px solid var(--border)", paddingTop: 16 }}>
@@ -76,10 +76,10 @@ export function LoginForm({ authApi }: { authApi: IAuthAPIService }) {
           onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,196,68,0.13)"; }}
           onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,196,68,0.07)"; }}
         >
-          👁 Nastavi kao gost
+          👁 Continue as guest
         </button>
         <p style={{ textAlign: "center", fontSize: 11, color: "var(--text-dim)", marginTop: 8, lineHeight: 1.4 }}>
-          Pregled turnira i kataloga igara — bez registracije
+          Browse tournaments and the game catalog — no sign-up required
         </p>
       </div>
     </div>

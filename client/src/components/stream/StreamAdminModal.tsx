@@ -12,9 +12,9 @@ interface StreamAdminModalProps {
 
 const PLATFORMS: StreamPlatform[] = ["twitch", "youtube", "kick"];
 const TYPES: { value: StreamType; label: string }[] = [
-  { value: "official", label: "Zvanični" },
+  { value: "official", label: "Official" },
   { value: "cocast", label: "Co-stream" },
-  { value: "caster", label: "Kaster" },
+  { value: "caster", label: "Caster" },
 ];
 
 const CHANNEL_HINT: Record<StreamPlatform, string> = {
@@ -41,7 +41,7 @@ export default function StreamAdminModal({ gameId, onClose }: StreamAdminModalPr
     setLoading(true);
     const res = await streamApi.getAllForMatch(gameId);
     if (res.success && res.data) setStreams(res.data);
-    else setError(res.message ?? "Greška pri učitavanju");
+    else setError(res.message ?? "Failed to load");
     setLoading(false);
   };
 
@@ -56,7 +56,7 @@ export default function StreamAdminModal({ gameId, onClose }: StreamAdminModalPr
       setChannel(""); setTitle("");
       await load();
     } else {
-      setError(res.message ?? "Neuspešno dodavanje");
+      setError(res.message ?? "Failed to add");
     }
     setSaving(false);
   };
@@ -68,7 +68,7 @@ export default function StreamAdminModal({ gameId, onClose }: StreamAdminModalPr
       language: s.language, title: s.title, isActive: !s.isActive,
     });
     if (res.success) await load();
-    else setError(res.message ?? "Neuspešna izmena");
+    else setError(res.message ?? "Update failed");
     setBusyId(null);
   };
 
@@ -76,7 +76,7 @@ export default function StreamAdminModal({ gameId, onClose }: StreamAdminModalPr
     setBusyId(streamId);
     const res = await streamApi.remove(streamId);
     if (res.success) await load();
-    else setError(res.message ?? "Neuspešno brisanje");
+    else setError(res.message ?? "Failed to delete");
     setBusyId(null);
   };
 
@@ -94,8 +94,8 @@ export default function StreamAdminModal({ gameId, onClose }: StreamAdminModalPr
 
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div>
-              <p style={{ fontFamily: "var(--font-ui)", fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 4 }}>Meč #{gameId}</p>
-              <h3 style={{ fontFamily: "var(--font-head)", fontSize: 18, fontWeight: 800, color: "var(--text)" }}>Streamovi</h3>
+              <p style={{ fontFamily: "var(--font-ui)", fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 4 }}>Match #{gameId}</p>
+              <h3 style={{ fontFamily: "var(--font-head)", fontSize: 18, fontWeight: 800, color: "var(--text)" }}>Streams</h3>
             </div>
             <button onClick={onClose} style={{ background: "none", border: "none", color: "var(--text-dim)", fontSize: 20, cursor: "pointer" }}>✕</button>
           </div>
@@ -107,7 +107,7 @@ export default function StreamAdminModal({ gameId, onClose }: StreamAdminModalPr
           {loading ? (
             <div style={{ display: "flex", justifyContent: "center", padding: "12px 0" }}><Spinner /></div>
           ) : streams.length === 0 ? (
-            <p style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--text-muted)", textAlign: "center", padding: "8px 0" }}>Još nema streamova za ovaj meč.</p>
+            <p style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--text-muted)", textAlign: "center", padding: "8px 0" }}>No streams for this match yet.</p>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {streams.map((s) => (
@@ -123,14 +123,14 @@ export default function StreamAdminModal({ gameId, onClose }: StreamAdminModalPr
                   <button
                     disabled={busyId === s.streamId}
                     onClick={() => void toggleActive(s)}
-                    title={s.isActive ? "Sakrij (deaktiviraj)" : "Prikaži (aktiviraj)"}
+                    title={s.isActive ? "Hide (deactivate)" : "Show (activate)"}
                     style={{ fontFamily: "var(--font-ui)", fontSize: 10, fontWeight: 700, padding: "3px 10px", borderRadius: 6, cursor: "pointer", border: `1px solid ${s.isActive ? "var(--green)" : "var(--border)"}`, background: s.isActive ? "rgba(0,255,136,0.1)" : "rgba(255,255,255,0.03)", color: s.isActive ? "var(--green)" : "var(--text-dim)" }}>
-                    {s.isActive ? "aktivan" : "skriven"}
+                    {s.isActive ? "active" : "hidden"}
                   </button>
                   <button
                     disabled={busyId === s.streamId}
                     onClick={() => void remove(s.streamId)}
-                    title="Obriši"
+                    title="Delete"
                     style={{ background: "none", border: "1px solid var(--pink)", color: "var(--pink)", fontSize: 12, cursor: "pointer", padding: "3px 9px", borderRadius: 6 }}>
                     ✕
                   </button>
@@ -141,7 +141,7 @@ export default function StreamAdminModal({ gameId, onClose }: StreamAdminModalPr
 
           {/* Forma za dodavanje */}
           <div style={{ borderTop: "1px solid var(--border)", paddingTop: 16, display: "flex", flexDirection: "column", gap: 10 }}>
-            <p style={{ fontFamily: "var(--font-ui)", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--violet2)" }}>Dodaj stream</p>
+            <p style={{ fontFamily: "var(--font-ui)", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--violet2)" }}>Add stream</p>
 
             <div style={{ display: "flex", gap: 8 }}>
               <select className="pg-input" value={platform} onChange={(e) => setPlatform(e.target.value as StreamPlatform)} style={{ flex: 1 }}>
@@ -155,12 +155,12 @@ export default function StreamAdminModal({ gameId, onClose }: StreamAdminModalPr
             <input className="pg-input" placeholder={CHANNEL_HINT[platform]} value={channel} onChange={(e) => setChannel(e.target.value)} style={{ width: "100%", boxSizing: "border-box" }} />
 
             <div style={{ display: "flex", gap: 8 }}>
-              <input className="pg-input" placeholder="Jezik (en, sr...)" value={language} onChange={(e) => setLanguage(e.target.value)} style={{ width: 120, boxSizing: "border-box" }} />
-              <input className="pg-input" placeholder="Naslov (opciono)" value={title} onChange={(e) => setTitle(e.target.value)} style={{ flex: 1, boxSizing: "border-box" }} />
+              <input className="pg-input" placeholder="Language (en, sr...)" value={language} onChange={(e) => setLanguage(e.target.value)} style={{ width: 120, boxSizing: "border-box" }} />
+              <input className="pg-input" placeholder="Title (optional)" value={title} onChange={(e) => setTitle(e.target.value)} style={{ flex: 1, boxSizing: "border-box" }} />
             </div>
 
             <PgBtn variant="primary" size="sm" disabled={saving || !channel.trim()} onClick={add}>
-              {saving ? "Dodavanje..." : "＋ Dodaj stream"}
+              {saving ? "Adding..." : "＋ Add stream"}
             </PgBtn>
           </div>
         </motion.div>

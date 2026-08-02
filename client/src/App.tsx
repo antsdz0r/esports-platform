@@ -6,6 +6,7 @@ import GuestTournamentsPage from "./pages/guest/GuestTournamentsPage";
 import GuestGamesPage from "./pages/guest/GuestGamesPage";
 import ProPage from "./pages/pro/ProPage";
 import ProTournamentsPage from "./pages/pro/ProTournamentsPage";
+import PickemPage from "./pages/pickem/PickemPage";
 
 import LoginPage    from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
@@ -42,6 +43,7 @@ export default function App() {
       <Route path="/dashboard/watchlist" element={<ProtectedRoute requiredRole="player"><WatchlistPage /></ProtectedRoute>} />
       <Route path="/dashboard/pro" element={<ProtectedRoute requiredRole="player"><ProPage /></ProtectedRoute>} />
       <Route path="/dashboard/pro-turniri" element={<ProtectedRoute requiredRole="player"><ProTournamentsPage /></ProtectedRoute>} />
+      <Route path="/dashboard/pickem" element={<ProtectedRoute requiredRole="player"><PickemPage /></ProtectedRoute>} />
 
       {/* Admin routes */}
       <Route path="/admin"                element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />
@@ -53,6 +55,7 @@ export default function App() {
       <Route path="/admin/tournaments/:id" element={<ProtectedRoute requiredRole="admin"><TournamentDetailPage isAdmin /></ProtectedRoute>} />
       <Route path="/admin/pro" element={<ProtectedRoute requiredRole="admin"><ProPage /></ProtectedRoute>} />
       <Route path="/admin/pro-turniri" element={<ProtectedRoute requiredRole="admin"><ProTournamentsPage /></ProtectedRoute>} />
+      <Route path="/admin/pickem" element={<ProtectedRoute requiredRole="admin"><PickemPage /></ProtectedRoute>} />
 
       {/* Public */}
       <Route path="/tournaments/:id" element={<TournamentDetailPage />} />

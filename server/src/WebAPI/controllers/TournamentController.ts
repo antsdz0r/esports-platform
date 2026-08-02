@@ -77,12 +77,12 @@ export class TournamentController {
   private async getById(req: Request, res: Response): Promise<void> {
     try {
       const id = Number(req.params.id);
-      if (isNaN(id)) { res.status(400).json({ message: "Neispravan ID" }); return; }
+      if (isNaN(id)) { res.status(400).json({ message: "Invalid ID" }); return; }
       const [tournament, registrations] = await Promise.all([
         this.tournamentService.getById(id),
         this.tournamentService.getRegistrations(id),
       ]);
-      if (tournament.tournamentId === 0) { res.status(404).json({ message: "Turnir nije pronađen" }); return; }
+      if (tournament.tournamentId === 0) { res.status(404).json({ message: "Tournament not found" }); return; }
       res.json({ ...tournament, registrations });
     } catch {
       res.status(500).json({ success: false, message: "Internal server error" });
@@ -93,14 +93,14 @@ export class TournamentController {
     try {
       const { gameId, name, format, maxTeams, registrationDeadline, prizePool, imageUrl } = req.body;
       const deadline = new Date(registrationDeadline);
-      if (isNaN(deadline.getTime())) { res.status(400).json({ message: "Neispravan datum roka prijave" }); return; }
+      if (isNaN(deadline.getTime())) { res.status(400).json({ message: "Invalid registration deadline date" }); return; }
       const validation = validateTournament(name, format, Number(maxTeams), deadline);
       if (!validation.valid) { res.status(400).json({ success: false, message: validation.message }); return; }
       const created = await this.tournamentService.create(
         new CreateTournamentData(Number(gameId), String(name), String(format) as TournamentFormat, Number(maxTeams), deadline, prizePool ? Number(prizePool) : 0, imageUrl ? String(imageUrl) : null)
       );
-      if (!created.ok) { res.status(400).json({ message: created.error ?? "Kreiranje nije uspelo" }); return; }
-      await this.auditLogService.log(req.user?.id ?? null, "CREATE_TOURNAMENT", "tournament", created.tournament?.tournamentId ?? null, `Kreiran turnir: ${name}`, req.socket.remoteAddress ?? null);
+      if (!created.ok) { res.status(400).json({ message: created.error ?? "Creation failed" }); return; }
+      await this.auditLogService.log(req.user?.id ?? null, "CREATE_TOURNAMENT", "tournament", created.tournament?.tournamentId ?? null, `Created tournament: ${name}`, req.socket.remoteAddress ?? null);
       res.status(201).json(created.tournament);
     } catch {
       res.status(500).json({ success: false, message: "Internal server error" });
@@ -112,14 +112,14 @@ export class TournamentController {
       const id = Number(req.params.id);
       const { gameId, name, format, maxTeams, registrationDeadline, prizePool, status, imageUrl } = req.body;
       const deadline = new Date(registrationDeadline);
-      if (isNaN(deadline.getTime())) { res.status(400).json({ message: "Neispravan datum roka prijave" }); return; }
+      if (isNaN(deadline.getTime())) { res.status(400).json({ message: "Invalid registration deadline date" }); return; }
       const validation = validateTournament(name, format, Number(maxTeams), deadline);
       if (!validation.valid) { res.status(400).json({ success: false, message: validation.message }); return; }
       const ok = await this.tournamentService.update(id,
         new UpdateTournamentData(Number(gameId), String(name), String(format) as TournamentFormat, Number(maxTeams), deadline, prizePool ? Number(prizePool) : 0, status as TournamentStatus ?? TournamentStatus.OPEN, imageUrl ? String(imageUrl) : null)
       );
-      if (ok) await this.auditLogService.log(req.user?.id ?? null, "UPDATE_TOURNAMENT", "tournament", id, `Izmenjen turnir #${id}`, req.socket.remoteAddress ?? null);
-      ok ? res.json({ message: "Turnir uspešno ažuriran" }) : res.status(400).json({ message: "Ažuriranje nije uspelo" });
+      if (ok) await this.auditLogService.log(req.user?.id ?? null, "UPDATE_TOURNAMENT", "tournament", id, `Edited tournament #${id}`, req.socket.remoteAddress ?? null);
+      ok ? res.json({ message: "Tournament updated successfully" }) : res.status(400).json({ message: "Update failed" });
     } catch {
       res.status(500).json({ success: false, message: "Internal server error" });
     }
@@ -129,8 +129,8 @@ export class TournamentController {
     try {
       const tournamentId = Number(req.params.id);
       const ok = await this.tournamentService.delete(tournamentId);
-      if (ok) await this.auditLogService.log(req.user?.id ?? null, "DELETE_TOURNAMENT", "tournament", tournamentId, `Obrisan turnir #${tournamentId}`, req.socket.remoteAddress ?? null);
-      ok ? res.json({ message: "Turnir obrisan" }) : res.status(404).json({ message: "Turnir nije pronađen" });
+      if (ok) await this.auditLogService.log(req.user?.id ?? null, "DELETE_TOURNAMENT", "tournament", tournamentId, `Deleted tournament #${tournamentId}`, req.socket.remoteAddress ?? null);
+      ok ? res.json({ message: "Tournament deleted" }) : res.status(404).json({ message: "Tournament not found" });
     } catch {
       res.status(500).json({ success: false, message: "Internal server error" });
     }
@@ -140,9 +140,9 @@ export class TournamentController {
     try {
       const tournamentId = Number(req.params.id);
       const { teamId } = req.body;
-      if (!teamId) { res.status(400).json({ message: "teamId je obavezan" }); return; }
+      if (!teamId) { res.status(400).json({ message: "teamId is required" }); return; }
       const result = await this.tournamentService.registerTeam(tournamentId, Number(teamId), req.user!.id);
-      result.ok ? res.status(201).json({ message: "Tim prijavljen" }) : res.status(400).json({ message: result.error });
+      result.ok ? res.status(201).json({ message: "Team registered" }) : res.status(400).json({ message: result.error });
     } catch {
       res.status(500).json({ success: false, message: "Internal server error" });
     }
@@ -153,7 +153,7 @@ export class TournamentController {
       const tournamentId = Number(req.params.id);
       const teamId = Number(req.params.teamId);
       const ok = await this.tournamentService.unregisterTeam(tournamentId, teamId, req.user!.id);
-      ok ? res.json({ message: "Tim odjavljen" }) : res.status(400).json({ message: "Odjava nije uspela" });
+      ok ? res.json({ message: "Team unregistered" }) : res.status(400).json({ message: "Logout failed" });
     } catch {
       res.status(500).json({ success: false, message: "Internal server error" });
     }
@@ -165,11 +165,11 @@ export class TournamentController {
       const teamId = Number(req.params.teamId);
       const { status } = req.body;
       if (!Object.values(TournamentRegistrationStatus).includes(status)) {
-        res.status(400).json({ message: "Neispravan status prijave" }); return;
+        res.status(400).json({ message: "Invalid registration status" }); return;
       }
       const ok = await this.tournamentService.updateRegistrationStatus(tournamentId, teamId, status as TournamentRegistrationStatus);
-      if (ok) await this.auditLogService.log(req.user?.id ?? null, "UPDATE_REGISTRATION", "tournament", tournamentId, `Prijava tima #${teamId} -> ${status} (turnir #${tournamentId})`, req.socket.remoteAddress ?? null);
-      ok ? res.json({ message: "Status prijave ažuriran" }) : res.status(404).json({ message: "Prijava nije pronađena" });
+      if (ok) await this.auditLogService.log(req.user?.id ?? null, "UPDATE_REGISTRATION", "tournament", tournamentId, `Team #${teamId} registration -> ${status} (tournament #${tournamentId})`, req.socket.remoteAddress ?? null);
+      ok ? res.json({ message: "Registration status updated" }) : res.status(404).json({ message: "Registration not found" });
     } catch {
       res.status(500).json({ success: false, message: "Internal server error" });
     }
@@ -179,8 +179,8 @@ export class TournamentController {
     try {
       const tournamentId = Number(req.params.id);
       const result = await this.tournamentService.lockAndGenerateBracket(tournamentId);
-      if (result.ok) await this.auditLogService.log(req.user?.id ?? null, "GENERATE_BRACKET", "tournament", tournamentId, `Generisan raspored za turnir #${tournamentId}`, req.socket.remoteAddress ?? null);
-      result.ok ? res.json({ message: "Bracket uspešno generisan" }) : res.status(400).json({ message: result.error });
+      if (result.ok) await this.auditLogService.log(req.user?.id ?? null, "GENERATE_BRACKET", "tournament", tournamentId, `Generated schedule for tournament #${tournamentId}`, req.socket.remoteAddress ?? null);
+      result.ok ? res.json({ message: "Bracket generated successfully" }) : res.status(400).json({ message: result.error });
     } catch {
       res.status(500).json({ success: false, message: "Internal server error" });
     }
@@ -190,9 +190,9 @@ export class TournamentController {
     try {
       const tournamentId = Number(req.params.id);
       const result = await this.tournamentService.advanceBracket(tournamentId);
-      if (result.ok) await this.auditLogService.log(req.user?.id ?? null, "ADVANCE_ROUND", "tournament", tournamentId, `Napredovanje bracketa turnira #${tournamentId} (+${result.advanced ?? 0})`, req.socket.remoteAddress ?? null);
+      if (result.ok) await this.auditLogService.log(req.user?.id ?? null, "ADVANCE_ROUND", "tournament", tournamentId, `Bracket advancement for tournament #${tournamentId} (+${result.advanced ?? 0})`, req.socket.remoteAddress ?? null);
       result.ok
-        ? res.json({ message: `Bracket ažuriran — ${result.advanced ?? 0} napredovanja` })
+        ? res.json({ message: `Bracket updated — ${result.advanced ?? 0} advancements` })
         : res.status(400).json({ message: result.error });
     } catch {
       res.status(500).json({ success: false, message: "Internal server error" });
@@ -206,8 +206,8 @@ export class TournamentController {
       const validation = validateMatchScore(score);
       if (!validation.valid) { res.status(400).json({ success: false, message: validation.message }); return; }
       const result = await this.tournamentService.recordMatchResult(gameId, score, Number(winnerTeamId));
-      if (result.ok) await this.auditLogService.log(req.user?.id ?? null, "RECORD_RESULT", "match", gameId, `Rezultat meča #${gameId}: ${score} (pobednik tim #${winnerTeamId})`, req.socket.remoteAddress ?? null);
-      result.ok ? res.json({ message: "Rezultat uspešno zabeležen" }) : res.status(400).json({ message: result.error });
+      if (result.ok) await this.auditLogService.log(req.user?.id ?? null, "RECORD_RESULT", "match", gameId, `Result of match #${gameId}: ${score} (winner team #${winnerTeamId})`, req.socket.remoteAddress ?? null);
+      result.ok ? res.json({ message: "Result recorded successfully" }) : res.status(400).json({ message: result.error });
     } catch {
       res.status(500).json({ success: false, message: "Internal server error" });
     }
@@ -216,7 +216,7 @@ export class TournamentController {
   private async watchTournament(req: Request, res: Response): Promise<void> {
     try {
       const ok = await this.tournamentService.watchTournament(req.user!.id, Number(req.params.id));
-      ok ? res.status(201).json({ message: "Turnir dodat na listu praćenja" }) : res.status(400).json({ message: "Već praćen ili greška" });
+      ok ? res.status(201).json({ message: "Tournament added to your watchlist" }) : res.status(400).json({ message: "Already followed or an error" });
     } catch {
       res.status(500).json({ success: false, message: "Internal server error" });
     }
@@ -225,7 +225,7 @@ export class TournamentController {
   private async unwatchTournament(req: Request, res: Response): Promise<void> {
     try {
       const ok = await this.tournamentService.unwatchTournament(req.user!.id, Number(req.params.id));
-      ok ? res.json({ message: "Turnir uklonjen sa liste praćenja" }) : res.status(400).json({ message: "Greška" });
+      ok ? res.json({ message: "Tournament removed from your watchlist" }) : res.status(400).json({ message: "Something went wrong" });
     } catch {
       res.status(500).json({ success: false, message: "Internal server error" });
     }

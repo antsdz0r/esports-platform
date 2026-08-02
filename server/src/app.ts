@@ -26,6 +26,9 @@ import { ProTournamentRepository } from "./Database/repositories/pro/ProTourname
 import { ProStandingRepository } from "./Database/repositories/pro/ProStandingRepository";
 import { ProFavoriteRepository } from "./Database/repositories/pro/ProFavoriteRepository";
 import { ChatRepository } from "./Database/repositories/chat/ChatRepository";
+import { PredictionRepository } from "./Database/repositories/pickem/PredictionRepository";
+import { PickemStatsRepository } from "./Database/repositories/pickem/PickemStatsRepository";
+import { UserBadgeRepository } from "./Database/repositories/pickem/UserBadgeRepository";
 
 
 
@@ -48,6 +51,8 @@ import { ProTournamentService } from "./Services/pro/ProTournamentService";
 import { ProFavoriteService } from "./Services/pro/ProFavoriteService";
 import { ChatService } from "./Services/chat/ChatService";
 import { ChatGateway } from "./WebAPI/realtime/ChatGateway";
+import { BadgeService } from "./Services/pickem/BadgeService";
+import { PickemService } from "./Services/pickem/PickemService";
 
 import { AuthController }   from "./WebAPI/controllers/AuthController";
 import { UserController }   from "./WebAPI/controllers/UserController";
@@ -60,6 +65,7 @@ import { AuditLogController } from "./WebAPI/controllers/AuditLogController";
 import { StreamController } from "./WebAPI/controllers/StreamController";
 import { ProController } from "./WebAPI/controllers/ProController";
 import { ProTournamentController } from "./WebAPI/controllers/ProTournamentController";
+import { PickemController } from "./WebAPI/controllers/PickemController";
 
 
 
@@ -91,6 +97,9 @@ const proTournamentRepo = new ProTournamentRepository(db, logger);
 const proStandingRepo = new ProStandingRepository(db, logger);
 const proFavoriteRepo = new ProFavoriteRepository(db, logger);
 const chatRepo = new ChatRepository(db, logger);
+const predictionRepo = new PredictionRepository(db, logger);
+const pickemStatsRepo = new PickemStatsRepository(db, logger);
+const userBadgeRepo = new UserBadgeRepository(db, logger);
 
 // Services
 const authService   = new AuthService(userRepo);
@@ -118,6 +127,8 @@ const proTournamentService = new ProTournamentService(pandaScoreClient, proLeagu
 const proFavoriteService = new ProFavoriteService(proFavoriteRepo);
 const chatService = new ChatService(chatRepo);
 export const chatGateway = new ChatGateway(chatService, logger, process.env.JWT_SECRET ?? "", process.env.CLIENT_URL ?? "");
+const badgeService = new BadgeService(pickemStatsRepo, predictionRepo, userBadgeRepo);
+export const pickemService = new PickemService(proMatchRepo, predictionRepo, pickemStatsRepo, userBadgeRepo, badgeService, logger);
 
 // Express rute
 const app = express();
@@ -137,5 +148,6 @@ app.use("/api", new AuditLogController(auditLogService).getRouter());
 app.use("/api", new StreamController(matchStreamService, auditLogService).getRouter());
 app.use("/api", new ProController(proMatchService, proSyncService, proStreamAdminService, auditLogService).getRouter());
 app.use("/api", new ProTournamentController(proTournamentService, proStructureSyncService, auditLogService, proFavoriteService).getRouter());
+app.use("/api", new PickemController(pickemService).getRouter());
 
 export default app;

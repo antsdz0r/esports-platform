@@ -89,7 +89,7 @@ export default function TournamentsPage() {
       setCaptainTeams(parseData<Team>(teamsData));
       setMyRegs(parseData<MyReg>(regsData));
     } catch {
-      setError("Neuspešno učitavanje turnira");
+      setError("Failed to load tournaments");
     } finally {
       setLoading(false);
     }
@@ -105,12 +105,12 @@ export default function TournamentsPage() {
   const removeFavorite = async (t: ProTournamentListDto) => {
     setFavs((prev) => prev.filter((x) => x.externalId !== t.externalId));
     const res = await proTournamentApi.removeFavorite(t.externalId);
-    setFavToast(res.success ? "Uklonjeno iz omiljenih" : (res.message ?? "Greška"));
+    setFavToast(res.success ? "Removed from favorites" : (res.message ?? "Something went wrong"));
     window.setTimeout(() => setFavToast(""), 2200);
   };
 
   const openRegModal = (t: Tournament) => {
-    if (captainTeams.length === 0) { setError("Nisi kapiten nijednog tima. Kreiraj tim ili postani kapiten."); return; }
+    if (captainTeams.length === 0) { setError("You aren't captain of any team. Create a team or become a captain."); return; }
     setSelectedTeamId(captainTeams.length === 1 ? captainTeams[0].teamId : null);
     setRegModal(t);
     setError("");
@@ -124,9 +124,9 @@ export default function TournamentsPage() {
         method: "POST", headers, body: JSON.stringify({ teamId: selectedTeamId }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.message ?? "Neuspešna prijava"); }
+      if (!res.ok) { setError(data.message ?? "Registration failed"); }
       else { setRegModal(null); await loadAll(); setError(""); }
-    } catch { setError("Neuspešna prijava"); }
+    } catch { setError("Registration failed"); }
     finally { setRegSaving(false); }
   };
 
@@ -137,20 +137,20 @@ export default function TournamentsPage() {
     try {
       await fetch(`${BASE}tournaments/${tournamentId}/register/${reg.teamId}`, { method: "DELETE", headers });
       await loadAll();
-    } catch { setError("Greška pri odjavi"); }
+    } catch { setError("Failed to cancel registration"); }
     finally { setCancellingId(null); }
   };
 
   return (
     <div>
-      <PageHeader eyebrow="Takmičenja" title="Turniri" />
+      <PageHeader eyebrow="Competitions" title="Tournaments" />
       {error && <ErrorBox message={error} />}
 
       {favs.length > 0 && (
         <div style={{ marginBottom: 32 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 11, marginBottom: 16 }}>
             <span style={{ width: 4, height: 22, borderRadius: 2, background: "linear-gradient(180deg, var(--gold), var(--pink))", boxShadow: "0 0 12px rgba(255,196,68,0.5)" }} />
-            <span style={{ fontFamily: "var(--font-head)", fontSize: 20, fontWeight: 800, color: "var(--text)" }}>★ Omiljeni pro turniri</span>
+            <span style={{ fontFamily: "var(--font-head)", fontSize: 20, fontWeight: 800, color: "var(--text)" }}>★ Favorite pro tournaments</span>
           </div>
           <motion.div variants={staggerContainer(0.05)} initial="hidden" animate="show"
             style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 14 }}>
@@ -195,7 +195,7 @@ export default function TournamentsPage() {
                   <div style={{ padding: "18px 20px" }}>
                     <h3 style={{ fontFamily: "var(--font-head)", fontSize: 18, fontWeight: 700, color: "var(--text)", marginBottom: 14, lineHeight: 1.25 }}>{t.name}</h3>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-                      <span style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--text-muted)" }}>👥 {registered}/{t.maxTeams} timova</span>
+                      <span style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--text-muted)" }}>👥 {registered}/{t.maxTeams} teams</span>
                       {t.prizePool > 0 && <span style={{ fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 900, color: "var(--gold)", textShadow: "0 0 14px rgba(255,196,68,0.4)" }}>${t.prizePool}</span>}
                     </div>
                     <div style={{ height: 4, background: "rgba(124,92,255,0.12)", borderRadius: 3, overflow: "hidden", marginBottom: 16 }}>
@@ -207,22 +207,22 @@ export default function TournamentsPage() {
                       isRegistered ? (
                         <div style={{ display: "flex", gap: 8 }}>
                           <div style={{ flex: 1, padding: "8px 12px", borderRadius: 8, border: "1px solid var(--green)", background: "rgba(0,240,160,0.06)", fontFamily: "var(--font-ui)", fontSize: 12, fontWeight: 700, color: "var(--green)", textAlign: "center" }}>
-                            ✓ Prijavljen
+                            ✓ Registered
                           </div>
                           <PgBtn variant="ghost" size="sm" disabled={isCancelling}
                             onClick={e => { e.stopPropagation(); void cancelReg(t.tournamentId); }}>
-                            {isCancelling ? "..." : "Otkaži"}
+                            {isCancelling ? "..." : "Cancel"}
                           </PgBtn>
                         </div>
                       ) : (
                         <PgBtn variant="primary" size="sm" full
                           onClick={e => { e.stopPropagation(); openRegModal(t); }}>
-                          Prijavi tim
+                          Register team
                         </PgBtn>
                       )
                     ) : (
                       <p style={{ fontSize: 12, color: "var(--text-dim)", fontFamily: "var(--font-ui)" }}>
-                        Rok: {new Date(t.registrationDeadline).toLocaleDateString("sr")}
+                        Deadline: {new Date(t.registrationDeadline).toLocaleDateString("en-GB")}
                       </p>
                     )}
                   </div>
@@ -231,7 +231,7 @@ export default function TournamentsPage() {
             );
           })}
         </motion.div>
-      ) : favs.length === 0 ? <Empty message="Trenutno nema turnira." /> : null}
+      ) : favs.length === 0 ? <Empty message="No tournaments right now." /> : null}
 
       {/* Registration modal */}
       {createPortal(
@@ -243,23 +243,23 @@ export default function TournamentsPage() {
               <motion.div initial={{ opacity: 0, y: 20, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 16, scale: 0.96 }}
                 className="pg-glass" style={{ width: "100%", maxWidth: 400, padding: 28, borderRadius: 16, display: "flex", flexDirection: "column", gap: 18 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <h3 style={{ fontFamily: "var(--font-head)", fontSize: 18, fontWeight: 700, color: "var(--text)" }}>Prijava na turnir</h3>
+                  <h3 style={{ fontFamily: "var(--font-head)", fontSize: 18, fontWeight: 700, color: "var(--text)" }}>Tournament registration</h3>
                   <button onClick={() => setRegModal(null)} style={{ background: "none", border: "none", color: "var(--text-dim)", fontSize: 18, cursor: "pointer" }}>✕</button>
                 </div>
                 <p style={{ fontFamily: "var(--font-ui)", fontSize: 13, color: "var(--text-muted)" }}>
-                  Turni: <strong style={{ color: "var(--text)" }}>{regModal.name}</strong>
+                  Tournament: <strong style={{ color: "var(--text)" }}>{regModal.name}</strong>
                 </p>
                 {error && <ErrorBox message={error} />}
                 {captainTeams.length === 1 ? (
                   <div style={{ padding: "12px 16px", borderRadius: 10, border: "1px solid var(--border)", background: "rgba(124,92,255,0.06)" }}>
-                    <p style={{ fontFamily: "var(--font-ui)", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 6 }}>Tim</p>
+                    <p style={{ fontFamily: "var(--font-ui)", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 6 }}>Team</p>
                     <p style={{ fontFamily: "var(--font-head)", fontSize: 15, fontWeight: 700, color: "var(--text)" }}>
                       {captainTeams[0].teamName} <span style={{ color: "var(--violet2)", fontSize: 12 }}>[{captainTeams[0].tag}]</span>
                     </p>
                   </div>
                 ) : (
                   <div>
-                    <p style={{ fontFamily: "var(--font-ui)", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 8 }}>Odaberi tim</p>
+                    <p style={{ fontFamily: "var(--font-ui)", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 8 }}>Choose a team</p>
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                       {captainTeams.map(team => (
                         <button key={team.teamId} onClick={() => setSelectedTeamId(team.teamId)}
@@ -272,9 +272,9 @@ export default function TournamentsPage() {
                   </div>
                 )}
                 <div style={{ display: "flex", gap: 10 }}>
-                  <PgBtn variant="ghost" size="sm" onClick={() => setRegModal(null)}>Otkaži</PgBtn>
+                  <PgBtn variant="ghost" size="sm" onClick={() => setRegModal(null)}>Cancel</PgBtn>
                   <PgBtn variant="primary" size="sm" disabled={regSaving || !selectedTeamId} onClick={register}>
-                    {regSaving ? "Prijavljivanje..." : "Prijavi tim"}
+                    {regSaving ? "Registering..." : "Register team"}
                   </PgBtn>
                 </div>
               </motion.div>

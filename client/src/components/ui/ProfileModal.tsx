@@ -23,11 +23,11 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
       fd.append("avatar", file);
       const res = await fetch(`${BASE}users/me/avatar`, { method: "POST", headers, body: fd });
       const data = await res.json();
-      if (!res.ok || !data.success) { setMsg("Greška pri uploadu"); return; }
+      if (!res.ok || !data.success) { setMsg("Upload failed"); return; }
       updateProfilePicture(data.data.profilePicture);
-      setMsg("Slika uspešno promenjena!");
+      setMsg("Image changed successfully!");
     } catch {
-      setMsg("Greška pri uploadu");
+      setMsg("Upload failed");
     } finally {
       setUploading(false);
     }
@@ -49,7 +49,7 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
 
             {/* Header */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <h2 style={{ fontFamily: "var(--font-head)", fontSize: 20, fontWeight: 700, color: "var(--text)" }}>Profil</h2>
+              <h2 style={{ fontFamily: "var(--font-head)", fontSize: 20, fontWeight: 700, color: "var(--text)" }}>Profile</h2>
               <button onClick={onClose} style={{ background: "none", border: "none", color: "var(--text-dim)", fontSize: 20, cursor: "pointer" }}>✕</button>
             </div>
 
@@ -81,15 +81,15 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
                 </div>
               </div>
               <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" style={{ display: "none" }} onChange={handleAvatarChange} />
-              <p style={{ fontFamily: "var(--font-ui)", fontSize: 11, color: "var(--text-muted)" }}>Klikni na sliku da promeniš</p>
-              {msg && <p style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: msg.includes("Greška") ? "var(--pink)" : "var(--green)" }}>{msg}</p>}
+              <p style={{ fontFamily: "var(--font-ui)", fontSize: 11, color: "var(--text-muted)" }}>Click the image to change it</p>
+              {msg && <p style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: msg.includes("failed") ? "var(--pink)" : "var(--green)" }}>{msg}</p>}
             </div>
 
             {/* Info */}
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {[
                 { label: "Gamer tag", value: user?.username },
-                { label: "Uloga", value: user?.role },
+                { label: "Role", value: user?.role },
               ].map(({ label, value }) => (
                 <div key={label} style={{ background: "rgba(124,92,255,0.05)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 14px" }}>
                   <p style={{ fontFamily: "var(--font-ui)", fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 4 }}>{label}</p>
@@ -102,7 +102,7 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
             <button
               onClick={() => { logout(); onClose(); window.location.href = "/login"; }}
               style={{ padding: "11px", borderRadius: 10, border: "1px solid rgba(255,45,126,0.3)", background: "rgba(255,45,126,0.06)", color: "var(--pink)", fontFamily: "var(--font-ui)", fontSize: 13, fontWeight: 700, cursor: "pointer", letterSpacing: "0.06em" }}>
-              Odjava →
+              Log out →
             </button>
           </motion.div>
         </motion.div>

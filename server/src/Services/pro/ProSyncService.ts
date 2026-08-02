@@ -94,7 +94,7 @@ export class ProSyncService implements IProSyncService {
     if (gameSlug) raw = raw.filter((m) => m.videogame?.slug === gameSlug);
 
     if (raw.length === 0) {
-      return { ok: false, synced: 0, error: "Nema podataka sa izvora (proveri token ili filter igre)" };
+      return { ok: false, synced: 0, error: "No data from the source (check the token or game filter)" };
     }
 
     let synced = 0;

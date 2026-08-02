@@ -60,7 +60,7 @@ export class GameCatalogController {
         res.status(400).json({ success: false, message: created.error ?? "Game create failed" });
         return;
       }
-      await this.auditLogService.log(req.user?.id ?? null, "CREATE_GAME", "game", created.game?.gameId ?? null, `Dodata igra: ${name}`, req.socket.remoteAddress ?? null);
+      await this.auditLogService.log(req.user?.id ?? null, "CREATE_GAME", "game", created.game?.gameId ?? null, `Added game: ${name}`, req.socket.remoteAddress ?? null);
       res.status(201).json({ success: true, data: created.game });
     } catch {
       res.status(500).json({ success: false, message: "Internal server error" });
@@ -81,7 +81,7 @@ export class GameCatalogController {
       const ok = await this.gameService.update(
         id, new UpdateGameData(name, tag, genre, maxPlayers, imageUrl)
       );
-      if (ok) await this.auditLogService.log(req.user?.id ?? null, "UPDATE_GAME", "game", id, `Izmenjena igra: ${name}`, req.socket.remoteAddress ?? null);
+      if (ok) await this.auditLogService.log(req.user?.id ?? null, "UPDATE_GAME", "game", id, `Edited game: ${name}`, req.socket.remoteAddress ?? null);
       res.status(ok ? 200 : 400).json({ success: ok, message: ok ? "Game updated" : "Update failed" });
     } catch {
       res.status(500).json({ success: false, message: "Internal server error" });
@@ -93,7 +93,7 @@ export class GameCatalogController {
       const id = parseInt(req.params.id as string, 10);
       if (isNaN(id)) { res.status(400).json({ success: false, message: "Invalid id" }); return; }
       const ok = await this.gameService.delete(id);
-      if (ok) await this.auditLogService.log(req.user?.id ?? null, "DELETE_GAME", "game", id, `Obrisana igra #${id}`, req.socket.remoteAddress ?? null);
+      if (ok) await this.auditLogService.log(req.user?.id ?? null, "DELETE_GAME", "game", id, `Deleted game #${id}`, req.socket.remoteAddress ?? null);
       res.status(ok ? 200 : 400).json({ success: ok, message: ok ? "Game deleted" : "Cannot delete game with tournaments" });
     } catch {
       res.status(500).json({ success: false, message: "Internal server error" });

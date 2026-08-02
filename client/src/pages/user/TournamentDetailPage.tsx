@@ -104,11 +104,11 @@ export default function TournamentDetailPage({ isAdmin = false }: { isAdmin?: bo
       ]);
       const tData = await tRes.json();
       const mData = await mRes.json();
-      if (!tRes.ok) { setError("Turnir nije pronađen"); return; }
+      if (!tRes.ok) { setError("Tournament not found"); return; }
       setTournament(tData);
       setMatches(mData.success ? mData.data : []);
     } catch {
-      setError("Greška pri učitavanju");
+      setError("Failed to load");
     } finally {
       setLoading(false);
     }
@@ -141,12 +141,12 @@ export default function TournamentDetailPage({ isAdmin = false }: { isAdmin?: bo
       });
       if (res.ok) {
         setIsWatched(!isWatched);
-        setSuccess(isWatched ? "Turnir uklonjen sa liste praćenja." : "Turnir dodat na listu praćenja ★");
+        setSuccess(isWatched ? "Tournament removed from your watchlist." : "Tournament added to your watchlist ★");
       } else {
         const data = await res.json();
-        setError(data.message ?? "Greška pri praćenju");
+        setError(data.message ?? "Failed to update watchlist");
       }
-    } catch { setError("Greška pri praćenju"); }
+    } catch { setError("Failed to update watchlist"); }
     finally { setWatchSaving(false); }
   };
 
@@ -167,9 +167,9 @@ export default function TournamentDetailPage({ isAdmin = false }: { isAdmin?: bo
         method: "POST", headers, body: JSON.stringify({ teamId: selectedTeamId }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.message ?? "Neuspešna prijava"); }
-      else { setRegModal(false); setSuccess("Tim prijavljen!"); await load(); await loadRegData(); }
-    } catch { setError("Neuspešna prijava"); }
+      if (!res.ok) { setError(data.message ?? "Registration failed"); }
+      else { setRegModal(false); setSuccess("Team registered!"); await load(); await loadRegData(); }
+    } catch { setError("Registration failed"); }
     finally { setRegSaving(false); }
   };
 
@@ -178,9 +178,9 @@ export default function TournamentDetailPage({ isAdmin = false }: { isAdmin?: bo
     setCancellingReg(true);
     try {
       await fetch(`${BASE}tournaments/${tournament.tournamentId}/register/${myReg.teamId}`, { method: "DELETE", headers });
-      setSuccess("Prijava otkazana.");
+      setSuccess("Registration canceled.");
       await load(); await loadRegData();
-    } catch { setError("Greška pri odjavi"); }
+    } catch { setError("Failed to cancel registration"); }
     finally { setCancellingReg(false); }
   };
 
@@ -202,11 +202,11 @@ export default function TournamentDetailPage({ isAdmin = false }: { isAdmin?: bo
         }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.message ?? "Greška pri izmeni statusa"); return; }
+      if (!res.ok) { setError(data.message ?? "Failed to change status"); return; }
       setSuccess(`Status promenjen u "${newStatus}"`);
       await load();
     } catch {
-      setError("Greška pri izmeni statusa");
+      setError("Failed to change status");
     } finally {
       setStatusUpdating(false);
     }
@@ -214,16 +214,16 @@ export default function TournamentDetailPage({ isAdmin = false }: { isAdmin?: bo
 
   const generateBracket = async () => {
     if (!tournament) return;
-    if (!(await confirm({ variant: "cyan", title: "Generiši bracket", message: "Bracket će biti generisan i prijave se zaključavaju. Nastaviti?", confirmText: "Generiši" }))) return;
+    if (!(await confirm({ variant: "cyan", title: "Generate bracket", message: "The bracket will be generated and registrations will be locked. Continue?", confirmText: "Generate" }))) return;
     setStatusUpdating(true);
     try {
       const res = await fetch(`${BASE}tournaments/${tournament.tournamentId}/generate-bracket`, { method: "POST", headers });
       const data = await res.json();
-      if (!res.ok) { setError(data.message ?? "Bracket generisanje neuspešno"); return; }
-      setSuccess("Bracket generisan!");
+      if (!res.ok) { setError(data.message ?? "Bracket generation failed"); return; }
+      setSuccess("Bracket generated!");
       await load();
     } catch {
-      setError("Greška pri generisanju bracketa");
+      setError("Failed to generate bracket");
     } finally {
       setStatusUpdating(false);
     }
@@ -236,7 +236,7 @@ export default function TournamentDetailPage({ isAdmin = false }: { isAdmin?: bo
       const res = await fetch(`${BASE}tournaments/${tournament.tournamentId}/advance-round`, { method: "POST", headers });
       const data = await res.json();
       if (!res.ok) { setError(data.message ?? "Napredovanje nije uspelo"); return; }
-      setSuccess(data.message ?? "Bracket ažuriran");
+      setSuccess(data.message ?? "Bracket updated");
       await load();
     } catch {
       setError("Napredovanje nije uspelo");
@@ -255,21 +255,21 @@ export default function TournamentDetailPage({ isAdmin = false }: { isAdmin?: bo
         body: JSON.stringify({ status: newStatus }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.message ?? "Greška pri ažuriranju prijave"); return; }
-      setSuccess(newStatus === "confirmed" ? "Tim potvrđen ✓" : "Tim diskvalifikovan");
+      if (!res.ok) { setError(data.message ?? "Failed to update registration"); return; }
+      setSuccess(newStatus === "confirmed" ? "Team confirmed ✓" : "Team disqualified");
       await load();
     } catch {
-      setError("Greška pri ažuriranju prijave");
+      setError("Failed to update registration");
     } finally {
       setRegUpdating(null);
     }
   };
 
   if (loading) return <div style={{ padding: 40 }}><Spinner /></div>;
-  if (error || !tournament) return <div style={{ padding: 40 }}><ErrorBox message={error || "Turnir nije pronađen"} /></div>;
+  if (error || !tournament) return <div style={{ padding: 40 }}><ErrorBox message={error || "Tournament not found"} /></div>;
 
   const deadline = tournament.registrationDeadLine ?? tournament.registrationDeadline ?? "";
-  const deadlineDisplay = deadline ? new Date(deadline).toLocaleDateString("sr") : "—";
+  const deadlineDisplay = deadline ? new Date(deadline).toLocaleDateString("en-GB") : "—";
 
   const backPath = isAdmin ? "/admin/tournaments" : "/dashboard/tournaments";
   const registrations = tournament.registrations ?? [];
@@ -292,44 +292,44 @@ export default function TournamentDetailPage({ isAdmin = false }: { isAdmin?: bo
   return (
     <div>
       <PageHeader
-        eyebrow={isAdmin ? "Admin · Turniri" : "Takmičenja"}
+        eyebrow={isAdmin ? "Admin · Tournaments" : "Competitions"}
         title={tournament.name}
         action={
           <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-            <PgBtn variant="ghost" size="sm" onClick={() => navigate(backPath)}>← Nazad</PgBtn>
+            <PgBtn variant="ghost" size="sm" onClick={() => navigate(backPath)}>← Back</PgBtn>
             {!isAdmin && !!token && (
               <PgBtn variant={isWatched ? "cyan" : "ghost"} size="sm" disabled={watchSaving} onClick={toggleWatch}>
-                {watchSaving ? "..." : isWatched ? "★ Praćeno" : "☆ Prati"}
+                {watchSaving ? "..." : isWatched ? "★ Following" : "☆ Follow"}
               </PgBtn>
             )}
             {isAdmin && tournament.status === "open" && (
               <PgBtn variant="cyan" size="sm" disabled={statusUpdating} onClick={generateBracket}>
-                {statusUpdating ? "..." : "⚙ Generiši bracket"}
+                {statusUpdating ? "..." : "⚙ Generate bracket"}
               </PgBtn>
             )}
             {isAdmin && hasMatches && (tournament.status === "locked" || tournament.status === "ongoing") && (
               <PgBtn variant="primary" size="sm" disabled={statusUpdating} onClick={advanceRound}>
-                {statusUpdating ? "..." : "⟳ Sledeća runda"}
+                {statusUpdating ? "..." : "⟳ Next round"}
               </PgBtn>
             )}
             {isAdmin && tournament.status === "locked" && (
               <PgBtn variant="primary" size="sm" disabled={statusUpdating} onClick={() => updateStatus("ongoing")}>
-                {statusUpdating ? "..." : "▶ Pokreni turnir"}
+                {statusUpdating ? "..." : "▶ Start tournament"}
               </PgBtn>
             )}
             {isAdmin && tournament.status === "ongoing" && (
               <PgBtn variant="cyan" size="sm" disabled={statusUpdating} onClick={() => updateStatus("completed")}>
-                {statusUpdating ? "..." : "✓ Završi turnir"}
+                {statusUpdating ? "..." : "✓ Finish tournament"}
               </PgBtn>
             )}
             {canRegister && isRegistered && myReg && (
               <>
-                <span style={{ fontFamily: "var(--font-ui)", fontSize: 12, fontWeight: 700, color: "var(--green)", padding: "6px 12px", borderRadius: 8, border: "1px solid var(--green)", background: "rgba(0,240,160,0.07)" }}>✓ Prijavljen</span>
-                <PgBtn variant="ghost" size="sm" disabled={cancellingReg} onClick={() => cancelReg(myReg)}>{cancellingReg ? "..." : "Otkaži prijavu"}</PgBtn>
+                <span style={{ fontFamily: "var(--font-ui)", fontSize: 12, fontWeight: 700, color: "var(--green)", padding: "6px 12px", borderRadius: 8, border: "1px solid var(--green)", background: "rgba(0,240,160,0.07)" }}>✓ Registered</span>
+                <PgBtn variant="ghost" size="sm" disabled={cancellingReg} onClick={() => cancelReg(myReg)}>{cancellingReg ? "..." : "Cancel registration"}</PgBtn>
               </>
             )}
             {canRegister && !isRegistered && (
-              <PgBtn variant="primary" size="sm" onClick={openRegModal}>Prijavi tim</PgBtn>
+              <PgBtn variant="primary" size="sm" onClick={openRegModal}>Register team</PgBtn>
             )}
           </div>
         }
@@ -344,10 +344,10 @@ export default function TournamentDetailPage({ isAdmin = false }: { isAdmin?: bo
         {[
           { label: "Status", value: <StatusBadge status={tournament.status} /> },
           { label: "Format", value: FORMAT_LABEL[tournament.format] ?? tournament.format },
-          { label: "Igra", value: tournament.gameName ?? "—" },
-          { label: "Timovi", value: `${registrations.length}/${tournament.maxTeams}` },
-          { label: "Nagrada", value: tournament.prizePool > 0 ? `$${tournament.prizePool}` : "—" },
-          { label: "Rok prijave", value: deadlineDisplay },
+          { label: "Game", value: tournament.gameName ?? "—" },
+          { label: "Teams", value: `${registrations.length}/${tournament.maxTeams}` },
+          { label: "Prize", value: tournament.prizePool > 0 ? `$${tournament.prizePool}` : "—" },
+          { label: "Registration deadline", value: deadlineDisplay },
         ].map(({ label, value }) => (
           <div key={label} className="pg-glass" style={{ padding: "14px 20px", borderRadius: 12, minWidth: 110 }}>
             <p style={{ fontFamily: "var(--font-ui)", fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 6 }}>{label}</p>
@@ -359,9 +359,9 @@ export default function TournamentDetailPage({ isAdmin = false }: { isAdmin?: bo
       <div style={{ display: "grid", gridTemplateColumns: hasMatches ? "280px 1fr" : "280px 1fr", gap: 24, alignItems: "start" }}>
         {/* Registered Teams */}
         <motion.div variants={staggerContainer(0.05)} initial="hidden" animate="show">
-          <SectionTitle label="Prijavljeni timovi" count={registrations.length} />
+          <SectionTitle label="Registered teams" count={registrations.length} />
           {registrations.length === 0 ? (
-            <Empty message="Nema prijavljenih timova." />
+            <Empty message="No teams registered yet." />
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {[...registrations]
@@ -370,13 +370,13 @@ export default function TournamentDetailPage({ isAdmin = false }: { isAdmin?: bo
                   <motion.div key={reg.teamId} variants={fadeUp}
                     className="pg-glass"
                     style={{ padding: "12px 16px", borderRadius: 10, display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}
-                    onClick={() => setMembersModal({ teamId: reg.teamId, teamName: reg.teamName ?? `Tim #${reg.teamId}` })}
-                    title="Klikni za detalje članova">
+                    onClick={() => setMembersModal({ teamId: reg.teamId, teamName: reg.teamName ?? `Team #${reg.teamId}` })}
+                    title="Click for member details">
                     <span style={{ fontFamily: "var(--font-display)", fontSize: 16, fontWeight: 900, color: "var(--text-dim)", minWidth: 20, textAlign: "center" }}>
                       {reg.seed ?? (i + 1)}
                     </span>
                     <span style={{ flex: 1, fontFamily: "var(--font-head)", fontSize: 14, fontWeight: 600, color: "var(--text)" }}>
-                      {reg.teamName ?? `Tim #${reg.teamId}`}
+                      {reg.teamName ?? `Team #${reg.teamId}`}
                     </span>
                     <TeamStatusBadge status={reg.status} />
                     {isAdmin && reg.status === "pending" && (
@@ -422,8 +422,8 @@ export default function TournamentDetailPage({ isAdmin = false }: { isAdmin?: bo
                           const label = section.key === "single"
                             ? roundLabel(round, sectionRounds.length)
                             : section.key === "grand"
-                              ? "Finale"
-                              : `Runda ${round}`;
+                              ? "Final"
+                              : `Round ${round}`;
                           return (
                             <div key={round} style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 220 }}>
                               <p style={{ fontFamily: "var(--font-ui)", fontSize: 10, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: "var(--text-muted)", textAlign: "center", marginBottom: 4 }}>
@@ -447,8 +447,8 @@ export default function TournamentDetailPage({ isAdmin = false }: { isAdmin?: bo
                 <div style={{ fontSize: 40, marginBottom: 12 }}>🏆</div>
                 <p style={{ fontFamily: "var(--font-ui)", fontSize: 13, color: "var(--text-muted)" }}>
                   {tournament.status === "open"
-                    ? "Bracket će biti generisan kada admin zaključa turnir."
-                    : "Nema mečeva za ovaj turnir."}
+                    ? "The bracket will be generated once an admin locks the tournament."
+                    : "No matches for this tournament."}
                 </p>
               </div>
             </div>
@@ -467,7 +467,7 @@ export default function TournamentDetailPage({ isAdmin = false }: { isAdmin?: bo
                 className="pg-glass" style={{ width: "100%", maxWidth: 400, padding: 28, borderRadius: 16, display: "flex", flexDirection: "column", gap: 18 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div>
-                    <h3 style={{ fontFamily: "var(--font-head)", fontSize: 18, fontWeight: 700, color: "var(--text)" }}>Prijava na turnir</h3>
+                    <h3 style={{ fontFamily: "var(--font-head)", fontSize: 18, fontWeight: 700, color: "var(--text)" }}>Tournament registration</h3>
                     <p style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>{tournament.name}</p>
                   </div>
                   <button onClick={() => setRegModal(false)} style={{ background: "none", border: "none", color: "var(--text-dim)", fontSize: 18, cursor: "pointer" }}>✕</button>
@@ -475,14 +475,14 @@ export default function TournamentDetailPage({ isAdmin = false }: { isAdmin?: bo
                 {error && <div style={{ fontSize: 12, color: "var(--pink)", padding: "8px 12px", borderRadius: 8, background: "rgba(255,45,126,0.1)", border: "1px solid rgba(255,45,126,0.3)" }}>{error}</div>}
                 {captainTeams.length === 1 ? (
                   <div style={{ padding: "12px 16px", borderRadius: 10, border: "1px solid var(--border)", background: "rgba(124,92,255,0.06)" }}>
-                    <p style={{ fontFamily: "var(--font-ui)", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 6 }}>Tim</p>
+                    <p style={{ fontFamily: "var(--font-ui)", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 6 }}>Team</p>
                     <p style={{ fontFamily: "var(--font-head)", fontSize: 15, fontWeight: 700, color: "var(--text)" }}>
                       {captainTeams[0].teamName} <span style={{ color: "var(--violet2)", fontSize: 12 }}>[{captainTeams[0].tag}]</span>
                     </p>
                   </div>
                 ) : (
                   <div>
-                    <p style={{ fontFamily: "var(--font-ui)", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 8 }}>Odaberi tim</p>
+                    <p style={{ fontFamily: "var(--font-ui)", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 8 }}>Choose a team</p>
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                       {captainTeams.map(team => (
                         <button key={team.teamId} onClick={() => setSelectedTeamId(team.teamId)}
@@ -495,9 +495,9 @@ export default function TournamentDetailPage({ isAdmin = false }: { isAdmin?: bo
                   </div>
                 )}
                 <div style={{ display: "flex", gap: 10 }}>
-                  <PgBtn variant="ghost" size="sm" onClick={() => setRegModal(false)}>Otkaži</PgBtn>
+                  <PgBtn variant="ghost" size="sm" onClick={() => setRegModal(false)}>Cancel</PgBtn>
                   <PgBtn variant="primary" size="sm" disabled={regSaving || !selectedTeamId} onClick={register}>
-                    {regSaving ? "Prijavljivanje..." : "Prijavi tim"}
+                    {regSaving ? "Registering..." : "Register team"}
                   </PgBtn>
                 </div>
               </motion.div>
@@ -562,7 +562,7 @@ function TeamMembersModal({ teamId, teamName, token, gameId, currentUserId, onCl
         ]);
         const membersData = await membersRes.json();
         if (membersData.success) setMembers(membersData.data as TeamMemberInfo[]);
-        else setError("Neuspešno učitavanje članova");
+        else setError("Failed to load members");
 
         if (gameRes) {
           const gameData = await gameRes.json();
@@ -571,7 +571,7 @@ function TeamMembersModal({ teamId, teamName, token, gameId, currentUserId, onCl
           }
         }
       } catch {
-        setError("Greška pri učitavanju");
+        setError("Failed to load");
       } finally {
         setLoading(false);
       }
@@ -594,7 +594,7 @@ function TeamMembersModal({ teamId, teamName, token, gameId, currentUserId, onCl
       setMembers(prev => prev.filter(m => m.playerId !== confirmMember.playerId));
       setConfirmMember(null);
     } catch {
-      setError("Greška pri uklanjanju člana");
+      setError("Failed to remove member");
     } finally {
       setRemoving(false);
     }
@@ -636,14 +636,14 @@ function TeamMembersModal({ teamId, teamName, token, gameId, currentUserId, onCl
         }
       }
     } catch {
-      setInviteError("Greška pri učitavanju korisnika");
+      setInviteError("Failed to load users");
     } finally {
       setUsersLoading(false);
     }
   };
 
   const sendInvite = async (inviteeId: number) => {
-    if (isFull) { setInviteError("Tim je popunjen, ne možeš pozvati više igrača."); return; }
+    if (isFull) { setInviteError("The team is full, you can't invite more players."); return; }
     setInviting(true);
     setInviteError("");
     setInviteSuccess("");
@@ -660,15 +660,14 @@ function TeamMembersModal({ teamId, teamName, token, gameId, currentUserId, onCl
         setInvitedIds(prev => new Set(prev).add(inviteeId));
       } else {
         // Ako pozivnica već postoji — označi kao pozvana umjesto greške
-        if ((data.message as string | undefined)?.toLowerCase().includes("već postoji") ||
-            (data.message as string | undefined)?.toLowerCase().includes("vec postoji")) {
+        if ((data.message as string | undefined)?.toLowerCase().includes("already")) {
           setInvitedIds(prev => new Set(prev).add(inviteeId));
         } else {
-          setInviteError(data.message ?? "Greška pri slanju pozivnice");
+          setInviteError(data.message ?? "Failed to send invite");
         }
       }
     } catch {
-      setInviteError("Greška pri slanju pozivnice");
+      setInviteError("Failed to send invite");
     } finally {
       setInviting(false);
     }
@@ -700,15 +699,15 @@ function TeamMembersModal({ teamId, teamName, token, gameId, currentUserId, onCl
             style={{ width: "100%", maxWidth: 360, borderRadius: 16, padding: 28, border: "1px solid var(--border-bright)", textAlign: "center" }}>
             <p style={{ fontSize: 28, marginBottom: 14 }}>⚠️</p>
             <p style={{ fontFamily: "var(--font-head)", fontSize: 16, fontWeight: 700, color: "var(--text)", marginBottom: 8 }}>
-              Izbaci igrača
+              Kick player
             </p>
             <p style={{ fontFamily: "var(--font-ui)", fontSize: 13, color: "var(--text-muted)", marginBottom: 24, lineHeight: 1.5 }}>
-              Da li želiš da izbacis <strong style={{ color: "var(--text)" }}>{confirmMember.gamerTag}</strong> iz tima <strong style={{ color: "var(--text)" }}>{teamName}</strong>?
+              Do you want to kick <strong style={{ color: "var(--text)" }}>{confirmMember.gamerTag}</strong> from the team <strong style={{ color: "var(--text)" }}>{teamName}</strong>?
             </p>
             <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
-              <PgBtn variant="ghost" onClick={() => setConfirmMember(null)} disabled={removing}>Otkaži</PgBtn>
+              <PgBtn variant="ghost" onClick={() => setConfirmMember(null)} disabled={removing}>Cancel</PgBtn>
               <PgBtn variant="danger" onClick={() => void confirmRemove()} disabled={removing}>
-                {removing ? "Uklanjanje..." : "Da, izbaci"}
+                {removing ? "Removing..." : "Yes, kick"}
               </PgBtn>
             </div>
           </motion.div>
@@ -737,7 +736,7 @@ function TeamMembersModal({ teamId, teamName, token, gameId, currentUserId, onCl
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 22 }}>
             <div>
               <p style={{ fontFamily: "var(--font-ui)", fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 4 }}>
-                Članovi tima {maxPlayers > 0 && <span style={{ color: isFull ? "var(--pink)" : "var(--green)" }}>· {members.length}/{maxPlayers}</span>}
+                Team members {maxPlayers > 0 && <span style={{ color: isFull ? "var(--pink)" : "var(--green)" }}>· {members.length}/{maxPlayers}</span>}
               </p>
               <p style={{ fontFamily: "var(--font-head)", fontSize: 20, fontWeight: 800, color: "var(--text)" }}>{teamName}</p>
             </div>
@@ -749,7 +748,7 @@ function TeamMembersModal({ teamId, teamName, token, gameId, currentUserId, onCl
           ) : error ? (
             <ErrorBox message={error} />
           ) : members.length === 0 ? (
-            <p style={{ color: "var(--text-muted)", fontSize: 13, textAlign: "center", padding: "16px 0" }}>Nema članova.</p>
+            <p style={{ color: "var(--text-muted)", fontSize: 13, textAlign: "center", padding: "16px 0" }}>No members.</p>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {captain && <MemberRow member={captain} />}
@@ -779,14 +778,14 @@ function TeamMembersModal({ teamId, teamName, token, gameId, currentUserId, onCl
                     opacity: isFull ? 0.5 : 1,
                     transition: "all 0.2s",
                   }}
-                  title={isFull ? "Tim je popunjen" : "Pošalji pozivnicu igraču"}
+                  title={isFull ? "The team is full" : "Send an invite to a player"}
                 >
-                  {isFull ? "🔒 Tim je popunjen" : "✉ Pošalji pozivnicu"}
+                  {isFull ? "🔒 Team is full" : "✉ Send invite"}
                 </button>
               ) : (
                 <div>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-                    <p style={{ fontFamily: "var(--font-ui)", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--violet2)" }}>Pozovi igrača</p>
+                    <p style={{ fontFamily: "var(--font-ui)", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--violet2)" }}>Invite a player</p>
                     <button onClick={() => { setInviteOpen(false); setSearch(""); setInviteError(""); setInviteSuccess(""); }}
                       style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: 16 }}>×</button>
                   </div>
@@ -796,7 +795,7 @@ function TeamMembersModal({ teamId, teamName, token, gameId, currentUserId, onCl
 
                   <input
                     className="pg-input"
-                    placeholder="Traži po gamertagu..."
+                    placeholder="Search by gamertag..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     style={{ width: "100%", marginBottom: 10, boxSizing: "border-box" }}
@@ -805,14 +804,14 @@ function TeamMembersModal({ teamId, teamName, token, gameId, currentUserId, onCl
 
                   {isFull && (
                     <div style={{ padding: "8px 12px", borderRadius: 8, background: "rgba(255,45,126,0.08)", border: "1px solid rgba(255,45,126,0.28)", marginBottom: 8 }}>
-                      <p style={{ fontFamily: "var(--font-ui)", fontSize: 11, fontWeight: 700, color: "var(--pink)", textAlign: "center" }}>🔒 Tim je popunjen ({members.length}/{maxPlayers})</p>
+                      <p style={{ fontFamily: "var(--font-ui)", fontSize: 11, fontWeight: 700, color: "var(--pink)", textAlign: "center" }}>🔒 Team is full ({members.length}/{maxPlayers})</p>
                     </div>
                   )}
                   {usersLoading ? (
                     <div style={{ display: "flex", justifyContent: "center", padding: "12px 0" }}><Spinner size={24} /></div>
                   ) : filteredUsers.length === 0 ? (
                     <p style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", padding: "8px 0" }}>
-                      {search ? "Nema rezultata." : "Nema dostupnih igrača."}
+                      {search ? "No results." : "No available players."}
                     </p>
                   ) : (
                     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -828,7 +827,7 @@ function TeamMembersModal({ teamId, teamName, token, gameId, currentUserId, onCl
                               padding: "4px 12px", borderRadius: 7,
                               border: "1px solid var(--border)", background: "rgba(255,255,255,0.04)", color: "var(--text-dim)",
                             }}>
-                              Pozvan
+                              Invited
                             </span>
                           ) : (
                             <button
@@ -842,7 +841,7 @@ function TeamMembersModal({ teamId, teamName, token, gameId, currentUserId, onCl
                                 color: isFull ? "var(--text-dim)" : "var(--cyan)",
                                 opacity: (inviting || isFull) ? 0.5 : 1, transition: "opacity 0.2s",
                               }}>
-                              Pozovi
+                              Invite
                             </button>
                           )}
                         </div>
@@ -873,7 +872,7 @@ function MemberRow({ member, onRemove }: { member: TeamMemberInfo; onRemove?: ()
         {member.fullName && <p style={{ fontFamily: "var(--font-ui)", fontSize: 11, color: "var(--text-muted)" }}>{member.fullName}</p>}
       </div>
       <span style={{ fontFamily: "var(--font-ui)", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: isCaptain ? "var(--violet)" : "var(--text-dim)", background: isCaptain ? "rgba(124,92,255,0.12)" : "rgba(255,255,255,0.06)", padding: "2px 8px", borderRadius: 6 }}>
-        {isCaptain ? "kapiten" : "član"}
+        {isCaptain ? "captain" : "member"}
       </span>
       {onRemove && (
         <button
@@ -977,7 +976,7 @@ function MatchCard({ match, isAdmin, token, onRefresh }: {
               <span style={{ fontFamily: "monospace", fontSize: 10, color: "var(--text-dim)" }}>#{match.gameId}</span>
               {match.scheduledTime && (
                 <span style={{ fontFamily: "var(--font-ui)", fontSize: 9, color: "var(--text-muted)" }}>
-                  {new Date(match.scheduledTime).toLocaleString("sr", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                  {new Date(match.scheduledTime).toLocaleString("en-GB", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
                 </span>
               )}
             </div>
@@ -997,17 +996,17 @@ function MatchCard({ match, isAdmin, token, onRefresh }: {
               )}
               <button onClick={() => setShowStream(v => !v)}
                 style={{ fontFamily: "var(--font-ui)", fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 5, border: "1px solid var(--violet)", background: "rgba(124,92,255,0.10)", color: "var(--violet2)", cursor: "pointer", letterSpacing: "0.05em" }}>
-                {showStream ? "Zatvori ▴" : "📺 Gledaj"}
+                {showStream ? "Close ▴" : "📺 Watch"}
               </button>
               {isAdmin && (
                 <button onClick={() => setShowStreamAdmin(true)}
                   style={{ fontFamily: "var(--font-ui)", fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 5, border: "1px solid var(--gold)", background: "rgba(255,200,0,0.08)", color: "var(--gold)", cursor: "pointer", letterSpacing: "0.05em" }}>
-                  📺 Streamovi
+                  📺 Streams
                 </button>
               )}
               <button onClick={toggleStats}
                 style={{ fontFamily: "var(--font-ui)", fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 5, border: "1px solid var(--border)", background: "transparent", color: "var(--text-muted)", cursor: "pointer", letterSpacing: "0.05em" }}>
-                {expanded ? "Sakrij ▴" : "Stats ▾"}
+                {expanded ? "Hide ▴" : "Stats ▾"}
               </button>
             </div>
           </div>
@@ -1019,14 +1018,14 @@ function MatchCard({ match, isAdmin, token, onRefresh }: {
               style={{ overflow: "hidden", borderTop: "1px solid var(--border)" }}>
               <div style={{ padding: "12px 14px" }}>
                 {players === null ? (
-                  <p style={{ fontFamily: "var(--font-ui)", fontSize: 11, color: "var(--text-dim)", textAlign: "center" }}>Učitavanje...</p>
+                  <p style={{ fontFamily: "var(--font-ui)", fontSize: 11, color: "var(--text-dim)", textAlign: "center" }}>Loading...</p>
                 ) : players.length === 0 ? (
-                  <p style={{ fontFamily: "var(--font-ui)", fontSize: 11, color: "var(--text-dim)", textAlign: "center" }}>Nema statova za ovaj meč.</p>
+                  <p style={{ fontFamily: "var(--font-ui)", fontSize: 11, color: "var(--text-dim)", textAlign: "center" }}>No stats for this match.</p>
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                     {players.map(p => {
                       const key = `${match.gameId}-${p.playerId}`;
-                      const teamName = p.teamId === match.team1Id ? (match.team1Name ?? "Tim 1") : (match.team2Name ?? "Tim 2");
+                      const teamName = p.teamId === match.team1Id ? (match.team1Name ?? "Team 1") : (match.team2Name ?? "Team 2");
                       const gamerTag = playerNames[p.playerId] ?? `#${p.playerId}`;
                       return (
                         <div key={p.playerId}>
@@ -1119,8 +1118,8 @@ function EditResultModal({ match, token, onClose, onSaved }: {
       });
       const data = await res.json();
       if (data.success) onSaved();
-      else setError(data.message ?? "Greška");
-    } catch { setError("Greška pri čuvanju"); }
+      else setError(data.message ?? "Something went wrong");
+    } catch { setError("Failed to save"); }
     finally { setSaving(false); }
   };
 
@@ -1129,22 +1128,22 @@ function EditResultModal({ match, token, onClose, onSaved }: {
       <motion.div initial={{ opacity: 0, scale: 0.93, y: 14 }} animate={{ opacity: 1, scale: 1, y: 0 }} onClick={(e) => e.stopPropagation()}
         className="pg-glass" style={{ width: "100%", maxWidth: 380, borderRadius: 16, padding: 24, border: "1px solid var(--border-bright)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-          <p style={{ fontFamily: "var(--font-head)", fontSize: 16, fontWeight: 800, color: "var(--text)" }}>Izmeni rezultat #{match.gameId}</p>
+          <p style={{ fontFamily: "var(--font-head)", fontSize: 16, fontWeight: 800, color: "var(--text)" }}>Edit result #{match.gameId}</p>
           <button onClick={onClose} style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: 20 }}>×</button>
         </div>
 
         {error && <p style={{ fontSize: 12, color: "var(--pink)", marginBottom: 12 }}>{error}</p>}
 
-        <p style={{ fontFamily: "var(--font-ui)", fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 8 }}>Rezultat</p>
+        <p style={{ fontFamily: "var(--font-ui)", fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 8 }}>Result</p>
         <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 8, marginBottom: 16 }}>
           <div>
-            <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>{match.team1Name ?? "Tim 1"}</p>
+            <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>{match.team1Name ?? "Team 1"}</p>
             <input type="number" min={0} value={score1} onChange={(e) => setScore1(e.target.value)}
               className="pg-input" style={{ textAlign: "center", fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 900 }} />
           </div>
           <span style={{ fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 900, color: "var(--text-dim)" }}>:</span>
           <div>
-            <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>{match.team2Name ?? "Tim 2"}</p>
+            <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>{match.team2Name ?? "Team 2"}</p>
             <input type="number" min={0} value={score2} onChange={(e) => setScore2(e.target.value)}
               className="pg-input" style={{ textAlign: "center", fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 900 }} />
           </div>
@@ -1162,19 +1161,19 @@ function EditResultModal({ match, token, onClose, onSaved }: {
 
         {(match.team1Id || match.team2Id) && (
           <>
-            <p style={{ fontFamily: "var(--font-ui)", fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 8 }}>Pobednik</p>
+            <p style={{ fontFamily: "var(--font-ui)", fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 8 }}>Winner</p>
             <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
               {[{ id: match.team1Id, name: match.team1Name }, { id: match.team2Id, name: match.team2Name }].filter(t => t.id).map((t) => (
                 <button key={t.id} onClick={() => setWinner(winner === t.id ? null : t.id!)}
                   style={{ flex: 1, fontFamily: "var(--font-head)", fontSize: 12, fontWeight: 700, padding: "7px 0", borderRadius: 7, border: `1px solid ${winner === t.id ? "var(--green)" : "var(--border)"}`, background: winner === t.id ? "rgba(0,255,136,0.1)" : "transparent", color: winner === t.id ? "var(--green)" : "var(--text-muted)", cursor: "pointer" }}>
-                  {winner === t.id ? "🏆 " : ""}{t.name ?? `Tim ${t.id}`}
+                  {winner === t.id ? "🏆 " : ""}{t.name ?? `Team ${t.id}`}
                 </button>
               ))}
             </div>
           </>
         )}
 
-        <PgBtn variant="cyan" full disabled={saving} onClick={save}>{saving ? "Čuvanje..." : "Sačuvaj"}</PgBtn>
+        <PgBtn variant="cyan" full disabled={saving} onClick={save}>{saving ? "Saving..." : "Save"}</PgBtn>
       </motion.div>
     </div>,
     document.body
@@ -1211,8 +1210,8 @@ function SetScheduleModal({ match, token, onClose, onSaved }: {
       });
       const data = await res.json();
       if (data.success) onSaved();
-      else setError(data.message ?? "Greška");
-    } catch { setError("Greška pri čuvanju"); }
+      else setError(data.message ?? "Something went wrong");
+    } catch { setError("Failed to save"); }
     finally { setSaving(false); }
   };
 
@@ -1221,20 +1220,20 @@ function SetScheduleModal({ match, token, onClose, onSaved }: {
       <motion.div initial={{ opacity: 0, scale: 0.93, y: 14 }} animate={{ opacity: 1, scale: 1, y: 0 }} onClick={(e) => e.stopPropagation()}
         className="pg-glass" style={{ width: "100%", maxWidth: 340, borderRadius: 16, padding: 24, border: "1px solid var(--border-bright)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-          <p style={{ fontFamily: "var(--font-head)", fontSize: 16, fontWeight: 800, color: "var(--text)" }}>Vreme meča #{match.gameId}</p>
+          <p style={{ fontFamily: "var(--font-head)", fontSize: 16, fontWeight: 800, color: "var(--text)" }}>Match time #{match.gameId}</p>
           <button onClick={onClose} style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: 20 }}>×</button>
         </div>
-        <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 6 }}>{match.team1Name ?? "Tim 1"} vs {match.team2Name ?? "Tim 2"}</p>
+        <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 6 }}>{match.team1Name ?? "Team 1"} vs {match.team2Name ?? "Team 2"}</p>
 
         {error && <p style={{ fontSize: 12, color: "var(--pink)", marginBottom: 12 }}>{error}</p>}
 
-        <p style={{ fontFamily: "var(--font-ui)", fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 8 }}>Datum i vreme</p>
+        <p style={{ fontFamily: "var(--font-ui)", fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 8 }}>Date and time</p>
         <input ref={inputRef} type="datetime-local" value={value} onChange={(e) => setValue(e.target.value)}
           className="pg-input" style={{ width: "100%", marginBottom: 20, colorScheme: "dark" }} />
 
         <div style={{ display: "flex", gap: 10 }}>
-          <PgBtn variant="cyan" full disabled={saving} onClick={save}>{saving ? "Čuvanje..." : "Sačuvaj"}</PgBtn>
-          {value && <PgBtn variant="ghost" onClick={() => setValue("")}>Obriši</PgBtn>}
+          <PgBtn variant="cyan" full disabled={saving} onClick={save}>{saving ? "Saving..." : "Save"}</PgBtn>
+          {value && <PgBtn variant="ghost" onClick={() => setValue("")}>Clear</PgBtn>}
         </div>
       </motion.div>
     </div>,
@@ -1281,8 +1280,8 @@ function MatchStatusBadge({ status }: { status: string }) {
 
 function roundLabel(round: number, totalRounds: number): string {
   const fromEnd = totalRounds - round;
-  if (fromEnd === 0) return "Finale";
-  if (fromEnd === 1) return "Polufinale";
-  if (fromEnd === 2) return "Cetvrtfinale";
-  return `Runda ${round}`;
+  if (fromEnd === 0) return "Final";
+  if (fromEnd === 1) return "Semifinal";
+  if (fromEnd === 2) return "Quarterfinal";
+  return `Round ${round}`;
 }

@@ -9,10 +9,10 @@ import { PLATFORM_LABELS } from "../../helpers/streamEmbed";
 import type { ProMatch, ProMatchStatus } from "../../models/pro/ProTypes";
 
 const STATUS_META: Record<ProMatchStatus, { label: string; color: string; bg: string }> = {
-  live: { label: "UŽIVO", color: "var(--pink)", bg: "rgba(255,45,126,0.12)" },
-  upcoming: { label: "USKORO", color: "var(--cyan)", bg: "rgba(0,212,255,0.10)" },
-  finished: { label: "ZAVRŠENO", color: "var(--green)", bg: "rgba(0,240,160,0.10)" },
-  canceled: { label: "OTKAZANO", color: "var(--text-dim)", bg: "rgba(255,255,255,0.04)" },
+  live: { label: "LIVE", color: "var(--pink)", bg: "rgba(255,45,126,0.12)" },
+  upcoming: { label: "SOON", color: "var(--cyan)", bg: "rgba(0,212,255,0.10)" },
+  finished: { label: "FINISHED", color: "var(--green)", bg: "rgba(0,240,160,0.10)" },
+  canceled: { label: "CANCELED", color: "var(--text-dim)", bg: "rgba(255,255,255,0.04)" },
 };
 
 const cap = (s: string) => (s.length > 0 ? s[0].toUpperCase() + s.slice(1) : s);
@@ -22,7 +22,7 @@ function toEmbeds(m: ProMatch): EmbedStream[] {
     key: `${s.platform}:${s.channel}`,
     platform: s.platform,
     channel: s.channel,
-    label: s.isOfficial ? "Zvanični" : cap(s.channel),
+    label: s.isOfficial ? "Official" : cap(s.channel),
     sub: `${PLATFORM_LABELS[s.platform]} · ${s.language.toUpperCase()}`,
   }));
 }
@@ -59,7 +59,7 @@ export default function ProMatchModal({ match, gameLabel, onClose, isAdmin = fal
   const st = STATUS_META[match.status];
   const won1 = match.status === "finished" && match.team1Score > match.team2Score;
   const won2 = match.status === "finished" && match.team2Score > match.team1Score;
-  const when = match.scheduledAt ? new Date(match.scheduledAt).toLocaleString("sr", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : null;
+  const when = match.scheduledAt ? new Date(match.scheduledAt).toLocaleString("en-GB", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : null;
   const roomId = String(match.id);
 
   // ESC izlazi iz theatre moda (ako je aktivan), inace zatvara modal se resava klikom.
@@ -70,10 +70,10 @@ export default function ProMatchModal({ match, gameLabel, onClose, isAdmin = fal
     return () => window.removeEventListener("keydown", onKey);
   }, [theatre]);
 
-  const emptyTitle = match.status === "finished" ? "Meč je završen" : match.status === "upcoming" ? "Meč još nije počeo" : undefined;
+  const emptyTitle = match.status === "finished" ? "Match is over" : match.status === "upcoming" ? "Match hasn't started yet" : undefined;
   const emptySub =
-    match.status === "finished" ? "Snimak meča nije dostupan preko izvora."
-    : match.status === "upcoming" ? "Stream se pojavljuje kada meč krene uživo."
+    match.status === "finished" ? "A replay of the match isn't available via the source."
+    : match.status === "upcoming" ? "The stream appears when the match goes live."
     : undefined;
 
   const player = <StreamEmbed streams={toEmbeds(match)} emptyTitle={emptyTitle} emptySub={emptySub} />;
@@ -95,9 +95,9 @@ export default function ProMatchModal({ match, gameLabel, onClose, isAdmin = fal
                 <span style={{ fontFamily: "var(--font-head)", fontSize: 15, fontWeight: 800, color: "var(--text)" }}>
                   {match.team1Name ?? "TBD"} <span style={{ color: "var(--text-dim)" }}>vs</span> {match.team2Name ?? "TBD"}
                 </span>
-                <button onClick={() => setTheatre(false)} title="Izađi iz fullscreen-a (Esc)"
+                <button onClick={() => setTheatre(false)} title="Exit fullscreen (Esc)"
                   style={{ marginLeft: "auto", fontFamily: "var(--font-ui)", fontSize: 12, fontWeight: 700, padding: "6px 12px", borderRadius: 8, cursor: "pointer", background: "rgba(255,255,255,0.06)", border: "1px solid var(--border)", color: "var(--text)" }}>
-                  ⤢ Smanji
+                  ⤢ Minimize
                 </button>
               </div>
               <div style={{ flex: 1, minHeight: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -140,7 +140,7 @@ export default function ProMatchModal({ match, gameLabel, onClose, isAdmin = fal
                 {isAdmin && (
                   <button onClick={() => setAdminOpen(true)}
                     style={{ fontFamily: "var(--font-ui)", fontSize: 11, fontWeight: 700, padding: "4px 10px", borderRadius: 6, cursor: "pointer", background: "rgba(124,92,255,0.12)", border: "1px solid rgba(124,92,255,0.4)", color: "var(--violet2)" }}>
-                    🎙 Kasteri
+                    🎙 Casters
                   </button>
                 )}
                 <button onClick={() => setTheatre(true)} title="Fullscreen sa chatom"

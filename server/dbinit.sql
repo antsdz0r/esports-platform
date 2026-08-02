@@ -274,5 +274,50 @@ CREATE TABLE PRO_CHAT_MESSAGES(
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
+-- ── Pick'em: predikcija pobednika pro meča (jedan tip po useru po meču) ──
+-- predicted_side: 1 = team1, 2 = team2. is_correct: NULL = neporavnato,
+-- 0/1 posle poravnanja (settlePending kad meč dobije finalni status).
+CREATE TABLE PRO_PREDICTIONS(
+    id             INT AUTO_INCREMENT PRIMARY KEY,
+    user_id        INT UNSIGNED NOT NULL,
+    pro_match_id   INT NOT NULL,
+    predicted_side TINYINT      NOT NULL,
+    is_correct     TINYINT(1)   NULL,
+    points_awarded INT          NOT NULL DEFAULT 0,
+    settled_at     DATETIME     NULL,
+    created_at     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_pred (user_id, pro_match_id),
+    INDEX idx_pred_user (user_id),
+    INDEX idx_pred_match (pro_match_id),
+    INDEX idx_pred_unsettled (is_correct),
+    FOREIGN KEY (user_id)      REFERENCES users(id)      ON DELETE CASCADE,
+    FOREIGN KEY (pro_match_id) REFERENCES PRO_MATCHES(id) ON DELETE CASCADE
+);
+
+-- ── Pick'em: agregirana statistika po useru (izvor rang liste + streak/bedževi) ──
+CREATE TABLE PRO_PICKEM_STATS(
+    user_id             INT UNSIGNED PRIMARY KEY,
+    total_points        INT NOT NULL DEFAULT 0,
+    total_predictions   INT NOT NULL DEFAULT 0,
+    correct_predictions INT NOT NULL DEFAULT 0,
+    current_streak      INT NOT NULL DEFAULT 0,
+    best_streak         INT NOT NULL DEFAULT 0,
+    updated_at          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_pickem_points (total_points),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- ── Bedževi koje je korisnik osvojio (katalog/kriterijumi su u kodu: BadgeDefinitions.ts) ──
+CREATE TABLE USER_BADGES(
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    user_id    INT UNSIGNED NOT NULL,
+    badge_code VARCHAR(50)  NOT NULL,
+    earned_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_user_badge (user_id, badge_code),
+    INDEX idx_user_badges_user (user_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
 
 

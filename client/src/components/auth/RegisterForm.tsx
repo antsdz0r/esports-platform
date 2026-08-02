@@ -14,15 +14,15 @@ export function RegisterForm({ authApi }: { authApi: IAuthAPIService }) {
     e.preventDefault(); setError(""); setLoading(true);
     const res = await authApi.register(form.username, form.email, form.password, form.fullName);
     setLoading(false);
-    if (!res.success || !res.data) { setError(res.message ?? "Registracija neuspešna"); return; }
+    if (!res.success || !res.data) { setError(res.message ?? "Registration failed"); return; }
     login(res.data.token);
   };
 
   const fields: { key: keyof typeof form; label: string; type: string; placeholder: string }[] = [
     { key: "username", label: "Gamer Tag",  type: "text",     placeholder: "ProPlayer99" },
-    { key: "fullName", label: "Pravo ime",  type: "text",     placeholder: "Marko Marković" },
-    { key: "email",    label: "Email",       type: "email",    placeholder: "tvoj@email.com" },
-    { key: "password", label: "Lozinka",     type: "password", placeholder: "Min 8 kar, 1 veliko, 1 broj" },
+    { key: "fullName", label: "Full name",  type: "text",     placeholder: "John Smith" },
+    { key: "email",    label: "Email",       type: "email",    placeholder: "your@email.com" },
+    { key: "password", label: "Password",    type: "password", placeholder: "Min 8 chars, 1 uppercase, 1 number" },
   ];
 
   return (
@@ -35,9 +35,9 @@ export function RegisterForm({ authApi }: { authApi: IAuthAPIService }) {
             <circle cx="30" cy="30" r="5.5" fill="var(--violet)" />
           </svg>
         </div>
-        <h1 className="pg-glitch" data-text="KREIRAJ NALOG"
-          style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 900, letterSpacing: "0.06em", color: "var(--text)", marginBottom: 6 }}>KREIRAJ NALOG</h1>
-        <p style={{ fontSize: 13, color: "var(--text-muted)" }}>Pridruži se PulseGrid platformi</p>
+        <h1 className="pg-glitch" data-text="CREATE ACCOUNT"
+          style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 900, letterSpacing: "0.06em", color: "var(--text)", marginBottom: 6 }}>CREATE ACCOUNT</h1>
+        <p style={{ fontSize: 13, color: "var(--text-muted)" }}>Join the PulseGrid platform</p>
       </div>
 
       {error && (
@@ -55,14 +55,14 @@ export function RegisterForm({ authApi }: { authApi: IAuthAPIService }) {
         ))}
         <div style={{ marginTop: 6 }}>
           <PgBtn type="submit" variant="primary" full disabled={loading}>
-            {loading ? "Kreiranje..." : "Kreiraj nalog"}
+            {loading ? "Creating..." : "Create account"}
           </PgBtn>
         </div>
       </form>
 
       <p style={{ textAlign: "center", color: "var(--text-muted)", fontSize: 13, marginTop: 20 }}>
-        Već imaš nalog?{" "}
-        <a href="/login" style={{ color: "var(--violet2)", fontWeight: 600 }}>Prijavi se</a>
+        Already have an account?{" "}
+        <a href="/login" style={{ color: "var(--violet2)", fontWeight: 600 }}>Log in</a>
       </p>
     </div>
   );

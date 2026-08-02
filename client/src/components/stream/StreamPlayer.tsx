@@ -9,9 +9,9 @@ interface StreamPlayerProps {
 }
 
 const TYPE_LABELS: Record<StreamType, string> = {
-  official: "Zvanični",
+  official: "Official",
   cocast: "Co-stream",
-  caster: "Kaster",
+  caster: "Caster",
 };
 
 export default function StreamPlayer({ gameId }: StreamPlayerProps) {
@@ -26,7 +26,7 @@ export default function StreamPlayer({ gameId }: StreamPlayerProps) {
       const res = await streamApi.getForMatch(gameId);
       if (!active) return;
       if (res.success && res.data) setStreams(res.data);
-      else setError(res.message ?? "Greška pri učitavanju streamova");
+      else setError(res.message ?? "Failed to load streams");
       setLoading(false);
     };
     void load();
@@ -45,7 +45,7 @@ export default function StreamPlayer({ gameId }: StreamPlayerProps) {
   );
 
   if (loading) {
-    return <div style={{ color: "var(--text-muted)", fontFamily: "var(--font-ui)", fontSize: 13 }}>Učitavanje streamova…</div>;
+    return <div style={{ color: "var(--text-muted)", fontFamily: "var(--font-ui)", fontSize: 13 }}>Loading streams…</div>;
   }
   if (error) {
     return <div style={{ color: "var(--text-muted)", fontFamily: "var(--font-ui)", fontSize: 13 }}>{error}</div>;

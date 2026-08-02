@@ -8,7 +8,7 @@ function nameColor(name: string): string {
   return `hsl(${h % 360}, 70%, 68%)`;
 }
 function hhmm(iso: string): string {
-  return new Date(iso).toLocaleTimeString("sr-RS", { hour: "2-digit", minute: "2-digit" });
+  return new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 }
 
 export default function ChatPanel({ matchId, active, canSend, isAdmin, style }: {
@@ -49,16 +49,16 @@ export default function ChatPanel({ matchId, active, canSend, isAdmin, style }: 
       {/* header */}
       <div style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", borderBottom: "1px solid var(--border)" }}>
         <span style={{ width: 7, height: 7, borderRadius: "50%", background: statusColor, boxShadow: `0 0 8px ${statusColor}` }} />
-        <span style={{ fontFamily: "var(--font-head)", fontSize: 13, fontWeight: 800, color: "var(--text)" }}>Chat uživo</span>
+        <span style={{ fontFamily: "var(--font-head)", fontSize: 13, fontWeight: 800, color: "var(--text)" }}>Live chat</span>
         <span style={{ marginLeft: "auto", fontFamily: "var(--font-ui)", fontSize: 10, color: "var(--text-dim)" }}>
-          {status === "open" ? "povezan" : status === "connecting" ? "povezivanje…" : "prekinuto"}
+          {status === "open" ? "connected" : status === "connecting" ? "connecting…" : "disconnected"}
         </span>
       </div>
 
       {/* poruke */}
       <div ref={listRef} onScroll={onScroll} style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "10px 12px", display: "flex", flexDirection: "column", gap: 7 }}>
         {messages.length === 0 ? (
-          <div style={{ margin: "auto", fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--text-dim)", textAlign: "center" }}>Još nema poruka. Budi prvi!</div>
+          <div style={{ margin: "auto", fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--text-dim)", textAlign: "center" }}>No messages yet. Be the first!</div>
         ) : messages.map((m: ChatMsg) => (
           <div key={m.id} style={{ fontFamily: "var(--font-ui)", fontSize: 13, lineHeight: 1.4, wordBreak: "break-word" }}>
             <span style={{ fontSize: 10, color: "var(--text-dim)", marginRight: 6 }}>{hhmm(m.createdAt)}</span>
@@ -66,7 +66,7 @@ export default function ChatPanel({ matchId, active, canSend, isAdmin, style }: 
             <span style={{ color: "var(--text-muted)" }}>: </span>
             <span style={{ color: "var(--text)" }}>{m.message}</span>
             {isAdmin && (
-              <button onClick={() => remove(m.id)} title="Obriši poruku" style={{ marginLeft: 6, background: "none", border: "none", color: "var(--text-dim)", cursor: "pointer", fontSize: 11 }}>✕</button>
+              <button onClick={() => remove(m.id)} title="Delete message" style={{ marginLeft: 6, background: "none", border: "none", color: "var(--text-dim)", cursor: "pointer", fontSize: 11 }}>✕</button>
             )}
           </div>
         ))}
@@ -85,16 +85,16 @@ export default function ChatPanel({ matchId, active, canSend, isAdmin, style }: 
               onChange={(e) => setText(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); submit(); } }}
               maxLength={500}
-              placeholder="Napiši poruku…"
+              placeholder="Write a message…"
               style={{ flex: 1, minWidth: 0, background: "rgba(255,255,255,0.04)", border: "1px solid var(--border)", borderRadius: 8, padding: "8px 12px", color: "var(--text)", fontFamily: "var(--font-ui)", fontSize: 13, outline: "none" }}
             />
             <button onClick={submit} disabled={status !== "open"}
               style={{ flexShrink: 0, background: "var(--cyan)", border: "none", borderRadius: 8, padding: "8px 14px", color: "#00131a", fontFamily: "var(--font-ui)", fontSize: 13, fontWeight: 800, cursor: status === "open" ? "pointer" : "not-allowed", opacity: status === "open" ? 1 : 0.5 }}>
-              Pošalji
+              Send
             </button>
           </div>
         ) : (
-          <div style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--text-dim)", textAlign: "center", padding: "4px 0" }}>Prijavi se da bi ćaskao.</div>
+          <div style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--text-dim)", textAlign: "center", padding: "4px 0" }}>Log in to chat.</div>
         )}
       </div>
     </div>

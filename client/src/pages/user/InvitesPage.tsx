@@ -28,9 +28,9 @@ const GLOW_COLORS = {
 };
 
 const STATUS_LABELS = {
-  pending:  "Na čekanju",
-  accepted: "Prihvaćena",
-  declined: "Odbijena",
+  pending:  "Pending",
+  accepted: "Accepted",
+  declined: "Declined",
 };
 
 const STATUS_STYLES: Record<string, React.CSSProperties> = {
@@ -57,7 +57,7 @@ export default function InvitesPage() {
       const data = await res.json() as { success: boolean; data?: TeamInvite[]; message?: string };
 
       if (!data.success) {
-        setError(data.message ?? "Greška pri učitavanju pozivnica");
+        setError(data.message ?? "Failed to load invites");
         return;
       }
 
@@ -93,7 +93,7 @@ export default function InvitesPage() {
 
       setInvites(enriched);
     } catch {
-      setError("Neuspešno učitavanje pozivnica");
+      setError("Failed to load invites");
     } finally {
       setLoading(false);
     }
@@ -115,7 +115,7 @@ export default function InvitesPage() {
       });
       const data = await res.json() as { success: boolean; message?: string };
       if (data.success) {
-        setSuccess(data.message ?? (accept ? "Pozivnica prihvaćena!" : "Pozivnica odbijena."));
+        setSuccess(data.message ?? (accept ? "Invite accepted!" : "Invite declined."));
         if (!accept) {
           // Odmah ukloni odbijenu pozivnicu iz liste
           setInvites(prev => prev.filter(i => i.id !== inviteId));
@@ -124,10 +124,10 @@ export default function InvitesPage() {
           await loadInvites();
         }
       } else {
-        setError(data.message ?? "Greška");
+        setError(data.message ?? "Something went wrong");
       }
     } catch {
-      setError("Greška pri odgovaranju na pozivnicu");
+      setError("Failed to respond to invite");
     } finally {
       setResponding(null);
     }
@@ -139,12 +139,12 @@ export default function InvitesPage() {
   return (
     <div>
       <PageHeader
-        eyebrow="Timovi"
-        title="Pozivnice"
+        eyebrow="Teams"
+        title="Invites"
         action={
           pendingCount > 0 ? (
             <span style={{ fontFamily: "var(--font-display)", fontSize: 13, fontWeight: 900, color: "var(--gold)", background: "rgba(255,196,68,0.12)", border: "1px solid rgba(255,196,68,0.30)", borderRadius: 20, padding: "4px 14px", letterSpacing: "0.06em" }}>
-              {pendingCount} na čekanju
+              {pendingCount} pending
             </span>
           ) : undefined
         }
@@ -172,7 +172,7 @@ export default function InvitesPage() {
                   transition: "all 0.2s",
                 }}
               >
-                {f === "all" ? "Sve" : STATUS_LABELS[f]} ({count})
+                {f === "all" ? "All" : STATUS_LABELS[f]} ({count})
               </button>
             );
           })}
@@ -182,7 +182,7 @@ export default function InvitesPage() {
       {loading ? (
         <Spinner />
       ) : filtered.length === 0 ? (
-        <Empty message={filter === "all" ? "Nema pozivnica." : `Nema ${STATUS_LABELS[filter as keyof typeof STATUS_LABELS]?.toLowerCase()} pozivnica.`} />
+        <Empty message={filter === "all" ? "No invites." : `No ${STATUS_LABELS[filter as keyof typeof STATUS_LABELS]?.toLowerCase()} invites.`} />
       ) : (
         <motion.div
           variants={staggerContainer(0.07)}
@@ -222,7 +222,7 @@ function InviteCard({
   const isPending = invite.status === "pending";
   const isProcessing = responding === invite.id;
 
-  const date = new Date(invite.createdAt).toLocaleDateString("sr-Latn", {
+  const date = new Date(invite.createdAt).toLocaleDateString("en-GB", {
     day:   "2-digit",
     month: "long",
     year:  "numeric",
@@ -264,7 +264,7 @@ function InviteCard({
             {invite.teamName}
           </p>
           <p style={{ fontFamily: "var(--font-ui)", fontSize: 11, color: "var(--text-muted)", letterSpacing: "0.04em" }}>
-            Pozvani ste da se pridružite timu · {date}
+            You&apos;ve been invited to join the team · {date}
           </p>
         </div>
 
@@ -292,7 +292,7 @@ function InviteCard({
               disabled={isProcessing || responding !== null}
               onClick={() => onRespond(invite.id, true)}
             >
-              {isProcessing ? "..." : "Prihvati"}
+              {isProcessing ? "..." : "Accept"}
             </PgBtn>
             <PgBtn
               variant="danger"
@@ -300,7 +300,7 @@ function InviteCard({
               disabled={isProcessing || responding !== null}
               onClick={() => onRespond(invite.id, false)}
             >
-              {isProcessing ? "..." : "Odbij"}
+              {isProcessing ? "..." : "Decline"}
             </PgBtn>
           </div>
         )}

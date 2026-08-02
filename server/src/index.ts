@@ -1,7 +1,11 @@
 import "dotenv/config";
-import app, { db, logger, proSyncService, proStructureSyncService, chatGateway } from "./app";
+import app, { db, logger, proSyncService, proStructureSyncService, chatGateway, pickemService } from "./app";
 
 const PORT = parseInt(process.env.PORT ?? "4000", 10);
+
+// Kako često se poravnavaju pick'em tipovi (bodovi/streak/bedževi) kao sigurnosna mreža
+// nezavisno od sync-a (default 2 min). Poravnanje je jeftino i idempotentno.
+const PICKEM_SETTLE_INTERVAL_MS = parseInt(process.env.PICKEM_SETTLE_INTERVAL_MS ?? "120000", 10);
 
 // Koliko cesto se osvezavaju LIVE + ZAVRSENI mecevi (default 15 min).
 const LIVE_INTERVAL_MS = parseInt(process.env.PRO_SYNC_LIVE_INTERVAL_MS ?? "900000", 10);
@@ -21,13 +25,19 @@ function startProAutoSync(): void {
     if (!r.ok) logger.warn("ProSync", `${label}: ${r.error ?? "sync nije uspeo"}`);
   };
 
+  // Posle svakog sync-a koji donosi zavrsene meceve, odmah poravnaj pick'em tipove
+  // (bodovi/streak/bedzevi), da rezultati budu vidljivi bez cekanja sigurnosnog intervala.
+  const settleAfter = (r: { ok: boolean; error?: string }): void => {
+    if (r.ok) void pickemService.settlePending();
+  };
+
   // 1) Na svakom pokretanju/restartu — pun sync (live + nadolazeci + zavrseni),
   //    da onaj ko pokrene aplikaciju odmah ima sveze podatke.
-  void proSyncService.sync().then(warnIfFail("startup"));
+  void proSyncService.sync().then((r) => { warnIfFail("startup")(r); settleAfter(r); });
 
   // 2) Live + zavrseni — cesto (default 15 min).
   setInterval(() => {
-    void proSyncService.syncKinds(["running", "past"]).then(warnIfFail("live+past"));
+    void proSyncService.syncKinds(["running", "past"]).then((r) => { warnIfFail("live+past")(r); settleAfter(r); });
   }, LIVE_INTERVAL_MS);
 
   // 3) Novi (nadolazeci) — retko (default jednom dnevno).
@@ -57,6 +67,10 @@ async function start(): Promise<void> {
     logger.info("Server", `Running at http://localhost:${PORT}/api`);
     startProAutoSync();
   });
+
+  // Sigurnosna mreza za pick'em poravnanje — hvata i rezultate od rucnog admin sync-a
+  // ("⟳ Sinhronizuj" na /admin/pro) i sve sto promakne poravnanju posle auto-sync-a.
+  setInterval(() => { void pickemService.settlePending(); }, PICKEM_SETTLE_INTERVAL_MS);
 
   // WebSocket chat na isti HTTP server (ws://.../ws/chat).
   chatGateway.attach(server);

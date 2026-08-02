@@ -31,9 +31,9 @@ const GENRE_IMG: Record<string, string> = {
 };
 
 const HERO_SLIDES = [
-  { img: IMG.hero1, tags: ["Explore", "Play", "Win"], title: "Igraj i osvajaj", desc: "Podigni esports iskustvo — timovi, turniri i mečevi na jednoj platformi." },
-  { img: IMG.hero2, tags: ["Explore", "Compete", "Rank"], title: "Istraži turnire", desc: "Pronađi otvorene turnire, prijavi tim i prati rezultate uživo." },
-  { img: IMG.hero3, tags: ["Join", "Team", "Dominate"], title: "Pridruži se zajednici", desc: "Pozovi igrače, formiraj ekipu i kreni u sledeći meč." },
+  { img: IMG.hero1, tags: ["Explore", "Play", "Win"], title: "Play and win", desc: "Level up your esports experience — teams, tournaments and matches on one platform." },
+  { img: IMG.hero2, tags: ["Explore", "Compete", "Rank"], title: "Explore tournaments", desc: "Find open tournaments, register your team and follow results live." },
+  { img: IMG.hero3, tags: ["Join", "Team", "Dominate"], title: "Join the community", desc: "Invite players, form your squad and jump into the next match." },
 ];
 
 
@@ -43,9 +43,9 @@ const fortnite = "https://i.pinimg.com/1200x/50/65/54/50655437ff81ed9c54b5515a67
 
 // HARDKODOVANE igre koje treba dodati na sajt — zameni `img`, `name` i `info` kasnije.
 const UPCOMING_GAMES = [
-  { name: "Overwatch", info: "HERO SHOOTER - 5 igrača", img: overwatch_img },
-  { name: "NBA 2K26", info: "BASKETBALL - 1-2 igrača", img: nba_img },
-  { name: "Fortnite", info: "BATTLE ROYALE - 1-4 igrača", img: fortnite },
+  { name: "Overwatch", info: "HERO SHOOTER - 5 players", img: overwatch_img },
+  { name: "NBA 2K26", info: "BASKETBALL - 1-2 players", img: nba_img },
+  { name: "Fortnite", info: "BATTLE ROYALE - 1-4 players", img: fortnite },
 ];
 
 interface GameCatalog {
@@ -385,9 +385,9 @@ export default function UserDashboard() {
         method: "POST", headers, body: JSON.stringify({ teamId: selectedTeamId }),
       });
       const d = await res.json();
-      if (!res.ok) { setRegError(d.message ?? "Neuspešna prijava"); }
+      if (!res.ok) { setRegError(d.message ?? "Registration failed"); }
       else { setRegModal(null); await loadRegData(); }
-    } catch { setRegError("Neuspešna prijava"); }
+    } catch { setRegError("Registration failed"); }
     finally { setRegSaving(false); }
   };
 
@@ -404,10 +404,10 @@ export default function UserDashboard() {
   };
 
   const actions = [
-    { to: "/dashboard/teams", icon: "◎", title: "Moji timovi", desc: "Sastav, pozivi, kapitenstvo.", glow: "var(--violet)" },
-    { to: "/dashboard/tournaments", icon: "◈", title: "Turniri", desc: "Prijave i raspored mečeva.", glow: "var(--cyan)" },
-    { to: "/dashboard/invites", icon: "✉", title: "Pozivnice", desc: "Prihvati ili odbij pozive.", glow: "var(--pink)" },
-    { to: "/dashboard/watchlist", icon: "★", title: "Watchlist", desc: "Prati omiljene turnire.", glow: "var(--gold)" },
+    { to: "/dashboard/teams", icon: "◎", title: "My teams", desc: "Roster, invites, captaincy.", glow: "var(--violet)" },
+    { to: "/dashboard/tournaments", icon: "◈", title: "Tournaments", desc: "Registrations and match schedule.", glow: "var(--cyan)" },
+    { to: "/dashboard/invites", icon: "✉", title: "Invites", desc: "Accept or decline invites.", glow: "var(--pink)" },
+    { to: "/dashboard/watchlist", icon: "★", title: "Watchlist", desc: "Follow your favorite tournaments.", glow: "var(--gold)" },
   ];
 
   const [selectedGame, setSelectedGame] = useState<GameCatalog | null>(null);
@@ -447,8 +447,8 @@ export default function UserDashboard() {
           <h1 className="pg-glitch" data-text={current.title} style={{ fontFamily: "var(--font-display)", fontSize: "clamp(32px,5vw,52px)", fontWeight: 900, lineHeight: 1.05, marginBottom: 16, textShadow: "0 0 40px rgba(124,92,255,0.35)", color: "var(--text)" }}>{current.title}</h1>
           <p style={{ fontSize: 16, color: "var(--text-soft)", lineHeight: 1.65, marginBottom: 28, maxWidth: 480 }}>{current.desc}</p>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            <PgBtn variant="primary" onClick={() => navigate("/dashboard/tournaments")}>Istraži turnire</PgBtn>
-            <PgBtn variant="ghost" onClick={() => navigate("/dashboard/teams")}>Moji timovi</PgBtn>
+            <PgBtn variant="primary" onClick={() => navigate("/dashboard/tournaments")}>Explore tournaments</PgBtn>
+            <PgBtn variant="ghost" onClick={() => navigate("/dashboard/teams")}>My teams</PgBtn>
           </div>
         </motion.div>
         <div className="pg-hero__dots">
@@ -469,7 +469,7 @@ export default function UserDashboard() {
                   <div>
                     <p className="pg-eyebrow" style={{ marginBottom: 8 }}>Live turnir</p>
                     <h3 style={{ fontFamily: "var(--font-head)", fontSize: 18, fontWeight: 700 }}>{data.liveTournament.name}</h3>
-                    <p style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 4 }}>{data.liveTournament.gameName} · {data.liveTournament.registeredCount}/{data.liveTournament.maxTeams} timova</p>
+                    <p style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 4 }}>{data.liveTournament.gameName} · {data.liveTournament.registeredCount}/{data.liveTournament.maxTeams} teams</p>
                   </div>
                   <StatusBadge status={data.liveTournament.status} />
                 </div>
@@ -486,21 +486,21 @@ export default function UserDashboard() {
                     </div>
                   </div>
                 ) : (
-                  <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 16 }}>Nema aktivnih mečeva.</p>
+                  <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 16 }}>No active matches.</p>
                 )}
-                <PgBtn variant="cyan" size="sm" full onClick={() => navigate("/dashboard/tournaments")}>Pogledaj turnir</PgBtn>
+                <PgBtn variant="cyan" size="sm" full onClick={() => navigate("/dashboard/tournaments")}>View tournament</PgBtn>
               </>
             ) : (
               <div>
-                <p className="pg-eyebrow" style={{ marginBottom: 8 }}>Live turnir</p>
-                <p style={{ fontSize: 14, color: "var(--text-muted)", marginBottom: 16 }}>Trenutno nema turnira u toku.</p>
-                <PgBtn variant="cyan" size="sm" full onClick={() => navigate("/dashboard/tournaments")}>Pregledaj turnire</PgBtn>
+                <p className="pg-eyebrow" style={{ marginBottom: 8 }}>Live tournament</p>
+                <p style={{ fontSize: 14, color: "var(--text-muted)", marginBottom: 16 }}>No tournaments in progress right now.</p>
+                <PgBtn variant="cyan" size="sm" full onClick={() => navigate("/dashboard/tournaments")}>Browse tournaments</PgBtn>
               </div>
             )}
           </motion.div>
 
           <motion.div variants={fadeInView} className="pg-glass" style={{ padding: 24 }}>
-            <p className="pg-eyebrow" style={{ marginBottom: 12 }}>Sledeći mečevi</p>
+            <p className="pg-eyebrow" style={{ marginBottom: 12 }}>Upcoming matches</p>
             <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 320, overflowY: "auto", paddingRight: 2 }}>
               {data.upcoming.length > 0 ? data.upcoming.map((m) => (
                 <div key={m.gameId} style={{ borderRadius: 8, background: "rgba(124,92,255,0.06)", border: "1px solid var(--border)", overflow: "hidden" }}>
@@ -508,7 +508,7 @@ export default function UserDashboard() {
                     <span style={{ fontFamily: "var(--font-ui)", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--cyan)", opacity: 0.8 }}>{m.tournamentName} · R{m.round}</span>
                     {m.scheduledTime && (
                       <span style={{ fontFamily: "var(--font-ui)", fontSize: 10, color: "var(--gold)", fontWeight: 600 }}>
-                        🕐 {new Date(m.scheduledTime).toLocaleDateString("sr", { day: "2-digit", month: "2-digit" })} {new Date(m.scheduledTime).toLocaleTimeString("sr", { hour: "2-digit", minute: "2-digit" })}
+                        🕐 {new Date(m.scheduledTime).toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit" })} {new Date(m.scheduledTime).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
                       </span>
                     )}
                   </div>
@@ -524,22 +524,22 @@ export default function UserDashboard() {
                     </div>
                   </div>
                 </div>
-              )) : <p style={{ fontSize: 13, color: "var(--text-muted)" }}>Nema zakazanih mečeva.</p>}
+              )) : <p style={{ fontSize: 13, color: "var(--text-muted)" }}>No scheduled matches.</p>}
             </div>
           </motion.div>
         </motion.div>
 
         <motion.div variants={staggerContainer(0.08)} initial="hidden" whileInView="show" viewport={viewOpts}
           style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 16, marginBottom: 40 }}>
-          <motion.div variants={fadeUp}><StatCard label="Uloga" value={user?.role ?? "player"} color="var(--violet2)" icon="🎮" /></motion.div>
-          <motion.div variants={fadeUp}><StatCard label="Timovi" value={<Counter value={data.teams.length} />} color="var(--cyan)" icon="◎" sub="aktivnih" /></motion.div>
-          <motion.div variants={fadeUp}><StatCard label="Turniri" value={<Counter value={data.watchlist.length} />} color="var(--green)" icon="◈" sub="praćenih" /></motion.div>
-          <motion.div variants={fadeUp}><StatCard label="Pobede" value={<Counter value={data.wins} />} color="var(--gold)" icon="🏆" sub="ukupno" /></motion.div>
+          <motion.div variants={fadeUp}><StatCard label="Role" value={user?.role ?? "player"} color="var(--violet2)" icon="🎮" /></motion.div>
+          <motion.div variants={fadeUp}><StatCard label="Teams" value={<Counter value={data.teams.length} />} color="var(--cyan)" icon="◎" sub="active" /></motion.div>
+          <motion.div variants={fadeUp}><StatCard label="Tournaments" value={<Counter value={data.watchlist.length} />} color="var(--green)" icon="◈" sub="followed" /></motion.div>
+          <motion.div variants={fadeUp}><StatCard label="Wins" value={<Counter value={data.wins} />} color="var(--gold)" icon="🏆" sub="total" /></motion.div>
         </motion.div>
 
         {sortedGames.length > 0 && (
           <motion.section initial="hidden" whileInView="show" viewport={viewOpts} variants={fadeInView} style={{ marginBottom: 44 }}>
-            <SectionTitle eyebrow="Popularno" title="Igre u katalogu" />
+            <SectionTitle eyebrow="Popular" title="Games in the catalog" />
             <div style={{ overflow: "hidden", marginBottom: 16, maskImage: "linear-gradient(90deg, transparent, black 8%, black 92%, transparent)" }}>
               <div className="pg-marquee">
                 {[...sortedGames, ...sortedGames].map((g, i) => (
@@ -548,7 +548,7 @@ export default function UserDashboard() {
                     <img src={gameImg(g.genre, g.imageUrl)} alt="" style={{ width: 56, height: 56, borderRadius: 10, objectFit: "cover", border: "1px solid var(--border)" }} />
                     <div>
                       <p style={{ fontFamily: "var(--font-head)", fontSize: 13, fontWeight: 700, marginBottom: 4 }}>{g.name}</p>
-                      <p style={{ fontSize: 11, color: "var(--text-muted)" }}>{g.maxPlayers} igrača · {g.genre}</p>
+                      <p style={{ fontSize: 11, color: "var(--text-muted)" }}>{g.maxPlayers} players · {g.genre}</p>
                       <span style={{ fontSize: 11, color: "var(--green)", fontWeight: 700 }}>[{g.tag}]</span>
                     </div>
                   </div>
@@ -559,7 +559,7 @@ export default function UserDashboard() {
               {sortedGames.slice(0, 6).map((g) => (
                 <div key={g.gameId} onClick={() => setSelectedGame(g)} style={{ cursor: "pointer" }}>
                   <GameCard img={gameImg(g.genre, g.imageUrl)} title={g.name} size="sm"
-                    meta={<p style={{ fontSize: 11, color: "var(--cyan)", marginBottom: 6 }}>{g.maxPlayers} igrača · {g.genre}</p>} />
+                    meta={<p style={{ fontSize: 11, color: "var(--cyan)", marginBottom: 6 }}>{g.maxPlayers} players · {g.genre}</p>} />
                 </div>
               ))}
             </div>
@@ -568,7 +568,7 @@ export default function UserDashboard() {
 
         {hasChampions && (
           <motion.section initial="hidden" whileInView="show" viewport={viewOpts} variants={fadeInView} style={{ marginBottom: 44 }}>
-            <SectionTitle eyebrow="Slavlje pobede" title="Šampioni turnira" />
+            <SectionTitle eyebrow="Victory lap" title="Tournament champions" />
             <motion.div variants={staggerContainer(0.12)} initial="hidden" whileInView="show" viewport={viewOpts}
               style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 20 }}>
               {data.champions.map((c) => <ChampionCard key={c.tournamentId} champion={c} />)}
@@ -578,7 +578,7 @@ export default function UserDashboard() {
 
         {trending.length > 0 && (
           <motion.section initial="hidden" whileInView="show" viewport={viewOpts} variants={fadeInView} style={{ marginBottom: 44 }}>
-            <SectionTitle eyebrow="U trendu" title="Aktivni turniri" action={<PgBtn variant="ghost" size="sm" onClick={() => navigate("/dashboard/tournaments")}>Sve</PgBtn>} />
+            <SectionTitle eyebrow="Trending" title="Active tournaments" action={<PgBtn variant="ghost" size="sm" onClick={() => navigate("/dashboard/tournaments")}>All</PgBtn>} />
             {regError && <div style={{ marginBottom: 12 }}><ErrorBox message={regError} /></div>}
             <motion.div variants={staggerContainer(0.1)} initial="hidden" whileInView="show" viewport={viewOpts}
               style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 20 }}>
@@ -597,24 +597,24 @@ export default function UserDashboard() {
                             <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", padding: "3px 8px", borderRadius: 4, background: "rgba(124,92,255,0.2)", color: "var(--violet2)" }}>{t.gameName}</span>
                             <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", padding: "3px 8px", borderRadius: 4, background: "rgba(0,212,255,0.15)", color: "var(--cyan)" }}>{t.status}</span>
                           </div>
-                          <p style={{ fontSize: 12, color: "var(--cyan)", marginBottom: 8 }}>{t.registeredCount}/{t.maxTeams} timova prijavljeno</p>
+                          <p style={{ fontSize: 12, color: "var(--cyan)", marginBottom: 8 }}>{t.registeredCount}/{t.maxTeams} teams registered</p>
                           {isOpen && (
                             <div onClick={e => e.stopPropagation()} style={{ display: "flex", gap: 6 }}>
                               {isRegistered ? (
                                 <>
-                                  <span style={{ fontFamily: "var(--font-ui)", fontSize: 10, fontWeight: 700, color: "var(--green)", padding: "4px 8px", borderRadius: 6, border: "1px solid var(--green)", background: "rgba(0,240,160,0.08)" }}>✓ Prijavljen</span>
+                                  <span style={{ fontFamily: "var(--font-ui)", fontSize: 10, fontWeight: 700, color: "var(--green)", padding: "4px 8px", borderRadius: 6, border: "1px solid var(--green)", background: "rgba(0,240,160,0.08)" }}>✓ Registered</span>
                                   <button
                                     disabled={cancellingId === t.tournamentId}
                                     onClick={(e) => cancelReg(t, e)}
                                     style={{ fontSize: 10, fontFamily: "var(--font-ui)", fontWeight: 700, padding: "4px 10px", borderRadius: 6, border: "1px solid rgba(255,80,80,0.5)", background: "rgba(255,60,60,0.08)", color: "#ff6060", cursor: "pointer" }}>
-                                    {cancellingId === t.tournamentId ? "..." : "Otkaži"}
+                                    {cancellingId === t.tournamentId ? "..." : "Cancel"}
                                   </button>
                                 </>
                               ) : (
                                 <button
                                   onClick={(e) => openRegModal(t, e)}
                                   style={{ fontSize: 10, fontFamily: "var(--font-ui)", fontWeight: 700, padding: "4px 12px", borderRadius: 6, border: "1px solid var(--violet)", background: "rgba(124,92,255,0.15)", color: "var(--violet2)", cursor: "pointer" }}>
-                                  Prijavi tim
+                                  Register team
                                 </button>
                               )}
                             </div>
@@ -630,7 +630,7 @@ export default function UserDashboard() {
         )}
 
         <motion.section initial="hidden" whileInView="show" viewport={viewOpts} variants={fadeInView} style={{ marginBottom: 44 }}>
-          <SectionTitle eyebrow="Uskoro" title="Igre koje dolaze" />
+          <SectionTitle eyebrow="Soon" title="Upcoming games" />
           {/* HARDKODOVANE placeholder igre — izmeni UPCOMING_GAMES (slike i tekst) na vrhu fajla. */}
           <div className="pg-scroll-row">
             {UPCOMING_GAMES.map((g, i) => (
@@ -680,7 +680,7 @@ export default function UserDashboard() {
                 className="pg-glass" style={{ width: "100%", maxWidth: 400, padding: 28, borderRadius: 16, display: "flex", flexDirection: "column", gap: 18 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div>
-                    <h3 style={{ fontFamily: "var(--font-head)", fontSize: 18, fontWeight: 700, color: "var(--text)" }}>Prijava na turnir</h3>
+                    <h3 style={{ fontFamily: "var(--font-head)", fontSize: 18, fontWeight: 700, color: "var(--text)" }}>Tournament registration</h3>
                     <p style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>{regModal.name}</p>
                   </div>
                   <button onClick={() => setRegModal(null)} style={{ background: "none", border: "none", color: "var(--text-dim)", fontSize: 18, cursor: "pointer" }}>✕</button>
@@ -688,14 +688,14 @@ export default function UserDashboard() {
                 {regError && <ErrorBox message={regError} />}
                 {captainTeams.length === 1 ? (
                   <div style={{ padding: "12px 16px", borderRadius: 10, border: "1px solid var(--border)", background: "rgba(124,92,255,0.06)" }}>
-                    <p style={{ fontFamily: "var(--font-ui)", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 6 }}>Tim</p>
+                    <p style={{ fontFamily: "var(--font-ui)", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 6 }}>Team</p>
                     <p style={{ fontFamily: "var(--font-head)", fontSize: 15, fontWeight: 700, color: "var(--text)" }}>
                       {captainTeams[0].teamName} <span style={{ color: "var(--violet2)", fontSize: 12 }}>[{captainTeams[0].tag}]</span>
                     </p>
                   </div>
                 ) : (
                   <div>
-                    <p style={{ fontFamily: "var(--font-ui)", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 8 }}>Odaberi tim</p>
+                    <p style={{ fontFamily: "var(--font-ui)", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 8 }}>Choose a team</p>
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                       {captainTeams.map(team => (
                         <button key={team.teamId} onClick={() => setSelectedTeamId(team.teamId)}
@@ -708,9 +708,9 @@ export default function UserDashboard() {
                   </div>
                 )}
                 <div style={{ display: "flex", gap: 10 }}>
-                  <PgBtn variant="ghost" size="sm" onClick={() => setRegModal(null)}>Otkaži</PgBtn>
+                  <PgBtn variant="ghost" size="sm" onClick={() => setRegModal(null)}>Cancel</PgBtn>
                   <PgBtn variant="primary" size="sm" disabled={regSaving || !selectedTeamId} onClick={register}>
-                    {regSaving ? "Prijavljivanje..." : "Prijavi tim"}
+                    {regSaving ? "Registering..." : "Register team"}
                   </PgBtn>
                 </div>
               </motion.div>
@@ -736,11 +736,11 @@ function GameDetailModal({ game, tournamentCount, activeTournamentCount, onClose
     : (GENRE_IMG[game.genre.toLowerCase()] ?? IMG.default);
 
   const stats = [
-    { label: "Žanr", value: game.genre },
-    { label: "Max igrača", value: String(game.maxPlayers) },
+    { label: "Genre", value: game.genre },
+    { label: "Max players", value: String(game.maxPlayers) },
     { label: "Tag", value: `[${game.tag}]` },
-    { label: "Ukupno turnira", value: String(tournamentCount) },
-    { label: "Aktivnih turnira", value: String(activeTournamentCount), highlight: activeTournamentCount > 0 },
+    { label: "Total tournaments", value: String(tournamentCount) },
+    { label: "Active tournaments", value: String(activeTournamentCount), highlight: activeTournamentCount > 0 },
   ];
 
   return createPortal(

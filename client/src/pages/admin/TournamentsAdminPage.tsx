@@ -89,7 +89,7 @@ export default function TournamentsAdminPage() {
       setTournaments(tData.success ? tData.data : []);
       setGames(gData.success ? gData.data : []);
     } catch {
-      setError("Neuspešno učitavanje");
+      setError("Failed to load");
     } finally {
       setLoading(false);
     }
@@ -137,7 +137,7 @@ export default function TournamentsAdminPage() {
     const gameId = parseInt(form.gameId, 10);
     const prizePool = parseFloat(form.prizePool) || 0;
     if (!form.name.trim() || isNaN(gameId) || !form.format || isNaN(maxTeams) || maxTeams < 2 || !form.registrationDeadline) {
-      setError("Sva polja su obavezna. Min 2 tima.");
+      setError("All fields are required. Min 2 teams.");
       return;
     }
     setSaving(true);
@@ -158,57 +158,57 @@ export default function TournamentsAdminPage() {
         { method: editTournament ? "PUT" : "POST", headers, body: JSON.stringify(payload) }
       );
       const data = await res.json();
-      if (!res.ok) { setError(data.message ?? "Greška pri snimanju"); return; }
-      setSuccess(editTournament ? "Turnir ažuriran!" : "Turnir kreiran!");
+      if (!res.ok) { setError(data.message ?? "Failed to save"); return; }
+      setSuccess(editTournament ? "Tournament updated!" : "Tournament created!");
       closeModal();
       await fetchData();
     } catch {
-      setError("Greška pri snimanju");
+      setError("Failed to save");
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!(await confirm({ variant: "danger", title: "Obriši turnir", message: "Ovo trajno briše turnir, sve prijave i mečeve. Nastaviti?", confirmText: "Da, obriši" }))) return;
+    if (!(await confirm({ variant: "danger", title: "Delete tournament", message: "This permanently deletes the tournament, all registrations and matches. Continue?", confirmText: "Yes, delete" }))) return;
     setDeletingId(id);
     try {
       const res = await fetch(`${BASE}tournaments/${id}`, { method: "DELETE", headers });
       const data = await res.json();
-      if (!res.ok) { setError(data.message ?? "Brisanje neuspešno"); return; }
-      setSuccess("Turnir obrisan.");
+      if (!res.ok) { setError(data.message ?? "Delete failed"); return; }
+      setSuccess("Tournament deleted.");
       await fetchData();
     } catch {
-      setError("Greška pri brisanju");
+      setError("Failed to delete");
     } finally {
       setDeletingId(null);
     }
   };
 
   const handleGenerateBracket = async (id: number) => {
-    if (!(await confirm({ variant: "cyan", title: "Generiši bracket", message: "Bracket će biti generisan i prijave se zaključavaju. Nastaviti?", confirmText: "Generiši" }))) return;
+    if (!(await confirm({ variant: "cyan", title: "Generate bracket", message: "The bracket will be generated and registrations will be locked. Continue?", confirmText: "Generate" }))) return;
     try {
       const res = await fetch(`${BASE}tournaments/${id}/generate-bracket`, { method: "POST", headers });
       const data = await res.json();
-      if (!res.ok) { setError(data.message ?? "Bracket generisanje neuspešno"); return; }
-      setSuccess("Bracket generisan!");
+      if (!res.ok) { setError(data.message ?? "Bracket generation failed"); return; }
+      setSuccess("Bracket generated!");
       await fetchData();
     } catch {
-      setError("Greška pri generisanju bracketa");
+      setError("Failed to generate bracket");
     }
   };
 
   return (
     <div>
       <PageHeader
-        eyebrow="Admin · Upravljanje"
-        title="Turniri"
+        eyebrow="Admin · Management"
+        title="Tournaments"
         action={
           <div style={{ display: "flex", gap: 10 }}>
             <Link to="/admin"><PgBtn variant="ghost" size="sm">← Dashboard</PgBtn></Link>
             <Link to="/admin/games"><PgBtn variant="ghost" size="sm">🎮 Igre</PgBtn></Link>
             <PgBtn variant="primary" size="sm" onClick={openCreate} disabled={games.length === 0}>
-              {games.length === 0 ? "Dodaj igru prvo" : "+ Novi turnir"}
+              {games.length === 0 ? "Add a game first" : "+ New tournament"}
             </PgBtn>
           </div>
         }
@@ -218,11 +218,11 @@ export default function TournamentsAdminPage() {
       {error && !showModal && <ErrorBox message={error} />}
 
       {loading ? <Spinner /> : tournaments.length === 0 ? (
-        <Empty message="Nema turnira. Klikni '+ Novi turnir' da kreiraš prvi." />
+        <Empty message="No tournaments. Click '+ New tournament' to create your first." />
       ) : (
         <motion.div variants={staggerContainer(0.05)} initial="hidden" animate="show">
           <Table>
-            <TableHead columns={["Naziv", "Igra", "Format", "Timovi", "Status", "Nagrada", "Rok prijave", "Akcije"]} />
+            <TableHead columns={["Name", "Game", "Format", "Teams", "Status", "Prize", "Registration deadline", "Actions"]} />
             <tbody>
               {tournaments.map((t) => (
                 <motion.tr key={t.tournamentId} variants={fadeUp}
@@ -238,7 +238,7 @@ export default function TournamentsAdminPage() {
                   <td style={tdStyle}>{t.registeredCount ?? 0}/{t.maxTeams}</td>
                   <td style={tdStyle}><StatusBadge status={t.status} /></td>
                   <td style={tdStyle}>{t.prizePool > 0 ? <span style={{ color: "var(--gold)", fontWeight: 700 }}>${t.prizePool}</span> : "—"}</td>
-                  <td style={{ ...tdStyle, fontSize: 12, color: "var(--text-dim)" }}>{new Date(t.registrationDeadline).toLocaleDateString("sr")}</td>
+                  <td style={{ ...tdStyle, fontSize: 12, color: "var(--text-dim)" }}>{new Date(t.registrationDeadline).toLocaleDateString("en-GB")}</td>
                   <td style={{ ...tdStyle }} onClick={e => e.stopPropagation()}>
                     <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                       <PgBtn variant="ghost" size="sm" onClick={() => openEdit(t)}>Izmeni</PgBtn>
@@ -246,7 +246,7 @@ export default function TournamentsAdminPage() {
                         <PgBtn variant="cyan" size="sm" onClick={() => handleGenerateBracket(t.tournamentId)}>Bracket</PgBtn>
                       )}
                       <PgBtn variant="danger" size="sm" disabled={deletingId === t.tournamentId} onClick={() => handleDelete(t.tournamentId)}>
-                        {deletingId === t.tournamentId ? "..." : "Briši"}
+                        {deletingId === t.tournamentId ? "..." : "Delete"}
                       </PgBtn>
                     </div>
                   </td>
@@ -259,14 +259,14 @@ export default function TournamentsAdminPage() {
 
       <AnimatePresence>
         {showModal && (
-          <Modal title={editTournament ? "Izmeni turnir" : "Novi turnir"} onClose={closeModal}>
+          <Modal title={editTournament ? "Edit tournament" : "New tournament"} onClose={closeModal}>
             {error && <ErrorBox message={error} />}
-            <FormField label="Naziv turnira">
-              <input style={inputStyle} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="npr. Spring Championship 2026" />
+            <FormField label="Tournament name">
+              <input style={inputStyle} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Spring Championship 2026" />
             </FormField>
-            <FormField label="Igra">
+            <FormField label="Game">
               <select style={selectStyle} value={form.gameId} onChange={e => setForm(f => ({ ...f, gameId: e.target.value }))}>
-                <option value="">— Izaberi igru —</option>
+                <option value="">— Select a game —</option>
                 {games.map(g => <option key={g.gameId} value={g.gameId}>{g.name}</option>)}
               </select>
             </FormField>
@@ -278,18 +278,18 @@ export default function TournamentsAdminPage() {
                   <option value="round_robin">Round Robin</option>
                 </select>
               </FormField>
-              <FormField label="Max timova">
+              <FormField label="Max teams">
                 <input style={inputStyle} type="number" min={2} value={form.maxTeams} onChange={e => setForm(f => ({ ...f, maxTeams: e.target.value }))} />
               </FormField>
             </div>
-            <FormField label="Rok prijave">
+            <FormField label="Registration deadline">
               <input style={inputStyle} type="datetime-local" value={form.registrationDeadline} onChange={e => setForm(f => ({ ...f, registrationDeadline: e.target.value }))} />
             </FormField>
-            <FormField label="Nagradni fond ($)">
+            <FormField label="Prize pool ($)">
               <input style={inputStyle} type="number" min={0} value={form.prizePool} onChange={e => setForm(f => ({ ...f, prizePool: e.target.value }))} placeholder="0" />
             </FormField>
-            <FormField label="Slika turnira (URL)">
-              <input style={inputStyle} type="url" value={form.imageUrl} onChange={e => setForm(f => ({ ...f, imageUrl: e.target.value }))} placeholder="https://primer.com/slika.jpg (opciono)" />
+            <FormField label="Tournament image (URL)">
+              <input style={inputStyle} type="url" value={form.imageUrl} onChange={e => setForm(f => ({ ...f, imageUrl: e.target.value }))} placeholder="https://example.com/image.jpg (optional)" />
             </FormField>
             {editTournament && (
               <FormField label="Status">
@@ -299,9 +299,9 @@ export default function TournamentsAdminPage() {
               </FormField>
             )}
             <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
-              <PgBtn variant="ghost" size="sm" onClick={closeModal}>Otkaži</PgBtn>
-              <PgBtn variant="primary" size="sm" disabled={saving} onClick={handleSave}>
-                {saving ? "Snimanje..." : editTournament ? "Sačuvaj izmene" : "Kreiraj turnir"}
+              <PgBtn variant="ghost" size="sm" onClick={closeModal}>Cancel</PgBtn>
+<PgBtn variant="primary" size="sm" disabled={saving} onClick={handleSave}>
+                {saving ? "Saving..." : editTournament ? "Save changes" : "Create tournament"}
               </PgBtn>
             </div>
           </Modal>

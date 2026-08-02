@@ -12,13 +12,13 @@ export const validateProStream = (
 ): ValidationResult => {
   const validPlatforms: string[] = [StreamPlatform.TWITCH, StreamPlatform.YOUTUBE, StreamPlatform.KICK];
   if (!validPlatforms.includes(platform))
-    return { valid: false, message: "Izaberite validnu platformu (twitch, youtube, kick)" };
+    return { valid: false, message: "Choose a valid platform (twitch, youtube, kick)" };
 
   if (!channel || !CHANNEL_PATTERN.test(channel.trim()))
-    return { valid: false, message: "Kanal je obavezan (dozvoljena slova, brojevi, _ - .)" };
+    return { valid: false, message: "Channel is required (letters, numbers, _ - . allowed)" };
 
   if (!language || !LANGUAGE_PATTERN.test(language.trim()))
-    return { valid: false, message: "Jezik mora biti kod od 2-10 slova (npr. en, sr)" };
+    return { valid: false, message: "Language must be a 2-10 letter code (e.g. en, sr)" };
 
   return { valid: true };
 };

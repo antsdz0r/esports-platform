@@ -68,12 +68,12 @@ export default function AdminDashboard() {
 
   return (
     <div>
-      <PageHeader eyebrow="Admin · Pregled" title="Dashboard"
+      <PageHeader eyebrow="Admin · Overview" title="Dashboard"
         action={
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <Link to="/admin/tournaments"><PgBtn variant="primary" size="sm">+ Turnir</PgBtn></Link>
-            <Link to="/admin/games"><PgBtn variant="ghost" size="sm">🎮 Igre</PgBtn></Link>
-            <Link to="/admin/users"><PgBtn variant="ghost" size="sm">👥 Korisnici</PgBtn></Link>
+            <Link to="/admin/tournaments"><PgBtn variant="primary" size="sm">+ Tournament</PgBtn></Link>
+            <Link to="/admin/games"><PgBtn variant="ghost" size="sm">🎮 Games</PgBtn></Link>
+            <Link to="/admin/users"><PgBtn variant="ghost" size="sm">👥 Users</PgBtn></Link>
             <Link to="/admin/audit"><PgBtn variant="ghost" size="sm">📜 Audit</PgBtn></Link>
             <Link to="/admin/health"><PgBtn variant="ghost" size="sm">♥ Health</PgBtn></Link>
           </div>
@@ -83,16 +83,16 @@ export default function AdminDashboard() {
         <>
           <motion.div variants={staggerContainer(0.07)} initial="hidden" animate="show"
             style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 16, marginBottom: 28 }}>
-            <motion.div variants={fadeUp}><StatCard label="Korisnici" value={<Counter value={usersCount} />} icon="👥" /></motion.div>
-            <motion.div variants={fadeUp}><StatCard label="Igre u katalogu" value={<Counter value={gamesCount} />} icon="🎮" /></motion.div>
-            <motion.div variants={fadeUp}><StatCard label="Turniri (ukupno)" value={<Counter value={tournaments.length} />} icon="🏆" /></motion.div>
-            <motion.div variants={fadeUp}><StatCard label="Aktivni turniri" value={<Counter value={tOngoing} />} color="var(--gold)" icon="⚔️" /></motion.div>
+            <motion.div variants={fadeUp}><StatCard label="Users" value={<Counter value={usersCount} />} icon="👥" /></motion.div>
+            <motion.div variants={fadeUp}><StatCard label="Games in catalog" value={<Counter value={gamesCount} />} icon="🎮" /></motion.div>
+            <motion.div variants={fadeUp}><StatCard label="Tournaments (total)" value={<Counter value={tournaments.length} />} icon="🏆" /></motion.div>
+            <motion.div variants={fadeUp}><StatCard label="Active tournaments" value={<Counter value={tOngoing} />} color="var(--gold)" icon="⚔️" /></motion.div>
           </motion.div>
 
           <motion.div variants={staggerContainer(0.07)} initial="hidden" animate="show"
             style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 16, marginBottom: 32 }}>
-            <motion.div variants={fadeUp}><StatCard label="Otvorene prijave" value={<Counter value={tOpen} />} color="var(--green)" icon="📝" /></motion.div>
-            <motion.div variants={fadeUp}><StatCard label="Završeni turniri" value={<Counter value={tCompleted} />} color="var(--violet2)" icon="🏁" /></motion.div>
+            <motion.div variants={fadeUp}><StatCard label="Open registrations" value={<Counter value={tOpen} />} color="var(--green)" icon="📝" /></motion.div>
+            <motion.div variants={fadeUp}><StatCard label="Completed tournaments" value={<Counter value={tCompleted} />} color="var(--violet2)" icon="🏁" /></motion.div>
             <motion.div variants={fadeUp}>
               <Link to="/admin/health" style={{ textDecoration: "none" }}>
                 <StatCard label="Zdravlje baze" value={`${dbHealthy}/${dbTotal}`} color={dbTotal > 0 && dbHealthy === dbTotal ? "var(--green)" : "var(--pink)"} icon="🛢️" sub="klikni za Health" />
@@ -100,17 +100,17 @@ export default function AdminDashboard() {
             </motion.div>
           </motion.div>
 
-          <SectionTitle label="Najnovija aktivnost" right="audit log" />
+          <SectionTitle label="Latest activity" right="audit log" />
           <div className="pg-glass" style={{ padding: 8, border: "1px solid var(--border)" }}>
             {recent.length === 0 ? (
-              <p style={{ color: "var(--text-muted)", fontSize: 13, padding: 16 }}>Nema zabeležene aktivnosti.</p>
+              <p style={{ color: "var(--text-muted)", fontSize: 13, padding: 16 }}>No recorded activity.</p>
             ) : recent.map((l, i) => (
               <motion.div key={l.id}
                 initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.03 }}
                 style={{ display: "flex", alignItems: "center", gap: 14, padding: "11px 14px", borderTop: i === 0 ? "none" : "1px solid var(--border)" }}>
                 <span className="pg-badge" style={{ minWidth: 130, textAlign: "center", color: actionColor(l.action), border: `1px solid ${actionColor(l.action)}33`, background: `${actionColor(l.action)}14`, fontFamily: "var(--font-ui)", fontSize: 11, fontWeight: 700 }}>{l.action}</span>
                 <span style={{ flex: 1, fontSize: 13, color: "var(--text-soft)" }}>{l.description ?? (l.entity ?? "—")}</span>
-                <span style={{ fontFamily: "monospace", fontSize: 11, color: "var(--text-dim)", whiteSpace: "nowrap" }}>{new Date(l.createdAt).toLocaleString("sr")}</span>
+                <span style={{ fontFamily: "monospace", fontSize: 11, color: "var(--text-dim)", whiteSpace: "nowrap" }}>{new Date(l.createdAt).toLocaleString("en-GB")}</span>
               </motion.div>
             ))}
             <div style={{ padding: "10px 14px", borderTop: "1px solid var(--border)" }}>
