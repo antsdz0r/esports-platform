@@ -288,3 +288,4 @@ Token je privatan — samo na serveru, nikad na klijentu.
 - **Dublja istorija „Završeno"**: trenutno prozor od 2 dana u feed-u; za pravi arhiv/rezultate napraviti
   zaseban endpoint + stranicu (bez limita od 2 dana), po mogućstvu sortirano po važnosti lige.
 - Bracket uživo + zajednica/chat oko strima (spoj koji veliki nemaju).
+- Dodati viewer count za turnire,lajv strim itd.
