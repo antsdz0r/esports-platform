@@ -25,6 +25,7 @@ import { ProSerieRepository } from "./Database/repositories/pro/ProSerieReposito
 import { ProTournamentRepository } from "./Database/repositories/pro/ProTournamentRepository";
 import { ProStandingRepository } from "./Database/repositories/pro/ProStandingRepository";
 import { ProFavoriteRepository } from "./Database/repositories/pro/ProFavoriteRepository";
+import { ChatRepository } from "./Database/repositories/chat/ChatRepository";
 
 
 
@@ -45,6 +46,8 @@ import { ProStreamAdminService } from "./Services/pro/ProStreamAdminService";
 import { ProStructureSyncService } from "./Services/pro/ProStructureSyncService";
 import { ProTournamentService } from "./Services/pro/ProTournamentService";
 import { ProFavoriteService } from "./Services/pro/ProFavoriteService";
+import { ChatService } from "./Services/chat/ChatService";
+import { ChatGateway } from "./WebAPI/realtime/ChatGateway";
 
 import { AuthController }   from "./WebAPI/controllers/AuthController";
 import { UserController }   from "./WebAPI/controllers/UserController";
@@ -87,6 +90,7 @@ const proSerieRepo = new ProSerieRepository(db, logger);
 const proTournamentRepo = new ProTournamentRepository(db, logger);
 const proStandingRepo = new ProStandingRepository(db, logger);
 const proFavoriteRepo = new ProFavoriteRepository(db, logger);
+const chatRepo = new ChatRepository(db, logger);
 
 // Services
 const authService   = new AuthService(userRepo);
@@ -112,6 +116,8 @@ const proStreamAdminService = new ProStreamAdminService(proStreamRepo, proMatchR
 export const proStructureSyncService = new ProStructureSyncService(pandaScoreClient, proLeagueRepo, proSerieRepo, proTournamentRepo, logger);
 const proTournamentService = new ProTournamentService(pandaScoreClient, proLeagueRepo, proSerieRepo, proTournamentRepo, proStandingRepo, proMatchRepo);
 const proFavoriteService = new ProFavoriteService(proFavoriteRepo);
+const chatService = new ChatService(chatRepo);
+export const chatGateway = new ChatGateway(chatService, logger, process.env.JWT_SECRET ?? "", process.env.CLIENT_URL ?? "");
 
 // Express rute
 const app = express();

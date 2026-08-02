@@ -1,5 +1,5 @@
 import "dotenv/config";
-import app, { db, logger, proSyncService, proStructureSyncService } from "./app";
+import app, { db, logger, proSyncService, proStructureSyncService, chatGateway } from "./app";
 
 const PORT = parseInt(process.env.PORT ?? "4000", 10);
 
@@ -53,10 +53,13 @@ function startProAutoSync(): void {
 async function start(): Promise<void> {
   await db.init();
 
-  app.listen(PORT, () => {
+  const server = app.listen(PORT, () => {
     logger.info("Server", `Running at http://localhost:${PORT}/api`);
     startProAutoSync();
   });
+
+  // WebSocket chat na isti HTTP server (ws://.../ws/chat).
+  chatGateway.attach(server);
 }
 
 start().catch(() => logger.error("Server", "Fatal startup error"));

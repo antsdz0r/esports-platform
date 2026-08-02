@@ -262,5 +262,17 @@ CREATE TABLE PRO_FAVORITES(
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+-- ── Chat poruke uz pro meč (real-time chat, istorija poslednjih poruka) ──
+CREATE TABLE PRO_CHAT_MESSAGES(
+    id                INT AUTO_INCREMENT PRIMARY KEY,
+    match_external_id VARCHAR(60)  NOT NULL,
+    user_id           INT UNSIGNED NULL,
+    gamer_tag         VARCHAR(30)  NOT NULL,
+    message           VARCHAR(500) NOT NULL,
+    created_at        DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_pro_chat_match (match_external_id, id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
 
 

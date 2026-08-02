@@ -195,6 +195,33 @@ Frontend: deljena `components/pro/TournamentCard.tsx` (ppv kartica + bela zvezdi
 markira/togluje favorite + toast „Added to Favorites"; `Moji turniri` (user/TournamentsPage) prikazuje
 sekciju „★ Omiljeni pro turniri".
 
+**Real-time chat (nova tabela `PRO_CHAT_MESSAGES`)** — pokrenuti CREATE TABLE samo na masteru (127.0.0.1:3306):
+```sql
+CREATE TABLE PRO_CHAT_MESSAGES(
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  match_external_id VARCHAR(60) NOT NULL,
+  user_id INT UNSIGNED NULL,
+  gamer_tag VARCHAR(30) NOT NULL,
+  message VARCHAR(500) NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_pro_chat_match (match_external_id, id),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+```
+Transport: **native `ws`** (potrebno `npm install ws @types/ws` u `server`). WS je zakačen na isti HTTP
+server (`chatGateway.attach(server)` u `index.ts`), path `/ws/chat`. Soba = `String(proMatch.id)`.
+Backend: `ChatMessage` model + `ChatMessageDto`; `IChatRepository`+`ChatRepository` (insert/lastForMatch/deleteById),
+`IChatService`+`ChatService` (validacija dužine, `\s+` normalizacija; XSS-safe jer klijent renderuje kao tekst),
+`WebAPI/realtime/ChatGateway.ts` (JWT iz `?token=`, room manager, rate-limit ~1/s, heartbeat, `history` na
+konekciju, `message`/`delete` protokol; admin briše). DI u `app.ts` (`export const chatGateway`).
+Frontend: `hooks/chat/useChatHook.ts` (WS klijent, auto-reconnect; guard `wsRef.current !== ws` protiv
+duplih konekcija u StrictMode-u), `components/chat/ChatPanel.tsx` (lista + input, boja nadimka po hešu,
+gost read-only). Integrisano u `ProMatchModal`: chat desno (apsolutno popuni kolonu visine leve strane,
+skroluje unutra) + dugme „⛶" za theatre/fullscreen (strim + chat preko celog ekrana, Esc izlaz).
+WS adresa: `VITE_WS_URL` (dev = `ws://localhost:4000`, mimo LB); u prod-u prazno → izvede se `wss://<domen>/ws/chat`
+iz `VITE_API_URL`. Gateway prima WS samo sa `CLIENT_URL` origin-a (prazno/"*" = dev, sve dozvoljeno).
+**Deployment**: vidi `DEPLOYMENT.md` (nginx: statika + `/api` + `/ws/chat` upgrade + TLS, prod env, pm2, migracije).
+
 ---
 
 ## 6. Env varijable

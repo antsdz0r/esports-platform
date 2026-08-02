@@ -61,8 +61,6 @@ export default function TournamentsPage() {
   const [myRegs, setMyRegs] = useState<MyReg[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [filterStatus, setFilterStatus] = useState("");
-  const [filterFormat, setFilterFormat] = useState("");
 
   // Registration modal state
   const [regModal, setRegModal] = useState<Tournament | null>(null);
@@ -143,17 +141,6 @@ export default function TournamentsPage() {
     finally { setCancellingId(null); }
   };
 
-  const filtered = tournaments.filter((t) => {
-    if (filterStatus && t.status !== filterStatus) return false;
-    if (filterFormat && t.format !== filterFormat) return false;
-    return true;
-  });
-
-  const selectStyle: React.CSSProperties = {
-    background: "rgba(10,12,28,0.8)", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 14px",
-    color: "var(--text)", fontFamily: "var(--font-ui)", fontSize: 13, outline: "none", cursor: "pointer",
-  };
-
   return (
     <div>
       <PageHeader eyebrow="Takmičenja" title="Turniri" />
@@ -175,25 +162,10 @@ export default function TournamentsPage() {
         </div>
       )}
 
-      <div style={{ display: "flex", gap: 12, marginBottom: 24, flexWrap: "wrap" }}>
-        <select style={selectStyle} value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
-          <option value="">Svi statusi</option>
-          <option value="open">Prijave otvorene</option>
-          <option value="ongoing">U toku</option>
-          <option value="completed">Završen</option>
-        </select>
-        <select style={selectStyle} value={filterFormat} onChange={(e) => setFilterFormat(e.target.value)}>
-          <option value="">Svi formati</option>
-          <option value="single_elim">Single Elimination</option>
-          <option value="double_elim">Double Elimination</option>
-          <option value="round_robin">Round Robin</option>
-        </select>
-      </div>
-
-      {loading ? <Spinner /> : filtered.length === 0 ? <Empty message="Nema turnira koji odgovaraju filterima." /> : (
+      {loading ? <Spinner /> : tournaments.length > 0 ? (
         <motion.div variants={staggerContainer(0.07)} initial="hidden" animate="show"
           style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(330px, 1fr))", gap: 20 }}>
-          {filtered.map((t, i) => {
+          {tournaments.map((t, i) => {
             const glow = GLOWS[i % GLOWS.length];
             const registered = t.registeredCount ?? 0;
             const pct = Math.min(100, (registered / t.maxTeams) * 100);
@@ -259,7 +231,7 @@ export default function TournamentsPage() {
             );
           })}
         </motion.div>
-      )}
+      ) : favs.length === 0 ? <Empty message="Trenutno nema turnira." /> : null}
 
       {/* Registration modal */}
       {createPortal(
