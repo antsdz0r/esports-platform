@@ -78,7 +78,7 @@ Ako dodaješ na postojeću bazu, pokreni samo nedostajuće `CREATE TABLE`-ove (a
 `users`, `GAME_CATALOG`, `TEAMS`, `TOURNAMENTS`, `GAMES`, `TEAM_MEMBERS`, `TOURNAMENT_REGISTRATIONS`,
 `MATCH_PLAYERS`, `USER_WATCHLIST`, `TEAM_INVITES`, `AUDIT_LOGS`, `MATCH_STREAMS`,
 `PRO_MATCHES`, `PRO_STREAMS`, `PRO_LEAGUES`, `PRO_SERIES`, `PRO_TOURNAMENTS`, `PRO_STANDINGS`,
-`PRO_FAVORITES`, `PRO_CHAT_MESSAGES`, `PRO_PREDICTIONS`, `PRO_PICKEM_STATS`, `USER_BADGES`.
+`PRO_FAVORITES`, `PRO_CHAT_MESSAGES`, `PRO_PREDICTIONS`, `PRO_PICKEM_STATS`, `USER_BADGES`, `PRO_MATCH_WATCHLIST`.
 
 Replikacija (master–slave) je opciona za rad sajta — `DbManager` fallback-uje čitanja na master.
 
@@ -129,6 +129,30 @@ CREATE TABLE USER_BADGES(
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 ```
+
+---
+
+### 3b. Migracija za Watchlist mečeva (nova tabela)
+
+Za **postojeću živu bazu** pokreni **samo na masteru** (`127.0.0.1:3306`). Watchlist meča (zvonce na
+kartici) + notifikacija kad meč krene uživo:
+
+```sql
+CREATE TABLE PRO_MATCH_WATCHLIST(
+  id           INT AUTO_INCREMENT PRIMARY KEY,
+  user_id      INT UNSIGNED NOT NULL,
+  pro_match_id INT          NOT NULL,
+  created_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_pro_watch (user_id, pro_match_id),
+  INDEX idx_pro_watch_user (user_id),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  -- namerno BEZ FK na PRO_MATCHES (pro modul izolovan; izbegava fail kad feed dođe sa stale slave-a)
+);
+```
+
+> Detekcija „meč je krenuo" je na klijentu (poll feed-a svakih 30s, poređenje statusa) i radi dok je
+> sajt otvoren u bar jednom tabu. Za push i kad je sajt zatvoren trebalo bi Web Push + service worker
+> (naredni korak, nije potrebno za sada).
 
 ---
 

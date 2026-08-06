@@ -4,10 +4,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { AnimatedBackground } from "../ui/AnimatedBackground";
 
 const guestNav = [
-  { to: "/pro",               label: "Pro matches",   icon: "📺" },
-  { to: "/pro/turniri",       label: "Tournaments",   icon: "◈" },
-  { to: "/guest/tournaments", label: "Community",     icon: "◆" },
-  { to: "/guest/games",       label: "Game catalog",  icon: "🎮" },
+  { to: "/pro",         label: "Pro matches", icon: "📺" },
+  { to: "/pro/turniri", label: "Tournaments", icon: "◈" },
 ];
 
 export function GuestLayout({ children }: { children: ReactNode }) {

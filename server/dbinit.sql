@@ -319,5 +319,17 @@ CREATE TABLE USER_BADGES(
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+-- ── Watchlist pro mečeva (zvonce na kartici; notifikacija kad meč krene uživo) ──
+CREATE TABLE PRO_MATCH_WATCHLIST(
+    id           INT AUTO_INCREMENT PRIMARY KEY,
+    user_id      INT UNSIGNED NOT NULL,
+    pro_match_id INT          NOT NULL,
+    created_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_pro_watch (user_id, pro_match_id),
+    INDEX idx_pro_watch_user (user_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    -- namerno BEZ FK na PRO_MATCHES (pro modul je izolovan; izbegava fail kad feed dođe sa stale slave-a)
+);
+
 
 

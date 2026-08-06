@@ -3,6 +3,7 @@ import { UserRole } from "../../Domain/enums/UserRole";
 import { IProMatchService } from "../../Domain/services/pro/IProMatchService";
 import { IProSyncService } from "../../Domain/services/pro/IProSyncService";
 import { IProStreamAdminService } from "../../Domain/services/pro/IProStreamAdminService";
+import { IProMatchWatchlistService } from "../../Domain/services/pro/IProMatchWatchlistService";
 import { IAuditLogService } from "../../Domain/services/audit_logs/IAuditLogService";
 import { authenticate } from "../../Middlewares/authentification/AuthMiddleware";
 import { authorize } from "../../Middlewares/authorization/AuthorizeMiddleware";
@@ -17,12 +18,54 @@ export class ProController {
     private readonly proSyncService: IProSyncService,
     private readonly proStreamAdminService: IProStreamAdminService,
     private readonly auditLogService: IAuditLogService,
+    private readonly watchlistService: IProMatchWatchlistService,
   ) {
     this.router.get("/pro/matches", this.getFeed.bind(this));
     this.router.post("/pro/sync", authenticate, authorize(UserRole.ADMIN), this.sync.bind(this));
+    // Watchlist mečeva (pre /pro/matches/:id/streams — distinktne rute, ali radi urednosti)
+    this.router.get("/pro/watchlist/ids", authenticate, this.listWatchlistIds.bind(this));
+    this.router.post("/pro/watchlist/:matchId", authenticate, this.addWatch.bind(this));
+    this.router.delete("/pro/watchlist/:matchId", authenticate, this.removeWatch.bind(this));
     this.router.get("/pro/matches/:id/streams", authenticate, authorize(UserRole.ADMIN), this.listStreams.bind(this));
     this.router.post("/pro/matches/:id/streams", authenticate, authorize(UserRole.ADMIN), this.addStream.bind(this));
     this.router.delete("/pro/streams/:streamId", authenticate, authorize(UserRole.ADMIN), this.removeStream.bind(this));
+  }
+
+  private async listWatchlistIds(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = req.user?.id;
+      if (!userId) { res.status(401).json({ success: false, message: "Unauthorized" }); return; }
+      res.status(200).json({ success: true, data: await this.watchlistService.listIds(userId) });
+    } catch {
+      res.status(500).json({ success: false, message: "Internal server error" });
+    }
+  }
+
+  private async addWatch(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = req.user?.id;
+      if (!userId) { res.status(401).json({ success: false, message: "Unauthorized" }); return; }
+      const matchId = parseInt(req.params.matchId as string, 10);
+      if (isNaN(matchId)) { res.status(400).json({ success: false, message: "Invalid matchId" }); return; }
+      const ok = await this.watchlistService.add(userId, matchId);
+      if (!ok) { res.status(500).json({ success: false, message: "Failed to add to watchlist" }); return; }
+      res.status(201).json({ success: true, message: "Added to watchlist" });
+    } catch {
+      res.status(500).json({ success: false, message: "Internal server error" });
+    }
+  }
+
+  private async removeWatch(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = req.user?.id;
+      if (!userId) { res.status(401).json({ success: false, message: "Unauthorized" }); return; }
+      const matchId = parseInt(req.params.matchId as string, 10);
+      if (isNaN(matchId)) { res.status(400).json({ success: false, message: "Invalid matchId" }); return; }
+      await this.watchlistService.remove(userId, matchId);
+      res.status(200).json({ success: true, message: "Removed from watchlist" });
+    } catch {
+      res.status(500).json({ success: false, message: "Internal server error" });
+    }
   }
 
   private async getFeed(req: Request, res: Response): Promise<void> {

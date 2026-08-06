@@ -8,12 +8,9 @@ import { ProfileModal } from "../ui/ProfileModal";
 
 const userNav = [
   { to: "/dashboard",             label: "Dashboard",   icon: "⬡" },
-  { to: "/dashboard/teams",       label: "Teams",       icon: "◎" },
   { to: "/dashboard/pro-turniri", label: "Tournaments", icon: "◈" },
   { to: "/dashboard/pro",         label: "Pro matches", icon: "📺" },
   { to: "/dashboard/pickem",      label: "Pick'em",     icon: "🎯" },
-  { to: "/dashboard/tournaments", label: "My tournaments", icon: "◆" },
-  { to: "/dashboard/invites",     label: "Invites",     icon: "✉" },
   { to: "/dashboard/watchlist",   label: "Watchlist",   icon: "★" },
 ];
 const adminNav = [

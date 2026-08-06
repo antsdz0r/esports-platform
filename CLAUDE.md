@@ -267,6 +267,18 @@ WS adresa: `VITE_WS_URL` (dev = `ws://localhost:4000`, mimo LB); u prod-u prazno
 iz `VITE_API_URL`. Gateway prima WS samo sa `CLIENT_URL` origin-a (prazno/"*" = dev, sve dozvoljeno).
 **Deployment**: vidi `DEPLOYMENT.md` (nginx: statika + `/api` + `/ws/chat` upgrade + TLS, prod env, pm2, migracije).
 
+**Watchlist mečeva + notifikacije (nova tabela `PRO_MATCH_WATCHLIST`)** — zvonce (🔔) na `upcoming` pro
+kartici (ProPage) dodaje meč u watchlist po useru; kad meč pređe u `live`, izlazi notifikacija + zvuk na
+header zvoncetu. CREATE TABLE samo na masteru (definicija u `dbinit.sql` / `DEPLOYMENT.md` 3b).
+Backend: `IProMatchWatchlistRepository`+`ProMatchWatchlistRepository` (add/remove/listIds),
+`IProMatchWatchlistService`+`ProMatchWatchlistService`; rute na `ProController` (auth):
+`GET /api/pro/watchlist/ids`, `POST/DELETE /api/pro/watchlist/:matchId`; DI u `app.ts`.
+Frontend: `proApi` (getWatchlistIds/addToWatchlist/removeFromWatchlist); `contexts/notifications/NotificationsProvider.tsx`
+(watched set + toggle, poll feed-a 30s, detekcija `upcoming`→`live`, Web Audio „chime"), mount u `Layout`.
+`components/ui/NotificationBell.tsx` prikazuje „Match is live" notifikacije uz team-invite-ove (badge + dismiss).
+ProPage: `BellIcon` zvonce na upcoming karticama. Detekcija je klijentska (dok je sajt otvoren);
+za push kad je zatvoren → Web Push + service worker (backlog).
+
 **Pick'em + bedževi (nove tabele `PRO_PREDICTIONS`, `PRO_PICKEM_STATS`, `USER_BADGES`)** — CREATE TABLE samo na
 masteru (127.0.0.1:3306). Katalog bedževa je u kodu (`Domain/constants/BadgeDefinitions.ts`), pa nema seed-a.
 ```sql

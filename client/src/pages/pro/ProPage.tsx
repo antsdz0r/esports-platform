@@ -2,8 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "../../hooks/auth/useAuthHook";
 import { PageHeader, Spinner, Empty, ErrorBox, SuccessBox, PgBtn } from "../../components/ui/UI";
-import { fadeUp, staggerContainer } from "../../components/ui/motion";
+import { staggerContainer } from "../../components/ui/motion";
 import ProMatchModal from "../../components/stream/ProMatchModal";
+import ProMatchCard from "../../components/pro/ProMatchCard";
 import { proApi } from "../../api_services/pro/ProAPIService";
 import type { ProMatch, ProMatchStatus } from "../../models/pro/ProTypes";
 
@@ -29,37 +30,6 @@ const STATUS_FILTERS: { key: "all" | ProMatchStatus; label: string }[] = [
   { key: "upcoming", label: "Upcoming" },
   { key: "finished", label: "Finished" },
 ];
-
-const STATUS_META: Record<ProMatchStatus, { label: string; color: string; bg: string }> = {
-  live: { label: "LIVE", color: "var(--pink)", bg: "rgba(255,45,126,0.14)" },
-  upcoming: { label: "SOON", color: "var(--cyan)", bg: "rgba(0,212,255,0.12)" },
-  finished: { label: "FINISHED", color: "var(--green)", bg: "rgba(0,240,160,0.12)" },
-  canceled: { label: "CANCELED", color: "var(--text-dim)", bg: "rgba(255,255,255,0.05)" },
-};
-
-// Zaseban, distinktan panel da se kartice odvoje od pozadine sajta + neon-plavi akcenat.
-const CARD_BG = "linear-gradient(165deg, rgba(34,44,82,0.72), rgba(15,19,40,0.9))";
-const CARD_BORDER = "1px solid rgba(78,120,210,0.38)";
-
-function TeamCol({ name, logo, won, align }: { name: string | null; logo: string | null; won: boolean; align: "left" | "right" }) {
-  const initials = (name ?? "?").slice(0, 3).toUpperCase();
-  return (
-    <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-      {logo ? (
-        <img src={logo} alt={name ?? ""} style={{ width: 46, height: 46, objectFit: "contain" }} />
-      ) : (
-        <div style={{ width: 46, height: 46, borderRadius: 10, background: "rgba(255,255,255,0.07)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-display)", fontSize: 13, fontWeight: 900, color: "var(--text-dim)" }}>{initials}</div>
-      )}
-      <span style={{
-        maxWidth: "100%", fontFamily: "var(--font-head)", fontSize: 13, fontWeight: won ? 800 : 600,
-        color: won ? "var(--text)" : "var(--text-muted)", textAlign: align === "right" ? "right" : "left",
-        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-      }}>
-        {name ?? "TBD"}
-      </span>
-    </div>
-  );
-}
 
 export default function ProPage() {
   const { user } = useAuth();
@@ -178,72 +148,9 @@ export default function ProPage() {
       ) : (
         <motion.div variants={staggerContainer(0.05)} initial="hidden" animate="show"
           style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 16, alignItems: "stretch" }}>
-          {visible.map((m) => {
-            const st = STATUS_META[m.status];
-            const won1 = m.status === "finished" && m.team1Score > m.team2Score;
-            const won2 = m.status === "finished" && m.team2Score > m.team1Score;
-            const when = m.scheduledAt ? new Date(m.scheduledAt).toLocaleString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : null;
-            return (
-              <motion.div key={m.id} variants={fadeUp}
-                whileHover={{ scale: 1.02, y: -3, boxShadow: "0 14px 40px rgba(0,212,255,0.22)" }}
-                transition={{ type: "spring", stiffness: 320, damping: 24 }}
-                onClick={() => setActive(m)}
-                style={{ display: "flex", flexDirection: "column", borderRadius: 16, padding: 16, cursor: "pointer", background: CARD_BG, border: CARD_BORDER }}>
-
-                {/* Top meta */}
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
-                  <span style={{ fontFamily: "var(--font-ui)", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", padding: "3px 9px", borderRadius: 6, background: st.bg, color: st.color, display: "inline-flex", alignItems: "center", gap: 6 }}>
-                    {m.status === "live" && <span className="pg-dot-pulse" style={{ width: 6, height: 6, borderRadius: "50%", background: st.color }} />}
-                    {st.label}
-                  </span>
-                  <span style={{ fontFamily: "var(--font-ui)", fontSize: 11, fontWeight: 700, color: "var(--cyan)", padding: "2px 8px", borderRadius: 6, background: "rgba(0,212,255,0.10)", border: "1px solid rgba(0,212,255,0.30)" }}>
-                    {gameLabel(m.gameSlug)}
-                  </span>
-                </div>
-
-                {/* League */}
-                <div style={{ fontFamily: "var(--font-ui)", fontSize: 11, color: "var(--text-muted)", textAlign: "center", marginBottom: 8, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {m.leagueName ?? m.serieName ?? ""}{m.tournamentName ? ` · ${m.tournamentName}` : ""}
-                </div>
-
-                {/* Datum i vreme */}
-                {when && (
-                  <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
-                    <span style={{
-                      display: "inline-flex", alignItems: "center", gap: 6,
-                      fontFamily: "var(--font-ui)", fontSize: 12.5, fontWeight: 700, letterSpacing: "0.02em",
-                      color: "var(--cyan)", background: "rgba(0,212,255,0.09)",
-                      border: "1px solid rgba(0,212,255,0.28)", padding: "4px 11px", borderRadius: 8,
-                    }}>
-                      <span style={{ fontSize: 13 }}>🕐</span>{when}
-                    </span>
-                  </div>
-                )}
-
-                {/* Teams: A  score  B */}
-                <div style={{ display: "flex", alignItems: "flex-start", gap: 10, flex: 1 }}>
-                  <TeamCol name={m.team1Name} logo={m.team1Logo} won={won1} align="left" />
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", paddingTop: 8, minWidth: 56 }}>
-                    <span style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 900, color: "var(--text)" }}>
-                      {m.team1Score}<span style={{ color: "var(--text-dim)", margin: "0 4px" }}>:</span>{m.team2Score}
-                    </span>
-                    {m.bestOf ? <span style={{ fontFamily: "var(--font-ui)", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", color: "var(--text-dim)" }}>BO{m.bestOf}</span> : null}
-                  </div>
-                  <TeamCol name={m.team2Name} logo={m.team2Logo} won={won2} align="right" />
-                </div>
-
-                {/* WATCH bar */}
-                <div style={{
-                  marginTop: 16, textAlign: "center", padding: "9px 0", borderRadius: 10,
-                  fontFamily: "var(--font-ui)", fontSize: 12, fontWeight: 800, letterSpacing: "0.22em",
-                  color: "var(--cyan)", background: "rgba(0,212,255,0.08)",
-                  border: "1.5px solid var(--cyan)", boxShadow: "0 0 14px rgba(0,212,255,0.25)",
-                }}>
-                  WATCH
-                </div>
-              </motion.div>
-            );
-          })}
+          {visible.map((m) => (
+            <ProMatchCard key={m.id} m={m} gameLabel={gameLabel(m.gameSlug)} onOpen={() => setActive(m)} />
+          ))}
         </motion.div>
       )}
 

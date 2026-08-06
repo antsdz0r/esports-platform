@@ -56,4 +56,26 @@ export const proApi = {
       .then((r) => r.data)
       .catch((e) => ({ success: false, message: e?.response?.data?.message ?? "Failed to delete stream" }));
   },
+
+  // ── Watchlist mečeva (zvonce na kartici) ──
+  async getWatchlistIds(): Promise<ApiResp<number[]>> {
+    return axios
+      .get<ApiResp<number[]>>(`${BASE}pro/watchlist/ids`, { headers: authHeader() })
+      .then((r) => r.data)
+      .catch(() => ({ success: false, message: "Failed to load watchlist" }));
+  },
+
+  async addToWatchlist(matchId: number): Promise<ApiResp<unknown>> {
+    return axios
+      .post<ApiResp<unknown>>(`${BASE}pro/watchlist/${matchId}`, {}, { headers: authHeader() })
+      .then((r) => r.data)
+      .catch((e) => ({ success: false, message: e?.response?.data?.message ?? "Failed" }));
+  },
+
+  async removeFromWatchlist(matchId: number): Promise<ApiResp<unknown>> {
+    return axios
+      .delete<ApiResp<unknown>>(`${BASE}pro/watchlist/${matchId}`, { headers: authHeader() })
+      .then((r) => r.data)
+      .catch((e) => ({ success: false, message: e?.response?.data?.message ?? "Failed" }));
+  },
 };
