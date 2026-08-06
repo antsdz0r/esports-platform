@@ -17,6 +17,7 @@ import UsersPage from "./pages/admin/UsersPage";
 import AuditLogPage from "./pages/admin/AuditLogPage";
 import HealthPage from "./pages/admin/HealthPage";
 import WatchlistPage from "./pages/user/WatchlistPage";
+import FavoritesPage from "./pages/user/FavoritesPage";
 
 export default function App() {
   return (
@@ -29,6 +30,7 @@ export default function App() {
       {/* User routes */}
       <Route path="/dashboard"              element={<ProtectedRoute requiredRole="player"><UserDashboard /></ProtectedRoute>} />
       <Route path="/dashboard/watchlist"    element={<ProtectedRoute requiredRole="player"><WatchlistPage /></ProtectedRoute>} />
+      <Route path="/dashboard/favorites"    element={<ProtectedRoute requiredRole="player"><FavoritesPage /></ProtectedRoute>} />
       <Route path="/dashboard/pro"          element={<ProtectedRoute requiredRole="player"><ProPage /></ProtectedRoute>} />
       <Route path="/dashboard/pro-turniri"  element={<ProtectedRoute requiredRole="player"><ProTournamentsPage /></ProtectedRoute>} />
       <Route path="/dashboard/pickem"       element={<ProtectedRoute requiredRole="player"><PickemPage /></ProtectedRoute>} />
@@ -38,6 +40,7 @@ export default function App() {
       <Route path="/admin/users"       element={<ProtectedRoute requiredRole="admin"><UsersPage /></ProtectedRoute>} />
       <Route path="/admin/audit"       element={<ProtectedRoute requiredRole="admin"><AuditLogPage /></ProtectedRoute>} />
       <Route path="/admin/health"      element={<ProtectedRoute requiredRole="admin"><HealthPage /></ProtectedRoute>} />
+      <Route path="/admin/favorites"   element={<ProtectedRoute requiredRole="admin"><FavoritesPage /></ProtectedRoute>} />
       <Route path="/admin/pro"         element={<ProtectedRoute requiredRole="admin"><ProPage /></ProtectedRoute>} />
       <Route path="/admin/pro-turniri" element={<ProtectedRoute requiredRole="admin"><ProTournamentsPage /></ProtectedRoute>} />
       <Route path="/admin/pickem"      element={<ProtectedRoute requiredRole="admin"><PickemPage /></ProtectedRoute>} />

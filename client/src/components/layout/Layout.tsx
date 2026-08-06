@@ -11,7 +11,8 @@ const userNav = [
   { to: "/dashboard/pro-turniri", label: "Tournaments", icon: "◈" },
   { to: "/dashboard/pro",         label: "Pro matches", icon: "📺" },
   { to: "/dashboard/pickem",      label: "Pick'em",     icon: "🎯" },
-  { to: "/dashboard/watchlist",   label: "Watchlist",   icon: "★" },
+  { to: "/dashboard/favorites",   label: "Favorites",   icon: "★" },
+  { to: "/dashboard/watchlist",   label: "Watchlist",   icon: "🔔" },
 ];
 const adminNav = [
   { to: "/admin",             label: "Dashboard",   icon: "⬡" },
@@ -19,6 +20,7 @@ const adminNav = [
   { to: "/admin/pro-turniri", label: "Tournaments", icon: "◈" },
   { to: "/admin/pro",         label: "Pro matches", icon: "📺" },
   { to: "/admin/pickem",      label: "Pick'em",     icon: "🎯" },
+  { to: "/admin/favorites",   label: "Favorites",   icon: "★" },
   { to: "/admin/audit",       label: "Audit Log",   icon: "▤" },
   { to: "/admin/health",      label: "Health",      icon: "♥" },
 ];
